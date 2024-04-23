@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="EpisodeTabText" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="TvProgramTabText" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="TvCategoryTabText" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="NoTabIndicator" parent="Widget.Design.TabLayout">
+        <item name="tabIndicatorHeight">0dp</item>
+    </style>
+
+
+    <style name="TvChannelTabText" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Theme.CastVideosTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Set AppCompat’s color theming attrs -->
+        <item name="colorPrimary">@color/main</item>
+        <item name="colorPrimaryDark">@color/main_dark</item>
+        <item name="colorAccent">@color/main</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/grey10</item>
+
+    </style>
+
+    <style name="Theme.CastVideosDark" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimaryDark">@color/black</item>
+    </style>
+
+    <style name="TextAppearance.CustomCastIntroOverlay.Button" parent="android:style/TextAppearance">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="TextAppearance.CustomCastIntroOverlay.Title" parent="android:style/TextAppearance.Large">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+</resources>

@@ -1,0 +1,57 @@
+PODS:
+  - Flutter (1.0.0)
+  - NVActivityIndicatorView (5.1.1):
+    - NVActivityIndicatorView/Base (= 5.1.1)
+  - NVActivityIndicatorView/Base (5.1.1)
+  - ScreenshotPreventing (1.4.0):
+    - ScreenshotPreventing/Core (= 1.4.0)
+  - ScreenshotPreventing/Core (1.4.0)
+  - SDWebImage (5.19.0):
+    - SDWebImage/Core (= 5.19.0)
+  - SDWebImage/Core (5.19.0)
+  - SnapKit (4.2.0)
+  - TinyConstraints (4.0.2)
+  - udevs_video_player (1.0.0):
+    - Flutter
+    - NVActivityIndicatorView
+    - ScreenshotPreventing (~> 1.4.0)
+    - SDWebImage (~> 5.0)
+    - SnapKit (~> 4.0)
+    - TinyConstraints
+    - XLActionController
+  - XLActionController (5.1.0):
+    - XLActionController/Core (= 5.1.0)
+  - XLActionController/Core (5.1.0)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - udevs_video_player (from `.symlinks/plugins/udevs_video_player/ios`)
+
+SPEC REPOS:
+  trunk:
+    - NVActivityIndicatorView
+    - ScreenshotPreventing
+    - SDWebImage
+    - SnapKit
+    - TinyConstraints
+    - XLActionController
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  udevs_video_player:
+    :path: ".symlinks/plugins/udevs_video_player/ios"
+
+SPEC CHECKSUMS:
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  NVActivityIndicatorView: 1f6c5687f1171810aa27a3296814dc2d7dec3667
+  ScreenshotPreventing: 7057fd23cb00599ba265c0b166768e1e0cb3a0b0
+  SDWebImage: 981fd7e860af070920f249fd092420006014c3eb
+  SnapKit: fe8a619752f3f27075cc9a90244d75c6c3f27e2a
+  TinyConstraints: 7b7ccc0c485bb3bb47082138ff28bc33cd49897f
+  udevs_video_player: 00a21d4f4f95ed0aaf9f3491c863cd92f6bbfe38
+  XLActionController: 24140d835ab9e260270711afebc5efabebe9d392
+
+PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
+
+COCOAPODS: 1.15.2

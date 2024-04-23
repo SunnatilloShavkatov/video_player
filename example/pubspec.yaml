@@ -1,0 +1,23 @@
+name: video_player_example
+description: Demonstrates how to use the video_player plugin.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  video_player:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^3.0.2
+  flutter_test:
+    sdk: flutter
+
+flutter:
+
+  uses-material-design: true
