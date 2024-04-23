@@ -24,7 +24,7 @@ class SeasonSelectionCell : UITableViewCell{
     
     lazy var checkIcon: UIImageView = {
         let imageView = UIImageView()
-        let image = UIImage(named: "ic_done",in: Bundle(for: SwiftUdevsVideoPlayerPlugin.self),compatibleWith: nil)
+        let image = UIImage(named: "ic_done",in: Bundle(for: SwiftVideoPlayerPlugin.self),compatibleWith: nil)
         imageView.image = image
         imageView.tintColor = Colors.white
         imageView.size(CGSize(width: 24, height: 24))

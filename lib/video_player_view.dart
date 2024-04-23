@@ -29,7 +29,7 @@ class VideoPlayerView extends StatelessWidget {
             if (url.contains('assets')) 'assets': url,
             'resizeMode': resizeMode.name,
           },
-          viewType: 'plugins.udevs/video_player_view',
+          viewType: 'plugins.video/video_player_view',
           onPlatformViewCreated: _onPlatformViewCreated,
         );
       case TargetPlatform.iOS:
@@ -40,7 +40,7 @@ class VideoPlayerView extends StatelessWidget {
             if (url.contains('assets')) 'assets': url,
             'resizeMode': resizeMode.name,
           },
-          viewType: 'plugins.udevs/video_player_view',
+          viewType: 'plugins.video/video_player_view',
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );

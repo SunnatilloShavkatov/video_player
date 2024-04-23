@@ -24,7 +24,7 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<dynamic> playVideo({required String playerConfigJsonString});
+  Future<List<int>?> playVideo({required String playerConfigJsonString});
 
   Future downloadVideo({required String downloadConfigJsonString});
 

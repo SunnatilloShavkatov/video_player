@@ -11,17 +11,19 @@ import 'video_player_platform_interface.dart';
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('udevs_video_player');
+  final methodChannel = const MethodChannel('video_player');
   final StreamController<MediaItemDownload> _streamController =
       StreamController<MediaItemDownload>.broadcast();
 
   @override
-  Future<dynamic> playVideo({required String playerConfigJsonString}) async {
-    final res = await methodChannel.invokeMethod<dynamic>(
+  Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
+    final res = await methodChannel.invokeMethod<List<Object?>>(
       'playVideo',
       <String, dynamic>{'playerConfigJsonString': playerConfigJsonString},
     );
-    return res;
+    if (res == null) return null;
+    final List<int> list = res.map((e) => (e ?? 1) as int).toList();
+    return list;
   }
 
   @override

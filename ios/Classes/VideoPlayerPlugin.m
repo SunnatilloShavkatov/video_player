@@ -1,8 +1,8 @@
-#import VideoPlayerPlugin.h
-#import <udevs_video_player/udevs_video_player-Swift.h>
+#import "VideoPlayerPlugin.h"
+#import <video_player/video_player-Swift.h>
 
 @implementation VideoPlayerPlugin
 + (void)registerWithRegistrar:(NSObject <FlutterPluginRegistrar> *)registrar {
-    [SwiftUdevsVideoPlayerPlugin registerWithRegistrar:registrar];
+    [SwiftVideoPlayerPlugin registerWithRegistrar:registrar];
 }
 @end

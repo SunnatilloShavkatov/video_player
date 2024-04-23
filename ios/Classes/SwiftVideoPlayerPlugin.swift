@@ -3,7 +3,7 @@ import AVFoundation
 import AVFAudio
 import UIKit
 
-public class SwiftUdevsVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegate {
+public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegate {
     
     public static var viewController = FlutterViewController()
     private var flutterResult: FlutterResult?
@@ -27,18 +27,18 @@ public class SwiftUdevsVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDe
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         viewController = (UIApplication.shared.delegate?.window??.rootViewController)! as! FlutterViewController
-        channel = FlutterMethodChannel(name: "udevs_video_player", binaryMessenger: registrar.messenger())
-        let instance = SwiftUdevsVideoPlayerPlugin()
+        channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger())
+        let instance = SwiftVideoPlayerPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel!)
         let videoViewFactory = VideoPlayerViewFactory(registrar: registrar)
-        registrar.register(videoViewFactory, withId: "plugins.udevs/video_player_view")
+        registrar.register(videoViewFactory, withId: "plugins.video/video_player_view")
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         flutterResult = result
         switch call.method  {
         case "closePlayer": do {
-            SwiftUdevsVideoPlayerPlugin.viewController.dismiss(animated:true)
+            SwiftVideoPlayerPlugin.viewController.dismiss(animated:true)
             return
         }
         case "downloadVideo": do {
@@ -141,7 +141,7 @@ public class SwiftUdevsVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDe
             vc.seasons  = playerConfiguration.seasons
             vc.selectChannelIndex  = playerConfiguration.selectChannelIndex
             vc.selectTvCategoryIndex  = playerConfiguration.selectTvCategoryIndex
-            SwiftUdevsVideoPlayerPlugin.viewController.present(vc, animated: true,  completion: nil)
+            SwiftVideoPlayerPlugin.viewController.present(vc, animated: true,  completion: nil)
             return
         }
         default: do {
@@ -156,7 +156,7 @@ public class SwiftUdevsVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDe
     }
     
     private func getPercentComplete(download: MediaItemDownload){
-        SwiftUdevsVideoPlayerPlugin.channel?.invokeMethod("percent", arguments: download.fromString())
+        SwiftVideoPlayerPlugin.channel?.invokeMethod("percent", arguments: download.fromString())
     }
     
     /// Restores the Application state by getting all the AVAssetDownloadTasks and restoring their Asset structs.
@@ -257,9 +257,9 @@ public class SwiftUdevsVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDe
 }
 
 /**
- Extend `SwiftUdevsVideoPlayerPlugin` to conform to the `AVAssetDownloadDelegate` protocol.
+ Extend `SwiftVideoPlayerPlugin` to conform to the `AVAssetDownloadDelegate` protocol.
  */
-extension SwiftUdevsVideoPlayerPlugin: AVAssetDownloadDelegate {
+extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
     
     /// Tells the delegate that the task finished transferring data.
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {

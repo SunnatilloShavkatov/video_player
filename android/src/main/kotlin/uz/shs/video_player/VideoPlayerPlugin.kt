@@ -51,9 +51,9 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     @SuppressLint("UnsafeOptInUsageError")
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         binding.platformViewRegistry.registerViewFactory(
-            "plugins.udevs/video_player_view", VideoPlayerViewFactory(binding.binaryMessenger)
+            "plugins.video/video_player_view", VideoPlayerViewFactory(binding.binaryMessenger)
         )
-        channel = MethodChannel(binding.binaryMessenger, "udevs_video_player")
+        channel = MethodChannel(binding.binaryMessenger, "video_player")
         channel.setMethodCallHandler(this)
         downloadTracker = DownloadUtil.getDownloadTracker(binding.applicationContext)
         startDownloadService(binding.applicationContext)

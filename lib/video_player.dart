@@ -16,9 +16,9 @@ export 'package:video_player/models/season.dart';
 export 'package:video_player/models/tv_program.dart';
 
 class VideoPlayer {
-  factory VideoPlayer() => _instance;
-
   VideoPlayer._();
+
+  static VideoPlayer get instance => _instance;
 
   static final VideoPlayer _instance = VideoPlayer._();
 

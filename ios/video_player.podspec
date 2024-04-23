@@ -1,9 +1,9 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint udevs_video_player.podspec` to validate before publishing.
+# Run `pod lib lint video_player.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'udevs_video_player'
+  s.name             = 'video_player'
   s.version          = '1.0.0'
   s.summary          = 'A new Flutter plugin project.'
   s.description      = <<-DESC
@@ -11,7 +11,7 @@ A new Flutter plugin project.
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'udevs4help@gmail.com' }
+  s.author           = { 'Your Company' => 'sunnatilloshavkatov@gmail.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
