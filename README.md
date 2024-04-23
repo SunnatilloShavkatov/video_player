@@ -1,4 +1,4 @@
-# udevs_video_player
+# video_player
 
 A new Flutter plugin project.
 
