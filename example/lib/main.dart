@@ -29,7 +29,7 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final _videoPlayerPlugin = VideoPlayer();
+  final _videoPlayerPlugin = VideoPlayer.instance;
 
   Future<void> download1() async {
     try {

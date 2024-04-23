@@ -10,7 +10,7 @@ class SecondPage extends StatefulWidget {
 }
 
 class _SecondPageState extends State<SecondPage> {
-  final _videoPlayerPlugin = VideoPlayer();
+  final _videoPlayerPlugin = VideoPlayer.instance;
 
   Stream<MediaItemDownload> currentProgressDownloadAsStream() =>
       _videoPlayerPlugin.currentProgressDownloadAsStream;
