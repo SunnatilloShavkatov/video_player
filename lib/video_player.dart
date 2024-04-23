@@ -22,7 +22,7 @@ class VideoPlayer {
 
   static final VideoPlayer _instance = VideoPlayer._();
 
-  Future<dynamic> playVideo({required PlayerConfiguration playerConfig}) {
+  Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
     final String jsonStringConfig = jsonEncode(playerConfig.toJson());
     return VideoPlayerPlatform.instance.playVideo(
       playerConfigJsonString: jsonStringConfig,
