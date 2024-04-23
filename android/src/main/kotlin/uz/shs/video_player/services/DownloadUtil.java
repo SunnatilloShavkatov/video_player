@@ -18,6 +18,7 @@ package uz.shs.video_player.services;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.database.DatabaseProvider;
 import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.DataSource;
@@ -44,6 +45,7 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.concurrent.Executors;
 
+@UnstableApi
 public final class DownloadUtil {
 
     public static final String DOWNLOAD_NOTIFICATION_CHANNEL_ID = "download_channel";

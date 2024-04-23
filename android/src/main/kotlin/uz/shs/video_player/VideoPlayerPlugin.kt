@@ -32,7 +32,7 @@ import uz.shs.video_player.services.DownloadUtil
 import uz.shs.video_player.services.MyDownloadService
 import kotlin.math.roundToInt
 
-const val EXTRA_ARGUMENT = "uz.udevs.udevs_video_player.ARGUMENT"
+const val EXTRA_ARGUMENT = "uz.shs.video_player.ARGUMENT"
 const val PLAYER_ACTIVITY = 111
 const val PLAYER_ACTIVITY_FINISH = 222
 

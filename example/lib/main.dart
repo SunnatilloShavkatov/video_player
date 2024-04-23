@@ -193,7 +193,7 @@ class _MainPageState extends State<MainPage> {
           episodeIndex: 0,
           isMegogo: false,
           isPremier: false,
-          videoId: '',
+          videoId: "",
           sessionId: '',
           megogoAccessToken: '',
           authorization: '',
