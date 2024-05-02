@@ -25,7 +25,7 @@ class DownloadTracker(
         fun onDownloadsChanged(download: Download)
     }
 
-    private val TAG = "DownloadTracker"
+    private val tag = "DownloadTracker"
 
     private var context: Context
     private var dataSourceFactory: DataSource.Factory? = null
@@ -135,7 +135,7 @@ class DownloadTracker(
                 }
             }
         } catch (e: IOException) {
-            Log.w(TAG, "Failed to query downloads", e)
+            Log.w(tag, "Failed to query downloads", e)
         }
     }
 

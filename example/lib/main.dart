@@ -30,14 +30,15 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
+  static const String downloadUrl =
+      "https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8";
 
   Future<void> download1() async {
     try {
       final s = await _videoPlayerPlugin.downloadVideo(
             downloadConfig: const DownloadConfiguration(
               title: 'She-Hulk 2',
-              url:
-                  'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+              url: downloadUrl,
             ),
           ) ??
           'nothing';
@@ -71,8 +72,7 @@ class _MainPageState extends State<MainPage> {
       final s = await _videoPlayerPlugin.pauseDownload(
               downloadConfig: const DownloadConfiguration(
             title: 'She-Hulk',
-            url:
-                'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+            url: downloadUrl,
           )) ??
           'nothing';
       if (kDebugMode) {
@@ -88,8 +88,7 @@ class _MainPageState extends State<MainPage> {
       final s = await _videoPlayerPlugin.resumeDownload(
               downloadConfig: const DownloadConfiguration(
             title: 'She-Hulk',
-            url:
-                'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+            url: downloadUrl,
           )) ??
           'nothing';
       if (kDebugMode) {
@@ -105,8 +104,7 @@ class _MainPageState extends State<MainPage> {
       final s = await _videoPlayerPlugin.removeDownload(
               downloadConfig: const DownloadConfiguration(
             title: 'She-Hulk',
-            url:
-                'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+            url: downloadUrl,
           )) ??
           'nothing';
       if (kDebugMode) {
@@ -123,8 +121,7 @@ class _MainPageState extends State<MainPage> {
       state = await _videoPlayerPlugin.getStateDownload(
               downloadConfig: const DownloadConfiguration(
             title: 'She-Hulk',
-            url:
-                'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+            url: downloadUrl,
           )) ??
           -1;
       if (kDebugMode) {
@@ -142,8 +139,7 @@ class _MainPageState extends State<MainPage> {
       isDownloaded = await _videoPlayerPlugin.isDownloadVideo(
         downloadConfig: const DownloadConfiguration(
           title: 'She-Hulk',
-          url:
-              'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8',
+          url: downloadUrl,
         ),
       );
       if (kDebugMode) {
@@ -164,10 +160,7 @@ class _MainPageState extends State<MainPage> {
         playerConfig: const PlayerConfiguration(
           movieShareLink: 'https://uzd.udevs.io/movie/7963?type=premier',
           baseUrl: 'https://api.spec.uzd.udevs.io/v1/',
-          initialResolution: {
-            'Auto':
-                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8'
-          },
+          initialResolution: {'Auto': downloadUrl},
           resolutions: {
             'Auto':
                 'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
@@ -269,7 +262,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Plugin example app')),
+        appBar: AppBar(title: const Text('Video Player')),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -340,8 +333,7 @@ class _MainPageState extends State<MainPage> {
                     Text(
                       data == null
                           ? 'Not downloading'
-                          : data.url !=
-                                  'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8'
+                          : data.url != downloadUrl
                               ? 'Not downloading'
                               : data.percent.toString(),
                     ),
@@ -361,7 +353,10 @@ class _MainPageState extends State<MainPage> {
               future: checkIsDownloaded(),
               builder: (context, snapshot) {
                 final data = snapshot.data;
-                return Text((data ?? false) ? 'Downloaded' : 'Not downloaded');
+                return Text(
+                  (data ?? false) ? 'Downloaded' : 'Not downloaded',
+                  textAlign: TextAlign.center,
+                );
               },
             ),
           ],

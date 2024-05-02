@@ -184,6 +184,5 @@ public final class DownloadUtil {
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
     }
 
-    private DownloadUtil() {
-    }
+    private DownloadUtil() {}
 }
