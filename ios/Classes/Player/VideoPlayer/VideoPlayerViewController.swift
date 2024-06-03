@@ -32,7 +32,7 @@ enum CastSessionStatus {
 
 class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
     
-    private var speedList = ["2.0","1.5","1.25","1.0","0.5"].sorted()
+    private var speedList = ["2.0","1.5","1.0","0.5"].sorted()
     
     private var pipController: AVPictureInPictureController!
     private var pipPossibleObservation: NSKeyValueObservation?
@@ -362,7 +362,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         var listOfQuality = [String]()
         listOfQuality = array.sorted().reversed()
         array.sorted().reversed().forEach { quality in
-            if quality == "1080p"{
+            if quality == "1080p" {
                 listOfQuality.removeLast()
                 listOfQuality.insert("1080p", at: 1)
             }

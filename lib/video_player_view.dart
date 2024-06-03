@@ -59,7 +59,7 @@ class VideoPlayerView extends StatelessWidget {
 // VideoPlayerView Controller class to set url etc
 class VideoPlayerViewController {
   VideoPlayerViewController._(int id)
-      : _channel = MethodChannel('plugins.udevs/video_player_view_$id');
+      : _channel = MethodChannel('plugins.video/video_player_view_$id');
 
   final MethodChannel _channel;
 

@@ -425,6 +425,11 @@ class PlayerView: UIView {
         if !playerConfiguration.isLive {
             NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
         }
+        playerConfiguration.resolutions.forEach { (key: String, value: String) in
+            if ("480p"==key) {
+                changeQuality(url: value)
+            }
+        }
         addTimeObserver()
     }
     
@@ -448,7 +453,7 @@ class PlayerView: UIView {
         self.player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
     }
     
-    func changeQuality(url:String?){
+    func changeQuality(url:String?) {
         if(url == nil){ return}
         guard let bitrate = Double(url!) else {
             self.player.currentItem?.preferredPeakBitRate = 5687102
