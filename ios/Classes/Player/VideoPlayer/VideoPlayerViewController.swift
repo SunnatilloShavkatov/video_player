@@ -109,9 +109,12 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         let resList = resolutions ?? ["480p":playerConfiguration.url]
         sortedResolutions = Array(resList.keys).sorted().reversed()
         Array(resList.keys).sorted().reversed().forEach { quality in
-            if quality == "1080p"{
+            if quality == "1080p" {
                 sortedResolutions.removeLast()
                 sortedResolutions.insert("1080p", at: 1)
+            }
+            if quality == "480p" {
+                selectedQualityText = quality
             }
         }
         view.backgroundColor = .black
