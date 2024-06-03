@@ -218,9 +218,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 ?: return false
 
         // Flexible connectivity check: Any of the specified transports indicates usable connection
-        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || capabilities.hasTransport(
+                NetworkCapabilities.TRANSPORT_WIFI
+            ) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         ) {
             return true
         }
@@ -345,6 +345,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 }
             }
         })
+        playerConfiguration.resolutions.forEach {
+            if (it.key == "480p") {
+                currentQuality = "480p"
+                val bitrate = it.value.toIntOrNull()
+                if (bitrate != null) player.trackSelectionParameters =
+                    player.trackSelectionParameters.buildUpon().setMaxVideoBitrate(bitrate).build()
+            }
+        }
         player.playWhenReady = true
     }
 
@@ -944,8 +952,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
 
-    private var speeds =
-        mutableListOf("0.25x", "0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "1.75x", "2.0x")
+    private var speeds = mutableListOf("0.5x", "1.0x", "1.5x", "2.0x")
     private var currentQuality = ""
     private var currentSpeed = "1.0x"
     private var qualityText: TextView? = null
@@ -1089,15 +1096,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                         if (bitrate != null) {
                             player.trackSelectionParameters =
                                 player.trackSelectionParameters.buildUpon()
-                                    .setMaxVideoBitrate(bitrate)
-                                    .build()
+                                    .setMaxVideoBitrate(bitrate).build()
                             player.playWhenReady = true
                         } else {
                             player.trackSelectionParameters =
                                 player.trackSelectionParameters.buildUpon()
-                                    .setMaxVideoBitrate(Integer.MAX_VALUE)
-
-                                    .build()
+                                    .setMaxVideoBitrate(Integer.MAX_VALUE).build()
                             player.playWhenReady = true
                         }
                     } else {

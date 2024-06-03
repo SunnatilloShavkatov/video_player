@@ -1,11 +1,11 @@
 name: video_player
 description: Play video natively and easily.
-version: 1.0.7
+version: 1.0.8
 homepage: https://github.com/SunnatilloShavkatov/video_player.git
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
-  flutter: ">=3.19.0"
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
