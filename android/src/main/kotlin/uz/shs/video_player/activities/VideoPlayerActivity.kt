@@ -76,7 +76,7 @@ import uz.shs.video_player.models.PremierStreamResponse
 import uz.shs.video_player.models.TvChannelResponse
 import uz.shs.video_player.retrofit.Common
 import uz.shs.video_player.retrofit.RetrofitService
-import uz.shs.video_player.services.DownloadUtil
+//import uz.shs.video_player.services.DownloadUtil
 import uz.shs.video_player.services.NetworkChangeReceiver
 import kotlin.math.abs
 
@@ -283,9 +283,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun playVideo() {
-        val dataSourceFactory: DataSource.Factory =
-            if (!playerConfiguration.fromCache) DefaultHttpDataSource.Factory()
-            else DownloadUtil.getDataSourceFactory(this)
+        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
         val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(Uri.parse(url)))
         player = ExoPlayer.Builder(this).build()

@@ -8,15 +8,11 @@
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         android:required="false" />
-    <!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <!--    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />-->
-    <!--    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />-->
-    <!--    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />-->
 
     <application
         android:allowBackup="false"
@@ -28,20 +24,5 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
-
-        <service
-            android:name=".services.MyDownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
-            <intent-filter>
-                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </service>
-
-        <service
-            android:name="androidx.media3.exoplayer.scheduler.PlatformScheduler$PlatformSchedulerService"
-            android:exported="true"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>
