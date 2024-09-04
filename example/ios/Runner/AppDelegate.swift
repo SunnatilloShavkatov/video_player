@@ -17,7 +17,6 @@ import Flutter
         } catch  {
             print("Audio session failed")
         }
-        
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
