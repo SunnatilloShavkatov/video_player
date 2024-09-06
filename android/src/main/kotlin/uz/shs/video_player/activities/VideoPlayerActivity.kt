@@ -394,6 +394,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             shareMovieLinkIv.visibility = View.GONE
             live.visibility = View.VISIBLE
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            pip.visibility = View.GONE
+        }
         episodesButton = findViewById(R.id.button_episodes)
         episodesText = findViewById(R.id.text_episodes)
         if (playerConfiguration.seasons.isNotEmpty()) {
@@ -476,17 +479,21 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             finish()
         }
         pip.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
-                        .setAutoEnterEnabled(false).build()
-                } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // For Android S (API 31) and above
+                val params = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
+                    .setAutoEnterEnabled(false).build()
+                enterPictureInPictureMode(params)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // For Android O (API 26) to R (API 30)
+                val params =
                     PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build()
-                }
                 enterPictureInPictureMode(params)
             } else {
-                Toast.makeText(this, "This is my Toast message!", Toast.LENGTH_SHORT).show()
+                // For devices below API 26
+                Toast.makeText(this, "Picture-in-Picture not supported!", Toast.LENGTH_SHORT).show()
             }
+
         }
         more.setOnClickListener {
             showSettingsBottomSheet()
