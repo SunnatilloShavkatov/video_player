@@ -264,8 +264,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     override fun onResume() {
-        super.onResume()  // This should come first
-        // Ensure player is not null
+        setAudioFocus()
+        super.onResume()
         player.playWhenReady = true
         try {
             // Retrieve and set brightness
@@ -274,9 +274,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 Settings.System.SCREEN_BRIGHTNESS
             )
             brightness = oldBrightness.toDouble() // Keep conversion if necessary
-            if (oldBrightness != 0) {
-                setScreenBrightness(oldBrightness)
-            }
+            brightnessSeekbar.progress = oldBrightness
         } catch (e: Settings.SettingNotFoundException) {
             e.printStackTrace()  // Handle error, maybe notify the user or log appropriately
         }
