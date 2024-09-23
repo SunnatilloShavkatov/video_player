@@ -1,5 +1,6 @@
 package uz.shs.video_player.activities
 
+import android.provider.Settings
 import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.Context
@@ -263,10 +264,22 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     override fun onResume() {
-        setAudioFocus()
+        super.onResume()  // This should come first
+        // Ensure player is not null
         player.playWhenReady = true
-        if (brightness != 0.0) setScreenBrightness(brightness.toInt())
-        super.onResume()
+        try {
+            // Retrieve and set brightness
+            val oldBrightness: Int = Settings.System.getInt(
+                this.contentResolver,
+                Settings.System.SCREEN_BRIGHTNESS
+            )
+            brightness = oldBrightness.toDouble() // Keep conversion if necessary
+            if (oldBrightness != 0) {
+                setScreenBrightness(oldBrightness)
+            }
+        } catch (e: Settings.SettingNotFoundException) {
+            e.printStackTrace()  // Handle error, maybe notify the user or log appropriately
+        }
     }
 
     override fun onRestart() {
