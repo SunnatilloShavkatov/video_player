@@ -86,12 +86,29 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == PLAYER_ACTIVITY && resultCode == PLAYER_ACTIVITY_FINISH) {
-            val position: Long = data?.getLongExtra("position", 0) ?: 0
-            val duration: Long = data?.getLongExtra("duration", 0) ?: 0
+            // Check if resultMethod has already been used to avoid double usage
+            if (resultMethod == null) {
+                return true // No result method to handle the result, so exit
+            }
+
+            // Handling null data case
+            if (data == null) {
+                resultMethod?.success(null)
+                resultMethod = null // Ensure the reply object isn't reused
+                return true
+            }
+
+            // Get position and duration from the intent
+            val position: Long = data.getLongExtra("position", 0)
+            val duration: Long = data.getLongExtra("duration", 0)
+
+            // Respond with the result
             resultMethod?.success(listOf(position.toInt(), duration.toInt()))
+            resultMethod = null // Mark the resultMethod as used
         }
         return true
     }
+
 
     private val handler = Handler(Looper.getMainLooper())
     private var runnable: Runnable? = null
