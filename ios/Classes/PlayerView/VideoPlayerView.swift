@@ -22,7 +22,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     ) {
         self.viewId = viewId
         self.videoView = UIView(frame: frame)
-        _methodChannel = FlutterMethodChannel(name: "plugins.udevs/video_player_view_\(viewId)", binaryMessenger: registrar.messenger())
+        _methodChannel = FlutterMethodChannel(name: "plugins.video/video_player_view_\(viewId)", binaryMessenger: registrar.messenger())
         let url: String? = args?["url"] as? String
         let assets: String? = args?["assets"] as? String
         let sourceType: String? = args?["resizeMode"] as? String

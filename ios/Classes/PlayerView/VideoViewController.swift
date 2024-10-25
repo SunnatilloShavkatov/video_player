@@ -1,8 +1,8 @@
 //
 //  VideoViewController.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 29/01/24.
+//  Created by Sunnatillo on 29/01/24.
 //
 
 import Foundation

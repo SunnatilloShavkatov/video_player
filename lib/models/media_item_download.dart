@@ -6,13 +6,13 @@ class MediaItemDownload {
     required this.downloadedBytes,
   });
 
-  static const int STATE_QUEUED = 0;
-  static const int STATE_STOPPED = 1;
-  static const int STATE_DOWNLOADING = 2;
-  static const int STATE_COMPLETED = 3;
-  static const int STATE_FAILED = 4;
-  static const int STATE_REMOVING = 5;
-  static const int STATE_RESTARTING = 7;
+  static const int stateQueued = 0;
+  static const int stateStopped = 1;
+  static const int stateDownloading = 2;
+  static const int stateCompleted = 3;
+  static const int stateFailed = 4;
+  static const int stateRemoving = 5;
+  static const int stateRestating = 7;
   final String url;
   final int percent;
   final int state;
