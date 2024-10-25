@@ -96,7 +96,7 @@ class PlayerView: UIView {
     }()
     
     private var liveCircle: UIView = {
-        let circle = UIView(frame: CGRect(x:6,y:5,width: 12, height: 12))
+        let circle = UIView(frame: CGRect(x:6, y:5, width: 12, height: 12))
         circle.layer.cornerRadius = (circle.frame.size.width) / 2
         circle.backgroundColor = .red
         let newCircle = UIView()
@@ -151,7 +151,7 @@ class PlayerView: UIView {
         if let icon = Svg.rotate {
             button.setImage(icon, for: .normal)
         }
-        button.imageEdgeInsets = UIEdgeInsets(top: 4,left: 4,bottom: 4,right: 4)
+        button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(changeOrientation(_:)), for: .touchUpInside)
         return button
     }()
@@ -336,12 +336,9 @@ class PlayerView: UIView {
             showsBtn.isHidden = true
             channelsButton.isHidden = true
         }
-        if #available(iOS 13.0, *) {
-            setSliderThumbTintColor(Colors.primary)
-        } else {
-            timeSlider.thumbTintColor = Colors.primary
-            brightnessSlider.thumbTintColor = Colors.white
-        }
+        
+        setSliderThumbTintColor(Colors.primary)
+       
         setTitle(title: playerConfiguration.title)
     }
     
@@ -731,16 +728,10 @@ class PlayerView: UIView {
         ///
         playButton.centerX(to: overlayView)
         playButton.centerY(to: overlayView)
-        playButton.width(Constants.controlButtonSize)
-        playButton.height(Constants.controlButtonSize)
         
-        skipBackwardButton.width(Constants.controlButtonSize)
-        skipBackwardButton.height(Constants.controlButtonSize)
         skipBackwardButton.rightToLeft(of: playButton, offset: -60)
         skipBackwardButton.top(to: playButton)
         
-        skipForwardButton.width(Constants.controlButtonSize)
-        skipForwardButton.height(Constants.controlButtonSize)
         skipForwardButton.leftToRight(of: playButton, offset: 60)
         skipForwardButton.top(to: playButton)
         
@@ -798,7 +789,6 @@ class PlayerView: UIView {
         liveStackView.bottomToTop(of: timeSlider)
         liveStackView.spacing = 24
         liveStackView.leftToSuperview(offset: 2)
-        liveStackView.centerY(to: rotateButton)
         
         if !playerConfiguration.isSerial {
             episodesButton.isHidden = true
