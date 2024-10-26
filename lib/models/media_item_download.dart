@@ -26,6 +26,5 @@ class MediaItemDownload {
   }
 
   @override
-  String toString() =>
-      'MediaItemDownload{url: $url, percent: $percent,  state: $state}';
+  String toString() => 'MediaItemDownload{url: $url, percent: $percent,  state: $state}';
 }

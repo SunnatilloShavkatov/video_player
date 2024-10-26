@@ -15,6 +15,5 @@ class TvProgram {
   }
 
   @override
-  String toString() =>
-      'TvProgram{scheduledTime: $scheduledTime, programTitle: $programTitle}';
+  String toString() => 'TvProgram{scheduledTime: $scheduledTime, programTitle: $programTitle}';
 }

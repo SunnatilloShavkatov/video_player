@@ -19,4 +19,7 @@ class TvChannel {
     map['resolutions'] = resolutions;
     return map;
   }
+
+  @override
+  String toString() => 'TvChannel{id: $id, image: $image, name: $name}';
 }

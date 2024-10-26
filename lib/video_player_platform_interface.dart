@@ -34,9 +34,7 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   Future<bool> isDownloadVideo({required String downloadConfigJsonString});
 
-  Future<int?> getCurrentProgressDownload({
-    required String downloadConfigJsonString,
-  });
+  Future<int?> getCurrentProgressDownload({required String downloadConfigJsonString});
 
   Stream<MediaItemDownload> currentProgressDownloadAsStream();
 
@@ -46,9 +44,7 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   Future<int?> getBytesDownloaded({required String downloadConfigJsonString});
 
-  Future<int?> getContentBytesDownload({
-    required String downloadConfigJsonString,
-  });
+  Future<int?> getContentBytesDownload({required String downloadConfigJsonString});
 
   Future removeDownload({required String downloadConfigJsonString});
 

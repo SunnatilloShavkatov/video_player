@@ -12,8 +12,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel('video_player');
-  final StreamController<MediaItemDownload> _streamController =
-      StreamController<MediaItemDownload>.broadcast();
+  final StreamController<MediaItemDownload> _streamController = StreamController<MediaItemDownload>.broadcast();
 
   @override
   Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
@@ -27,9 +26,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future downloadVideo({
-    required String downloadConfigJsonString,
-  }) async {
+  Future downloadVideo({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod(
       'downloadVideo',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -37,9 +34,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future pauseDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future pauseDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod(
       'pauseDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -47,9 +42,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future resumeDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future resumeDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod(
       'resumeDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -57,9 +50,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<bool> isDownloadVideo({
-    required String downloadConfigJsonString,
-  }) async {
+  Future<bool> isDownloadVideo({required String downloadConfigJsonString}) async {
     final res = await methodChannel.invokeMethod<bool?>(
       'checkIsDownloadedVideo',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -68,9 +59,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<int?> getCurrentProgressDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future<int?> getCurrentProgressDownload({required String downloadConfigJsonString}) async {
     final res = await methodChannel.invokeMethod<int>(
       'getCurrentProgressDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -100,9 +89,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<int?> getStateDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future<int?> getStateDownload({required String downloadConfigJsonString}) async {
     final res = await methodChannel.invokeMethod<int>(
       'getStateDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -111,9 +98,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<int?> getBytesDownloaded({
-    required String downloadConfigJsonString,
-  }) async {
+  Future<int?> getBytesDownloaded({required String downloadConfigJsonString}) async {
     final res = await methodChannel.invokeMethod<int>(
       'getBytesDownloaded',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -122,9 +107,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<int?> getContentBytesDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future<int?> getContentBytesDownload({required String downloadConfigJsonString}) async {
     final res = await methodChannel.invokeMethod<int>(
       'getContentBytesDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -133,9 +116,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future removeDownload({
-    required String downloadConfigJsonString,
-  }) async {
+  Future removeDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod(
       'removeDownload',
       <String, dynamic>{'downloadConfigJsonString': downloadConfigJsonString},
@@ -148,6 +129,5 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<int?> getPercentDownload({required String downloadConfigJsonString}) =>
-      Future.value(0);
+  Future<int?> getPercentDownload({required String downloadConfigJsonString}) => Future.value(0);
 }

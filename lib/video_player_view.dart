@@ -2,9 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-typedef FlutterVideoPayerViewCreatedCallback = void Function(
-  VideoPlayerViewController controller,
-);
+typedef FlutterVideoPayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
   const VideoPlayerView({
@@ -52,40 +50,20 @@ class VideoPlayerView extends StatelessWidget {
   }
 
   // Callback method when platform view is created
-  void _onPlatformViewCreated(int id) =>
-      onMapViewCreated(VideoPlayerViewController._(id));
+  void _onPlatformViewCreated(int id) => onMapViewCreated(VideoPlayerViewController._(id));
 }
 
 // VideoPlayerView Controller class to set url etc
 class VideoPlayerViewController {
-  VideoPlayerViewController._(int id)
-      : _channel = MethodChannel('plugins.video/video_player_view_$id');
+  VideoPlayerViewController._(int id) : _channel = MethodChannel('plugins.video/video_player_view_$id');
 
   final MethodChannel _channel;
 
-  Future<void> setUrl({
-    required String url,
-    ResizeMode resizeMode = ResizeMode.fit,
-  }) async =>
-      _channel.invokeMethod(
-        'setUrl',
-        {
-          'url': url,
-          'resizeMode': resizeMode.name,
-        },
-      );
+  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async =>
+      _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
 
-  Future<void> setAssets({
-    required String assets,
-    ResizeMode resizeMode = ResizeMode.fit,
-  }) async {
-    await _channel.invokeMethod(
-      'setAssets',
-      {
-        'url': assets,
-        'resizeMode': resizeMode.name,
-      },
-    );
+  Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
+    await _channel.invokeMethod('setAssets', {'url': assets, 'resizeMode': resizeMode.name});
   }
 
   Future<void> pause() async => _channel.invokeMethod('pause');
