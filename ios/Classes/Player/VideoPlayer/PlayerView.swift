@@ -59,34 +59,34 @@ class PlayerView: UIView {
     var pendingPlay: Bool = false
     var seeking: Bool = false
     
-    private var videoView: UIView = {
+    private lazy var videoView: UIView = {
         let view = UIView()
         view.backgroundColor = Colors.backgroud
         return view
     }()
     
-    private var overlayView: UIView = {
+    private lazy var overlayView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private var bottomView: UIView = {
+    private lazy var bottomView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private var topView: UIView = {
+    private lazy var topView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private var titleLabelPortrait: TitleLabel = TitleLabel()
-    private var titleLabelLandacape: TitleLabel = TitleLabel()
+    private lazy var titleLabelPortrait: TitleLabel = TitleLabel()
+    private lazy var titleLabelLandacape: TitleLabel = TitleLabel()
     
-    private var liveLabel: UILabel = {
+    private lazy var liveLabel: UILabel = {
         let label = UILabel()
         label.text = "LIVE"
         label.textColor = .red
@@ -95,7 +95,7 @@ class PlayerView: UIView {
         return label;
     }()
     
-    private var liveCircle: UIView = {
+    private lazy var liveCircle: UIView = {
         let circle = UIView(frame: CGRect(x:6, y:5, width: 12, height: 12))
         circle.layer.cornerRadius = (circle.frame.size.width) / 2
         circle.backgroundColor = .red
@@ -114,7 +114,7 @@ class PlayerView: UIView {
         return liveView
     }()
     
-    var currentTimeLabel: UILabel = {
+    private lazy var currentTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
         label.textColor = .white
@@ -122,7 +122,7 @@ class PlayerView: UIView {
         return label
     }()
     
-    private var durationTimeLabel: UILabel = {
+    private lazy var durationTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
         label.textColor = .white
@@ -130,7 +130,7 @@ class PlayerView: UIView {
         return label
     }()
     
-    private var seperatorLabel: UILabel = {
+    private lazy var seperatorLabel: UILabel = {
         let label = UILabel()
         label.text = " / "
         label.textColor = .white
@@ -138,7 +138,7 @@ class PlayerView: UIView {
         return label
     }()
     
-    private var timeSlider: UISlider = {
+    private lazy var timeSlider: UISlider = {
         let slider = UISlider()
         slider.tintColor = Colors.primary
         slider.maximumTrackTintColor = Colors.white50
@@ -146,7 +146,7 @@ class PlayerView: UIView {
         return slider
     }()
     
-    private var rotateButton: IconButton = {
+    private lazy var rotateButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.rotate {
             button.setImage(icon, for: .normal)
@@ -155,7 +155,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var exitButton: IconButton = {
+    private lazy var exitButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.exit {
             button.setImage(icon, for: .normal)
@@ -164,7 +164,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var pipButton: IconButton = {
+    private lazy var pipButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.pip {
             button.setImage(icon, for: .normal)
@@ -173,7 +173,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var settingsButton: IconButton = {
+    private lazy var settingsButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.more {
             button.setImage(icon, for: .normal)
@@ -182,7 +182,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var shareButton: IconButton = {
+    private lazy var shareButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.share {
             button.setImage(icon, for: .normal)
@@ -191,7 +191,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var playButton: IconButton = {
+    private lazy var playButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.play {
             button.setImage(icon, for: .normal)
@@ -201,7 +201,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var skipForwardButton: IconButton = {
+    private lazy var skipForwardButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.forward {
             button.setImage(icon, for: .normal)
@@ -211,7 +211,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var skipBackwardButton: IconButton = {
+    private lazy var skipBackwardButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.rewind {
             button.setImage(icon, for: .normal)
@@ -221,7 +221,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var episodesButton: UIButton = {
+    private lazy var episodesButton: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
         if let icon = Svg.serial {
@@ -237,7 +237,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var channelsButton: UIButton = {
+    private lazy var channelsButton: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
         if let icon = Svg.channels {
@@ -252,7 +252,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var showsBtn: UIButton = {
+    private lazy var showsBtn: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
         if let icon = Svg.programmes {
@@ -267,12 +267,12 @@ class PlayerView: UIView {
         return button
     }()
     
-    private var activityIndicatorView: NVActivityIndicatorView = {
+    private lazy var activityIndicatorView: NVActivityIndicatorView = {
         let activityView = NVActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 50, height: 50), type: .circleStrokeSpin, color: .white)
         return activityView
     }()
     
-    private var brightnessSlider: UISlider = {
+    private lazy var brightnessSlider: UISlider = {
         let slider = UISlider()
         slider.minimumValue = 0
         slider.maximumValue = 1
