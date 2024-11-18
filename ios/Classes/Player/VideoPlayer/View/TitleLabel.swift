@@ -2,7 +2,7 @@
 //  TitleLabel.swift
 //  Pods
 //
-//  Created by Udevs on 22/10/22.
+//  Created by Sunnatillo Shavkatov on 22/10/22.
 //
 
 import Foundation

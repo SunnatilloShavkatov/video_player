@@ -1,8 +1,8 @@
 //
 //  Svg.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 23/09/22.
+//  Created by Sunnatillo Shavkatov on 23/09/22.
 //
 
 import Foundation

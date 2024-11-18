@@ -1,23 +1,23 @@
-import Foundation
-import AVKit
 import AVFoundation
+import AVKit
 import Flutter
+import Foundation
 import UIKit
 
 class VideoPlayerView: NSObject, FlutterPlatformView {
     private var viewId: Int64
-    private var videoView : UIView
+    private var videoView: UIView
     private var videoViewController: VideoViewController
     private var _methodChannel: FlutterMethodChannel
-    
+
     func view() -> UIView {
         return videoView
     }
-    
+
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
-        arguments args: [String:Any]?,
+        arguments args: [String: Any]?,
         registrar: FlutterPluginRegistrar
     ) {
         self.viewId = viewId
@@ -33,20 +33,19 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         super.init()
         _methodChannel.setMethodCallHandler(onMethodCall)
     }
-    
+
     deinit {
         self.videoViewController.dismiss(animated: true)
         NotificationCenter.default.removeObserver(self)
         self._methodChannel.setMethodCallHandler(nil)
     }
 
-
     func onMethodCall(call: FlutterMethodCall, result: FlutterResult) {
-        switch(call.method){
+        switch call.method {
         case "setUrl":
-            setUrl(call:call, result:result)
+            setUrl(call: call, result: result)
         case "setAssets":
-            setAssets(call:call, result:result)
+            setAssets(call: call, result: result)
         case "pause":
             setPause(call: call, result: result)
         case "play":
@@ -59,9 +58,9 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(FlutterMethodNotImplemented)
         }
     }
-    
-    func setUrl(call: FlutterMethodCall, result: FlutterResult){
-        let arguments = call.arguments as? [String:Any]
+
+    func setUrl(call: FlutterMethodCall, result: FlutterResult) {
+        let arguments = call.arguments as? [String: Any]
         if let args = arguments {
             let videoPath: String? = args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
@@ -70,9 +69,9 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(nil)
         }
     }
-    
-    func setAssets(call: FlutterMethodCall, result: FlutterResult){
-        let arguments = call.arguments as? [String:Any]
+
+    func setAssets(call: FlutterMethodCall, result: FlutterResult) {
+        let arguments = call.arguments as? [String: Any]
         if let args = arguments {
             let videoPath: String? = args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
@@ -81,26 +80,26 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(nil)
         }
     }
-    
-    func setPause(call: FlutterMethodCall, result: FlutterResult){
+
+    func setPause(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.pause()
     }
-    
-    func setPlay(call: FlutterMethodCall, result: FlutterResult){
+
+    func setPlay(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.play()
     }
-    
-    func setMute(call: FlutterMethodCall, result: FlutterResult){
+
+    func setMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.mute()
     }
-    
-    func setUnMute(call: FlutterMethodCall, result: FlutterResult){
+
+    func setUnMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.unMute()
     }
 }
 
-func videoGravity(s:String?) -> AVLayerVideoGravity {
-    switch(s){
+func videoGravity(s: String?) -> AVLayerVideoGravity {
+    switch s {
     case "fit":
         return .resizeAspect
     case "fill":

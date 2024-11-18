@@ -15,7 +15,7 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
     
     var resolutions: [String:String]?
     var movieController = VideoPlayerViewController()
-    var delegete: QualityDelegate?
+    var delegate: QualityDelegate?
     var speedDelegate: SpeedDelegate?
     var subtitleDelegate: SubtitleDelegate?
     var speedTitle: String = "1x"
@@ -188,7 +188,7 @@ extension SettingVC: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if (indexPath.row == 0) {
             self.dismiss(animated: true) {
-                self.delegete?.qualityBottomSheet()
+                self.delegate?.qualityBottomSheet()
             }
         } else if(indexPath.row == 1) {
             self.dismiss(animated: true) {

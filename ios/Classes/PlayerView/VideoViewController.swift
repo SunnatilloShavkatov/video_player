@@ -5,29 +5,29 @@
 //  Created by Sunnatillo on 29/01/24.
 //
 
-import Foundation
 import AVFoundation
+import Foundation
 
 class VideoViewController: UIViewController {
-    
+
     private var registrar: FlutterPluginRegistrar?
     private var methodChannel: FlutterMethodChannel
-    
+
     //
     var assets: String = ""
     var url: String = ""
     var gravity: AVLayerVideoGravity
-    
+
     //
     lazy private var player = AVPlayer()
     lazy private var playerLayer = AVPlayerLayer()
-    lazy private var videoView : UIView = {
+    lazy private var videoView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
-    
-    init(registrar: FlutterPluginRegistrar? = nil, methodChannel: FlutterMethodChannel, assets: String, url:String, gravity: AVLayerVideoGravity) {
+
+    init(registrar: FlutterPluginRegistrar? = nil, methodChannel: FlutterMethodChannel, assets: String, url: String, gravity: AVLayerVideoGravity) {
         self.registrar = registrar
         self.methodChannel = methodChannel
         self.assets = assets
@@ -35,23 +35,23 @@ class VideoViewController: UIViewController {
         self.gravity = gravity
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(videoView)
         playVideo(gravity: gravity)
     }
-    
+
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
     }
-    
-    func playVideo(gravity : AVLayerVideoGravity) {
-        var videoURL : URL
+
+    func playVideo(gravity: AVLayerVideoGravity) {
+        var videoURL: URL
         if url.isEmpty {
             let key = self.registrar?.lookupKey(forAsset: assets)
             guard let path = Bundle.main.path(forResource: key, ofType: nil) else {
@@ -70,37 +70,37 @@ class VideoViewController: UIViewController {
         self.videoView.layer.addSublayer(playerLayer)
         player.play()
     }
-    
-    func pause(){
+
+    func pause() {
         player.pause()
     }
-    
-    func setGravity(gravity : AVLayerVideoGravity){
+
+    func setGravity(gravity: AVLayerVideoGravity) {
         playerLayer.videoGravity = gravity
     }
-    
-    func play(){
+
+    func play() {
         player.play()
     }
-    
-    func mute(){
+
+    func mute() {
         player.isMuted = true
     }
-    
-    func unMute(){
+
+    func unMute() {
         player.isMuted = false
     }
-    
+
     deinit {
         playerLayer.removeFromSuperlayer()
         player.pause()
     }
-    
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(true)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
         playerLayer.removeFromSuperlayer()

@@ -1,5 +1,5 @@
-import Foundation
 import Flutter
+import Foundation
 import UIKit
 
 class VideoPlayerViewFactory: NSObject, FlutterPlatformViewFactory {
@@ -18,10 +18,10 @@ class VideoPlayerViewFactory: NSObject, FlutterPlatformViewFactory {
         return VideoPlayerView(
             frame: frame,
             viewIdentifier: viewId,
-            arguments: args as? [String:Any],
+            arguments: args as? [String: Any],
             registrar: registrar)
     }
-    
+
     public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
         return FlutterStandardMessageCodec.sharedInstance()
     }

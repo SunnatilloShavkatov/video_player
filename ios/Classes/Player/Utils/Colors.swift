@@ -1,8 +1,8 @@
 //
 //  Colors.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 22/09/22.
+//  Created by Sunnatillo Shavkatov on 22/09/22.
 //
 
 import Foundation
@@ -11,7 +11,7 @@ struct Colors {
     
     static let primary = UIColor(hex: "#51A3FE")
     static let white50 = UIColor(red:1, green: 1, blue: 1, alpha: 0.5)
-    static let backgroud = UIColor(hex: "#000000")
+    static let background = UIColor(hex: "#000000")
     
     static let black03 = UIColor(red:0, green: 0, blue: 0, alpha: 0.3)
     

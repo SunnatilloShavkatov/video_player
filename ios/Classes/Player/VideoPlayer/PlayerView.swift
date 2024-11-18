@@ -1,15 +1,15 @@
 //
 //  PlayerView.swift
-//  udevs_video_player
+//  video_player
 //
 //  Created by Sunnatillo Shavkatov on 13/11/22.
 //
 
-import AVKit
 import AVFoundation
-import TinyConstraints
-import NVActivityIndicatorView
+import AVKit
 import MediaPlayer
+import NVActivityIndicatorView
+import TinyConstraints
 
 protocol PlayerViewDelegate: NSObjectProtocol {
     func close(duration: [Int])
@@ -30,14 +30,14 @@ enum LocalPlayerState: Int {
 }
 
 class PlayerView: UIView {
-    
+
     private var player = AVPlayer()
-    var playerLayer =  AVPlayerLayer()
+    var playerLayer = AVPlayerLayer()
     private var mediaTimeObserver: Any?
     private var observingMediaPlayer: Bool = false
     var playerConfiguration: PlayerConfiguration!
     weak var delegate: PlayerViewDelegate?
-    
+
     private var timer: Timer?
     private var seekForwardTimer: Timer?
     private var seekBackwardTimer: Timer?
@@ -58,45 +58,45 @@ class PlayerView: UIView {
     // If there is a pending request to start playback.
     var pendingPlay: Bool = false
     var seeking: Bool = false
-    
+
     private lazy var videoView: UIView = {
         let view = UIView()
-        view.backgroundColor = Colors.backgroud
+        view.backgroundColor = Colors.background
         return view
     }()
-    
+
     private lazy var overlayView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
-    
+
     private lazy var bottomView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
-    
+
     private lazy var topView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
-    
+
     private lazy var titleLabelPortrait: TitleLabel = TitleLabel()
-    private lazy var titleLabelLandacape: TitleLabel = TitleLabel()
-    
+    private lazy var titleLabelLandscape: TitleLabel = TitleLabel()
+
     private lazy var liveLabel: UILabel = {
         let label = UILabel()
         label.text = "LIVE"
         label.textColor = .red
         label.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         label.isHidden = true
-        return label;
+        return label
     }()
-    
+
     private lazy var liveCircle: UIView = {
-        let circle = UIView(frame: CGRect(x:6, y:5, width: 12, height: 12))
+        let circle = UIView(frame: CGRect(x: 6, y: 5, width: 12, height: 12))
         circle.layer.cornerRadius = (circle.frame.size.width) / 2
         circle.backgroundColor = .red
         let newCircle = UIView()
@@ -104,7 +104,7 @@ class PlayerView: UIView {
         newCircle.isHidden = true
         return newCircle
     }()
-    
+
     private lazy var liveStackView: UIStackView = {
         let liveView = UIStackView(arrangedSubviews: [liveCircle, liveLabel])
         liveView.height(20)
@@ -113,7 +113,7 @@ class PlayerView: UIView {
         liveView.distribution = .equalSpacing
         return liveView
     }()
-    
+
     private lazy var currentTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
@@ -121,7 +121,7 @@ class PlayerView: UIView {
         label.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         return label
     }()
-    
+
     private lazy var durationTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
@@ -129,15 +129,15 @@ class PlayerView: UIView {
         label.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         return label
     }()
-    
-    private lazy var seperatorLabel: UILabel = {
+
+    private lazy var separatorLabel: UILabel = {
         let label = UILabel()
         label.text = " / "
         label.textColor = .white
         label.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         return label
     }()
-    
+
     private lazy var timeSlider: UISlider = {
         let slider = UISlider()
         slider.tintColor = Colors.primary
@@ -145,7 +145,7 @@ class PlayerView: UIView {
         slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
         return slider
     }()
-    
+
     private lazy var rotateButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.rotate {
@@ -154,7 +154,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(changeOrientation(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var exitButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.exit {
@@ -163,7 +163,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(exitButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var pipButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.pip {
@@ -172,7 +172,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(togglePictureInPictureMode(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var settingsButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.more {
@@ -181,7 +181,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(settingPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var shareButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.share {
@@ -190,7 +190,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(share(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var playButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.play {
@@ -200,7 +200,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(playButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var skipForwardButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.forward {
@@ -210,7 +210,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(skipForwardButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var skipBackwardButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.rewind {
@@ -220,7 +220,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(skipBackButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var episodesButton: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
@@ -230,13 +230,13 @@ class PlayerView: UIView {
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.setTitle("", for: .normal)
         button.layer.zPosition = 3
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 13,weight: .semibold)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
         button.setTitleColor(.white, for: .normal)
         button.imageView?.contentMode = .scaleAspectFit
         button.addTarget(self, action: #selector(episodesButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var channelsButton: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
@@ -251,7 +251,7 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(channelsButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var showsBtn: UIButton = {
         let button = UIButton()
         button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
@@ -266,12 +266,12 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(showPressed), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var activityIndicatorView: NVActivityIndicatorView = {
         let activityView = NVActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 50, height: 50), type: .circleStrokeSpin, color: .white)
         return activityView
     }()
-    
+
     private lazy var brightnessSlider: UISlider = {
         let slider = UISlider()
         slider.minimumValue = 0
@@ -283,7 +283,7 @@ class PlayerView: UIView {
         slider.isHidden = true
         return slider
     }()
-    
+
     private func configureVolume() {
         let volumeView = MPVolumeView()
         for view in volumeView.subviews {
@@ -293,23 +293,23 @@ class PlayerView: UIView {
             }
         }
     }
-    
-    private var playerRate : Float = 1.0
+
+    private var playerRate: Float = 1.0
     private var enableGesture = true
     private var backwardGestureTimer: Timer?
     private var forwardGestureTimer: Timer?
     private var backwardTouches = 0
     private var forwardTouches = 0
-    
-    func setIsPipEnabled(v:Bool){
+
+    func setIsPipEnabled(v: Bool) {
         pipButton.isEnabled = v
     }
-    
-    func isHiddenPiP(isPiP: Bool){
+
+    func isHiddenPiP(isPiP: Bool) {
         overlayView.isHidden = isPiP
     }
-    
-    func loadMedia(autoPlay: Bool, playPosition: TimeInterval, area:UILayoutGuide) {
+
+    func loadMedia(autoPlay: Bool, playPosition: TimeInterval, area: UILayoutGuide) {
         translatesAutoresizingMaskIntoConstraints = false
         uiSetup()
         addSubviews()
@@ -324,10 +324,10 @@ class PlayerView: UIView {
         pendingPlay = autoPlay
         playOfflineAsset()
     }
-    
-    private func uiSetup(){
+
+    private func uiSetup() {
         configureVolume()
-        episodesButton.setTitle(" "+playerConfiguration.episodeButtonText, for: .normal)
+        episodesButton.setTitle(" " + playerConfiguration.episodeButtonText, for: .normal)
         showsBtn.setTitle("", for: .normal)
         if playerConfiguration.isLive {
             episodesButton.isHidden = true
@@ -335,12 +335,12 @@ class PlayerView: UIView {
             showsBtn.isHidden = true
             channelsButton.isHidden = true
         }
-        
+
         setSliderThumbTintColor(Colors.primary)
-       
+
         setTitle(title: playerConfiguration.title)
     }
-    
+
     fileprivate func makeCircleWith(size: CGSize, backgroundColor: UIColor) -> UIImage? {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         let context = UIGraphicsGetCurrentContext()
@@ -353,42 +353,44 @@ class PlayerView: UIView {
         UIGraphicsEndImageContext()
         return image
     }
-    
+
     fileprivate func makeCircleWithBorder(size: CGSize, backgroundColor: UIColor, borderColor: UIColor, borderWidth: CGFloat) -> UIImage? {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         let context = UIGraphicsGetCurrentContext()
-        
+
         // Draw the circle with background color
         context?.setFillColor(backgroundColor.cgColor)
         context?.setStrokeColor(UIColor.clear.cgColor)
         let bounds = CGRect(origin: .zero, size: size)
         context?.addEllipse(in: bounds)
         context?.drawPath(using: .fill)
-        
+
         // Draw the border
         context?.setLineWidth(borderWidth)
         context?.setStrokeColor(borderColor.cgColor)
         context?.addEllipse(in: bounds.insetBy(dx: borderWidth / 2, dy: borderWidth / 2))
         context?.drawPath(using: .stroke)
-        
+
         // Get the image from the context
         let image = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-        
+
         return image
     }
-    
+
     private func setSliderThumbTintColor(_ color: UIColor) {
-        let circle = makeCircleWith(size: CGSize(width: 4, height: 4),
-                                         backgroundColor: UIColor.white)
+        let circle = makeCircleWith(
+            size: CGSize(width: 4, height: 4),
+            backgroundColor: UIColor.white)
         brightnessSlider.setThumbImage(circle, for: .normal)
         ///
-        let circleImage = makeCircleWithBorder(size: CGSize(width: 24, height: 24),
-                                               backgroundColor: color, borderColor: Colors.backgroud, borderWidth: 3)
+        let circleImage = makeCircleWithBorder(
+            size: CGSize(width: 24, height: 24),
+            backgroundColor: color, borderColor: Colors.background, borderWidth: 3)
         timeSlider.setThumbImage(circleImage, for: .normal)
     }
-    
-    func loadMediaPlayer(asset:AVURLAsset){
+
+    func loadMediaPlayer(asset: AVURLAsset) {
         player.automaticallyWaitsToMinimizeStalling = true
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
         playerLayer = AVPlayerLayer(player: player)
@@ -396,7 +398,7 @@ class PlayerView: UIView {
         if let videoTrack = player.currentItem?.asset.tracks(withMediaType: .video).first {
             let videoSize = videoTrack.naturalSize
             let videoAspectRatio = videoSize.width / videoSize.height
-            
+
             if videoAspectRatio > 1 {
                 // Landscape video
                 playerLayer.frame.size.width = videoView.bounds.width
@@ -407,11 +409,14 @@ class PlayerView: UIView {
                 playerLayer.frame.size.width = videoView.bounds.height * videoAspectRatio
             }
         }
-        if (playerConfiguration.isLive){
-            if (UIApplication.shared.statusBarOrientation == .landscapeLeft || UIApplication.shared.statusBarOrientation == .landscapeRight){
-                playerLayer.videoGravity = .resize
-            } else {
-                playerLayer.videoGravity = .resizeAspect
+        if playerConfiguration.isLive {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                let orientation = windowScene.interfaceOrientation
+                if orientation == .landscapeLeft || orientation == .landscapeRight {
+                    playerLayer.videoGravity = .resize
+                } else {
+                    playerLayer.videoGravity = .resizeAspect
+                }
             }
         } else {
             playerLayer.videoGravity = .resizeAspect
@@ -422,22 +427,21 @@ class PlayerView: UIView {
             NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
         }
         playerConfiguration.resolutions.forEach { (key: String, value: String) in
-            if ("480p"==key) {
+            if "480p" == key {
                 changeQuality(url: value)
             }
         }
         addTimeObserver()
     }
-    
-    
+
     func playOfflineAsset() {
         guard let url = URL(string: playerConfiguration.url) else {
             return
         }
         loadMediaPlayer(asset: AVURLAsset(url: url))
     }
-    
-    func changeUrl(url:String?, title: String?){
+
+    func changeUrl(url: String?, title: String?) {
         guard let videoURL = URL(string: url ?? "") else {
             return
         }
@@ -448,169 +452,179 @@ class PlayerView: UIView {
         self.player.automaticallyWaitsToMinimizeStalling = true
         self.player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
     }
-    
-    func changeQuality(url:String?) {
-        if(url == nil){ return}
+
+    func changeQuality(url: String?) {
+        if url == nil { return }
         guard let bitrate = Double(url!) else {
-            self.player.currentItem?.preferredPeakBitRate = 5687102
+            self.player.currentItem?.preferredPeakBitRate = 5_687_102
             return
         }
         self.player.currentItem?.preferredPeakBitRate = bitrate
     }
-    
-    func setSubtitleCurrentItem() -> [String]{
+
+    func setSubtitleCurrentItem() -> [String] {
         var subtitles = player.currentItem?.tracks(type: .subtitle) ?? ["None"]
         subtitles.insert("None", at: 0)
         return subtitles
     }
-    
-    func getSubtitleTrackIsEmpty(selectedSubtitleLabel: String) -> Bool{
+
+    func getSubtitleTrackIsEmpty(selectedSubtitleLabel: String) -> Bool {
         return (player.currentItem?.select(type: .subtitle, name: selectedSubtitleLabel)) != nil
     }
-    
-    func changeSpeed(rate: Float){
+
+    func changeSpeed(rate: Float) {
         self.playerRate = rate
         self.player.preroll(atRate: self.playerRate, completionHandler: nil)
         self.player.rate = Float(self.playerRate)
     }
-    
-    func setTitle(title: String?){
+
+    func setTitle(title: String?) {
         self.titleLabelPortrait.isHidden = false
         self.titleLabelPortrait.text = title ?? ""
-        self.titleLabelLandacape.text = title ?? ""
+        self.titleLabelLandscape.text = title ?? ""
     }
-    
-    @objc func exitButtonPressed(_ sender: UIButton){
-        purgeMediaPlayer();
-        removeMediaPlayerObservers();
-        delegate?.close(duration: [Int(player.currentTime().seconds),
-            Int(player.currentItem!.duration.seconds)]
+
+    @objc func exitButtonPressed(_ sender: UIButton) {
+        purgeMediaPlayer()
+        removeMediaPlayerObservers()
+        delegate?.close(duration: [
+            Int(player.currentTime().seconds),
+            Int(player.currentItem!.duration.seconds),
+        ]
         )
     }
-    
-    @objc func togglePictureInPictureMode(_ sender: UIButton){
+
+    @objc func togglePictureInPictureMode(_ sender: UIButton) {
         delegate?.togglePictureInPictureMode()
     }
-    
-    @objc func settingPressed(_ sender: UIButton){
+
+    @objc func settingPressed(_ sender: UIButton) {
         delegate?.settingsPressed()
     }
-    
-    @objc func share(_ sender : UIButton){
+
+    @objc func share(_ sender: UIButton) {
         delegate?.share()
     }
-    
-    @objc func changeOrientation(_ sender: UIButton){
+
+    @objc func changeOrientation(_ sender: UIButton) {
         delegate?.changeOrientation()
     }
-    
-    @objc func episodesButtonPressed(_ sender: UIButton){
+
+    @objc func episodesButtonPressed(_ sender: UIButton) {
         delegate?.episodesButtonPressed()
     }
-    
-    @objc func channelsButtonPressed(_ sender: UIButton){
-       delegate?.channelsButtonPressed()
-   }
-    
-    @objc func showPressed(_ sender: UIButton){
+
+    @objc func channelsButtonPressed(_ sender: UIButton) {
+        delegate?.channelsButtonPressed()
+    }
+
+    @objc func showPressed(_ sender: UIButton) {
         delegate?.showPressed()
     }
-    
-    @objc func skipBackButtonPressed(_ sender: UIButton){
-            self.backwardTouches += 1
-            self.seekBackwardTo(10.0 * Double(self.backwardTouches))
-            self.backwardGestureTimer?.invalidate()
-            self.backwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-                self.backwardTouches = 0
-            }
+
+    @objc func skipBackButtonPressed(_ sender: UIButton) {
+        self.backwardTouches += 1
+        self.seekBackwardTo(10.0 * Double(self.backwardTouches))
+        self.backwardGestureTimer?.invalidate()
+        self.backwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+            self.backwardTouches = 0
+        }
+        resetTimer()
+    }
+
+    @objc func skipForwardButtonPressed(_ sender: UIButton) {
+        self.forwardTouches += 1
+        self.seekForwardTo(10.0 * Double(self.forwardTouches))
+        self.forwardGestureTimer?.invalidate()
+        self.forwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+            self.forwardTouches = 0
+        }
+        resetTimer()
+    }
+
+    @objc func playButtonPressed(_ sender: UIButton) {
+        if !player.isPlaying {
+            player.play()
+            playButton.setImage(Svg.pause!, for: .normal)
+            self.player.preroll(atRate: Float(self.playerRate), completionHandler: nil)
+            self.player.rate = Float(self.playerRate)
             resetTimer()
+        } else {
+            playButton.setImage(Svg.play!, for: .normal)
+            player.pause()
+            timer?.invalidate()
+            showControls()
+        }
     }
-    
-    @objc func skipForwardButtonPressed(_ sender: UIButton){
-            self.forwardTouches += 1
-            self.seekForwardTo(10.0 * Double(self.forwardTouches))
-            self.forwardGestureTimer?.invalidate()
-            self.forwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-                self.forwardTouches = 0
-            }
-            resetTimer()
-    }
-    
-    @objc func playButtonPressed(_ sender: UIButton){
-            if !player.isPlaying {
-                player.play()
-                playButton.setImage(Svg.pause!, for: .normal)
-                self.player.preroll(atRate: Float(self.playerRate), completionHandler: nil)
-                self.player.rate = Float(self.playerRate)
-                resetTimer()
-            } else {
-                playButton.setImage(Svg.play!, for: .normal)
-                player.pause()
-                timer?.invalidate()
-                showControls()
-            }
-    }
-    
+
     @objc func hideControls() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(withDuration: 0.3, delay: 0.2, options: options, animations: {[self] in
-            let alpha = 0.0
-            topView.alpha = alpha
-            skipForwardButton.alpha = alpha
-            overlayView.alpha = alpha
-            if enableGesture {
-                playButton.alpha = alpha
-            }
-            skipBackwardButton.alpha = alpha
-            bottomView.alpha = alpha
-        }, completion: nil)
+        UIView.animate(
+            withDuration: 0.3, delay: 0.2, options: options,
+            animations: { [self] in
+                let alpha = 0.0
+                topView.alpha = alpha
+                skipForwardButton.alpha = alpha
+                overlayView.alpha = alpha
+                if enableGesture {
+                    playButton.alpha = alpha
+                }
+                skipBackwardButton.alpha = alpha
+                bottomView.alpha = alpha
+            }, completion: nil)
     }
-    
+
     @objc func hideSeekForwardButton() {
         if topView.alpha == 0 {
             let options: UIView.AnimationOptions = [.curveEaseIn]
-            UIView.animate(withDuration: 0.1, delay: 0.1, options: options, animations: {[self] in
-                let alpha = 0.0
-                skipForwardButton.alpha = alpha
-            }, completion: nil)
+            UIView.animate(
+                withDuration: 0.1, delay: 0.1, options: options,
+                animations: { [self] in
+                    let alpha = 0.0
+                    skipForwardButton.alpha = alpha
+                }, completion: nil)
         }
     }
-    
+
     @objc func hideSeekBackwardButton() {
         if topView.alpha == 0 {
             let options: UIView.AnimationOptions = [.curveEaseIn]
-            UIView.animate(withDuration: 0.1, delay: 0.1, options: options, animations: {[self] in
-                let alpha = 0.0
-                skipBackwardButton.alpha = alpha
-            }, completion: nil)
+            UIView.animate(
+                withDuration: 0.1, delay: 0.1, options: options,
+                animations: { [self] in
+                    let alpha = 0.0
+                    skipBackwardButton.alpha = alpha
+                }, completion: nil)
         }
     }
-    
+
     func showControls() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(withDuration: 0.3, delay: 0.2, options: options, animations: {[self] in
-            let alpha = 1.0
-            topView.alpha = alpha
-            skipForwardButton.alpha = alpha
-            skipBackwardButton.alpha = alpha
-            if enableGesture {
-                playButton.alpha = alpha
-            }
-            bottomView.alpha = alpha
-        }, completion: nil)
-        
+        UIView.animate(
+            withDuration: 0.3, delay: 0.2, options: options,
+            animations: { [self] in
+                let alpha = 1.0
+                topView.alpha = alpha
+                skipForwardButton.alpha = alpha
+                skipBackwardButton.alpha = alpha
+                if enableGesture {
+                    playButton.alpha = alpha
+                }
+                bottomView.alpha = alpha
+            }, completion: nil)
+
     }
-    
+
     func resetTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(timeInterval: 3.0, target: self, selector: #selector(hideControls), userInfo: nil, repeats: false)
     }
-    
+
     private func pinchGesture() {
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(didpinch))
         videoView.addGestureRecognizer(pinchGesture)
     }
-    
+
     @objc func didpinch(_ gesture: UIPinchGestureRecognizer) {
         if gesture.state == .changed {
             let scale = gesture.scale
@@ -626,48 +640,51 @@ class PlayerView: UIView {
             resetTimer()
         }
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
         videoView.frame = fullFrame()
         overlayView.frame = fullFrame()
         playerLayer.frame = fullFrame()
     }
-    
+
     func fullFrame() -> CGRect {
         return bounds
     }
-    
+
     override func updateConstraints() {
         super.updateConstraints()
     }
-    
-    func changeConstraints(){
-        if UIApplication.shared.statusBarOrientation == .landscapeLeft || UIApplication.shared.statusBarOrientation == .landscapeRight {
-            addVideoPortaitConstraints()
-        } else {
-            addVideoLandscapeConstraints()
+
+    func changeConstraints() {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let orientation = windowScene.interfaceOrientation
+            if orientation == .landscapeLeft || orientation == .landscapeRight {
+                addVideoPortraitConstraints()
+            } else {
+                addVideoLandscapeConstraints()
+            }
         }
     }
-    
-    private func addVideoPortaitConstraints() {
-        titleLabelLandacape.isHidden = false
+
+    private func addVideoPortraitConstraints() {
+        titleLabelLandscape.isHidden = false
         titleLabelPortrait.isHidden = true
     }
-    
+
     private func addVideoLandscapeConstraints() {
         self.playerLayer.videoGravity = .resizeAspect
-        titleLabelLandacape.isHidden = true
+        titleLabelLandscape.isHidden = true
         titleLabelPortrait.isHidden = false
     }
-    
-    func addGestures(){
+
+    func addGestures() {
         swipeGesture = UIPanGestureRecognizer(target: self, action: #selector(swipePan))
         tapGesture = UITapGestureRecognizer(target: self, action: #selector(tapGestureControls))
         addGestureRecognizer(swipeGesture)
         addGestureRecognizer(tapGesture)
     }
-    
+
     func addSubviews() {
         addSubview(videoView)
         addSubview(overlayView)
@@ -686,12 +703,12 @@ class PlayerView: UIView {
         addTopViewSubviews()
         addBottomViewSubviews()
     }
-    
+
     // MARK: - addBottomViewSubviews
     func addBottomViewSubviews() {
         bottomView.addSubview(currentTimeLabel)
         bottomView.addSubview(durationTimeLabel)
-        bottomView.addSubview(seperatorLabel)
+        bottomView.addSubview(separatorLabel)
         bottomView.addSubview(timeSlider)
         bottomView.addSubview(episodesButton)
         bottomView.addSubview(channelsButton)
@@ -699,41 +716,41 @@ class PlayerView: UIView {
         bottomView.addSubview(rotateButton)
         bottomView.addSubview(liveStackView)
     }
-    
+
     func addTopViewSubviews() {
         topView.addSubview(exitButton)
-        topView.addSubview(titleLabelLandacape)
+        topView.addSubview(titleLabelLandscape)
         topView.addSubview(settingsButton)
         topView.addSubview(shareButton)
         topView.addSubview(pipButton)
     }
-    
-    func addConstraints(area:UILayoutGuide) {
+
+    func addConstraints(area: UILayoutGuide) {
         addBottomViewConstraints(area: area)
         addTopViewConstraints(area: area)
         addControlButtonConstraints()
     }
-    
-    private func addControlButtonConstraints(){
-        
+
+    private func addControlButtonConstraints() {
+
         ///
         brightnessSlider.centerY(to: overlayView)
         brightnessSlider.width(120)
         brightnessSlider.height(12)
-        
+
         brightnessSlider.snp.makeConstraints { make in
             make.left.equalToSuperview().offset(-42)
         }
         ///
         playButton.centerX(to: overlayView)
         playButton.centerY(to: overlayView)
-        
+
         skipBackwardButton.rightToLeft(of: playButton, offset: -60)
         skipBackwardButton.top(to: playButton)
-        
+
         skipForwardButton.leftToRight(of: playButton, offset: 60)
         skipForwardButton.top(to: playButton)
-        
+
         activityIndicatorView.centerX(to: overlayView)
         activityIndicatorView.centerY(to: overlayView)
         activityIndicatorView.layer.cornerRadius = 20
@@ -742,98 +759,97 @@ class PlayerView: UIView {
             skipBackwardButton.isHidden = true
         }
     }
-    
-    private func addBottomViewConstraints(area:UILayoutGuide) {
+
+    private func addBottomViewConstraints(area: UILayoutGuide) {
         overlayView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        
+
         bottomView.trailing(to: area, offset: 0)
         bottomView.leading(to: area, offset: 0)
         bottomView.bottom(to: area, offset: 0)
-        
+
         bottomView.height(82)
-        
+
         timeSlider.bottom(to: bottomView, offset: -8)
         timeSlider.snp.makeConstraints { make in
             make.left.equalToSuperview().offset(8)
             make.right.equalToSuperview().offset(-8)
         }
-        
+
         rotateButton.bottomToTop(of: timeSlider, offset: 8)
         rotateButton.snp.makeConstraints { make in
             make.right.equalTo(bottomView).offset(0)
         }
-        
+
         currentTimeLabel.snp.makeConstraints { make in
             make.left.equalTo(bottomView).offset(8)
         }
         currentTimeLabel.centerY(to: rotateButton)
-        
-        seperatorLabel.leftToRight(of: currentTimeLabel)
-        seperatorLabel.centerY(to: currentTimeLabel)
+
+        separatorLabel.leftToRight(of: currentTimeLabel)
+        separatorLabel.centerY(to: currentTimeLabel)
         channelsButton.rightToLeft(of: rotateButton, offset: -8)
         channelsButton.centerY(to: rotateButton)
-        
-        durationTimeLabel.leftToRight(of: seperatorLabel)
-        durationTimeLabel.centerY(to: seperatorLabel)
-        
-        
+
+        durationTimeLabel.leftToRight(of: separatorLabel)
+        durationTimeLabel.centerY(to: separatorLabel)
+
         episodesButton.rightToLeft(of: rotateButton, offset: -8)
         episodesButton.centerY(to: rotateButton)
-        
+
         showsBtn.rightToLeft(of: channelsButton, offset: -16)
         showsBtn.centerY(to: channelsButton)
-        
+
         liveStackView.bottomToTop(of: timeSlider)
         liveStackView.spacing = 24
         liveStackView.leftToSuperview(offset: 2)
-        
+
         if !playerConfiguration.isSerial {
             episodesButton.isHidden = true
         }
-        
+
         if playerConfiguration.isLive {
             liveCircle.isHidden = false
             liveLabel.isHidden = false
             currentTimeLabel.isHidden = true
             durationTimeLabel.isHidden = true
-            seperatorLabel.isHidden = true
+            separatorLabel.isHidden = true
         }
     }
-    
-    private func addTopViewConstraints(area:UILayoutGuide) {
+
+    private func addTopViewConstraints(area: UILayoutGuide) {
         topView.leading(to: area, offset: 0)
         topView.trailing(to: area, offset: 0)
         topView.top(to: area, offset: 0)
         topView.height(48)
-        
+
         exitButton.left(to: topView)
         exitButton.centerY(to: topView)
         //
         settingsButton.right(to: topView)
         settingsButton.centerY(to: topView)
-        if (playerConfiguration.isLive) {
+        if playerConfiguration.isLive {
             shareButton.isHidden = true
         } else {
             shareButton.isHidden = false
             shareButton.rightToLeft(of: settingsButton)
             shareButton.centerY(to: topView)
         }
-        
+
         pipButton.leftToRight(of: exitButton)
         pipButton.centerY(to: topView)
-        
-        titleLabelLandacape.centerY(to: topView)
-        titleLabelLandacape.centerX(to: topView)
-        titleLabelLandacape.leftToRight(of: pipButton)
-        titleLabelLandacape.layoutMargins = .horizontal(8)
+
+        titleLabelLandscape.centerY(to: topView)
+        titleLabelLandscape.centerX(to: topView)
+        titleLabelLandscape.leftToRight(of: pipButton)
+        titleLabelLandscape.layoutMargins = .horizontal(8)
         titleLabelPortrait.centerX(to: overlayView)
         titleLabelPortrait.topToBottom(of: topView, offset: 8)
         titleLabelPortrait.layoutMargins = .horizontal(24)
     }
-    
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "duration", let duration = player.currentItem?.duration.seconds, duration > 0.0 {
             self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: player.currentItem!.duration)
         }
@@ -841,29 +857,30 @@ class PlayerView: UIView {
             if player.status == .readyToPlay {
                 handleMediaPlayerReady()
             } else if player.status == .readyToPlay {
-                
+
             }
         }
-        if keyPath == "timeControlStatus", let change = change, let newValue = change[NSKeyValueChangeKey.newKey] as? Int, let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int {
+        if keyPath == "timeControlStatus", let change = change, let newValue = change[NSKeyValueChangeKey.newKey] as? Int, let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int
+        {
             if newValue != oldValue {
-                DispatchQueue.main.async {[weak self] in
+                DispatchQueue.main.async { [weak self] in
                     if newValue == 2 {
-                            self?.playButton.setImage(Svg.pause!, for: .normal)
-                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                            self?.activityIndicatorView.stopAnimating()
-                            self?.enableGesture = true
+                        self?.playButton.setImage(Svg.pause!, for: .normal)
+                        self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
+                        self?.activityIndicatorView.stopAnimating()
+                        self?.enableGesture = true
                     } else if newValue == 0 {
-                            self?.playButton.setImage(Svg.play!, for: .normal)
-                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                            self?.activityIndicatorView.stopAnimating()
-                            self?.enableGesture = true
-                            self?.timer?.invalidate()
-                            self?.showControls()
+                        self?.playButton.setImage(Svg.play!, for: .normal)
+                        self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
+                        self?.activityIndicatorView.stopAnimating()
+                        self?.enableGesture = true
+                        self?.timer?.invalidate()
+                        self?.showControls()
                     } else {
-                            self?.playButton.alpha = 0.0
-                            self?.activityIndicatorView.startAnimating()
-                            self?.enableGesture = false
-                        
+                        self?.playButton.alpha = 0.0
+                        self?.activityIndicatorView.startAnimating()
+                        self?.enableGesture = false
+
                     }
                 }
             }
@@ -872,15 +889,15 @@ class PlayerView: UIView {
             }
         }
     }
-    
+
     func handleMediaPlayerReady() {
-        if(!playerConfiguration.isLive){
+        if !playerConfiguration.isLive {
             if let duration = player.currentItem?.duration, CMTIME_IS_INDEFINITE(duration) {
                 purgeMediaPlayer()
                 playOfflineAsset()
                 return
             }
-            if streamDuration == nil  {
+            if streamDuration == nil {
                 if let duration = player.currentItem?.duration {
                     streamDuration = CMTimeGetSeconds(duration)
                     if let streamDuration = streamDuration {
@@ -911,39 +928,39 @@ class PlayerView: UIView {
             playerState = .paused
         }
     }
-    
+
     func handleSeekFinished() {
         activityIndicatorView.stopAnimating()
         if pendingPlay {
-          pendingPlay = false
-          player.play()
-          playerState = .playing
+            pendingPlay = false
+            player.play()
+            playerState = .playing
         } else {
-          playerState = .paused
+            playerState = .paused
         }
         seeking = false
-      }
-    
-    func setPlayButton(isPlay: Bool){
+    }
+
+    func setPlayButton(isPlay: Bool) {
         if isPlay {
             playButton.setImage(Svg.pause!, for: .normal)
         } else {
             playButton.setImage(Svg.play!, for: .normal)
         }
     }
-    
-    func setDuration(position: Float){
+
+    func setDuration(position: Float) {
         timeSlider.value = position
-        currentTimeLabel.text = VGPlayerUtils.getTimeString(from : CMTimeMake(value: Int64(position), timescale: 1))
+        currentTimeLabel.text = VGPlayerUtils.getTimeString(from: CMTimeMake(value: Int64(position), timescale: 1))
     }
-    
+
     @objc func playerEndedPlaying(_ notification: Notification) {
-        DispatchQueue.main.async {[weak self] in
+        DispatchQueue.main.async { [weak self] in
             self?.player.seek(to: CMTime.zero)
             self?.playButton.setImage(Svg.play!, for: .normal)
         }
     }
-    
+
     @objc func swipePan() {
         let locationPoint = swipeGesture.location(in: overlayView)
         let velocityPoint = swipeGesture.velocity(in: overlayView)
@@ -951,7 +968,7 @@ class PlayerView: UIView {
         case .began:
             let x = abs(velocityPoint.x)
             let y = abs(velocityPoint.y)
-            
+
             if x > y {
                 panDirection = SwipeDirection.horizontal
             } else {
@@ -962,7 +979,7 @@ class PlayerView: UIView {
                     isVolume = false
                 }
             }
-            
+
         case UIGestureRecognizer.State.changed:
             switch panDirection {
             case SwipeDirection.horizontal:
@@ -972,7 +989,7 @@ class PlayerView: UIView {
                 verticalMoved(velocityPoint.y)
                 break
             }
-            
+
         case UIGestureRecognizer.State.ended:
             switch panDirection {
             case SwipeDirection.horizontal:
@@ -987,7 +1004,7 @@ class PlayerView: UIView {
             break
         }
     }
-    
+
     func verticalMoved(_ value: CGFloat) {
         if isVolume {
             self.volumeViewSlider.value -= Float(value / 10000)
@@ -997,38 +1014,41 @@ class PlayerView: UIView {
             UIScreen.main.brightness -= value / 10000
         }
     }
-    
-    func showBlockControls(){
+
+    func showBlockControls() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(withDuration: 0.3, delay: 0.2, options: options, animations: {[self] in
-            let alpha = 1.0
-            topView.alpha = alpha
-            resetTimer()
-        }, completion: nil)
+        UIView.animate(
+            withDuration: 0.3, delay: 0.2, options: options,
+            animations: { [self] in
+                let alpha = 1.0
+                topView.alpha = alpha
+                resetTimer()
+            }, completion: nil)
     }
-    
-    
+
     func toggleViews() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(withDuration: 0.05, delay: 0, options: options, animations: {[self] in
-            let alpha = topView.alpha == 0.0 ? 1.0 : 0.0
-            topView.alpha = alpha
-            overlayView.alpha = alpha
-            skipForwardButton.alpha = alpha
-            skipBackwardButton.alpha = alpha
-            if enableGesture {
-                playButton.alpha = alpha
-            }
-            bottomView.alpha = alpha
-            if(alpha == 1.0){
-                resetTimer()
-            }
-        }, completion: nil)
+        UIView.animate(
+            withDuration: 0.05, delay: 0, options: options,
+            animations: { [self] in
+                let alpha = topView.alpha == 0.0 ? 1.0 : 0.0
+                topView.alpha = alpha
+                overlayView.alpha = alpha
+                skipForwardButton.alpha = alpha
+                skipBackwardButton.alpha = alpha
+                if enableGesture {
+                    playButton.alpha = alpha
+                }
+                bottomView.alpha = alpha
+                if alpha == 1.0 {
+                    resetTimer()
+                }
+            }, completion: nil)
     }
-    
+
     func fastForward() {
         self.forwardTouches += 1
-        if forwardTouches < 2{
+        if forwardTouches < 2 {
             self.forwardGestureTimer?.invalidate()
             self.forwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { _ in
                 self.forwardTouches = 0
@@ -1044,10 +1064,10 @@ class PlayerView: UIView {
             }
         }
     }
-    
+
     func fastBackward() {
         self.backwardTouches += 1
-        if backwardTouches < 2{
+        if backwardTouches < 2 {
             self.backwardGestureTimer?.invalidate()
             self.backwardGestureTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { _ in
                 self.backwardTouches = 0
@@ -1063,32 +1083,25 @@ class PlayerView: UIView {
             }
         }
     }
-    
+
     func resetSeekForwardTimer() {
         seekForwardTimer?.invalidate()
         seekForwardTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(hideSeekForwardButton), userInfo: nil, repeats: false)
     }
-    
+
     func resetSeekBackwardTimer() {
         seekBackwardTimer?.invalidate()
         seekBackwardTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(hideSeekBackwardButton), userInfo: nil, repeats: false)
     }
-    
-    func showSeekForwardButton(){
+
+    func showSeekForwardButton() {
         skipForwardButton.alpha = 1.0
     }
-    func showSeekBackwardButton(){
+
+    func showSeekBackwardButton() {
         skipBackwardButton.alpha = 1.0
     }
-    
-    @objc func hideBlockControls() {
-        let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(withDuration: 0.3, delay: 0.2, options: options, animations: {[self] in
-            _ = 0.0
-        }, completion: nil)
-    }
-    
-    
+
     @objc func tapGestureControls() {
         let location = tapGesture.location(in: overlayView)
         if location.x > overlayView.bounds.width / 2 + 50 {
@@ -1099,80 +1112,87 @@ class PlayerView: UIView {
             toggleViews()
         }
     }
-    
+
     fileprivate func seekForwardTo(_ seekPosition: Double) {
-        guard let duration = player.currentItem?.duration else {return}
+        guard let duration = player.currentItem?.duration else { return }
         let currentTime = CMTimeGetSeconds(player.currentTime())
         let newTime = currentTime + seekPosition
         if newTime < (CMTimeGetSeconds(duration) - seekPosition) {
-            let time: CMTime = CMTimeMake(value: Int64(newTime*1000), timescale: 1000)
+            let time: CMTime = CMTimeMake(value: Int64(newTime * 1000), timescale: 1000)
             player.seek(to: time)
         }
     }
-    
+
     fileprivate func seekBackwardTo(_ seekPosition: Double) {
         let currentTime = CMTimeGetSeconds(player.currentTime())
         var newTime = currentTime - seekPosition
         if newTime < 0 {
             newTime = 0
         }
-        let time: CMTime = CMTimeMake(value: Int64(newTime*1000), timescale: 1000)
+        let time: CMTime = CMTimeMake(value: Int64(newTime * 1000), timescale: 1000)
         player.seek(to: time)
     }
-    
+
     @objc func sliderValueChanged(_ sender: UISlider) {
-        player.seek(to: CMTimeMake(value: Int64(sender.value*1000), timescale: 1000))
+        player.seek(to: CMTimeMake(value: Int64(sender.value * 1000), timescale: 1000))
     }
-    
+
     @objc func playerDidFinishPlaying() {
-        purgeMediaPlayer();
-        removeMediaPlayerObservers();
-        delegate?.close(duration: [Int(player.currentTime().seconds),
-            Int(player.currentItem!.duration.seconds)]
+        purgeMediaPlayer()
+        removeMediaPlayerObservers()
+        delegate?.close(duration: [
+            Int(player.currentTime().seconds),
+            Int(player.currentItem!.duration.seconds),
+        ]
         )
     }
-    
+
     /// MARK: - Time logic
     func addTimeObserver() {
-        NotificationCenter.default.addObserver(self,
-                                           selector: #selector(playerDidFinishPlaying),
-                                           name: .AVPlayerItemDidPlayToEndTime,
-                                           object: player.currentItem)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerDidFinishPlaying),
+            name: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem)
         player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
         player.currentItem?.addObserver(self, forKeyPath: "status", options: .new, context: nil)
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
-        if(!playerConfiguration.isLive){
+        if !playerConfiguration.isLive {
             let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
             let mainQueue = DispatchQueue.main
-            player.addPeriodicTimeObserver(forInterval: interval, queue: mainQueue, using: { [weak self] time in
-                guard let currentItem = self?.player.currentItem else {return}
-                
-                guard currentItem.duration >= .zero, !currentItem.duration.seconds.isNaN else {
-                    return
-                }
-                self?.timeSlider.maximumValue = Float(currentItem.duration.seconds)
-                self?.timeSlider.minimumValue = 0
-                self?.timeSlider.value = Float(currentItem.currentTime().seconds)
-                self?.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.currentTime())
-                self?.streamPosition = CMTimeGetSeconds(time)
-            })
+            player.addPeriodicTimeObserver(
+                forInterval: interval, queue: mainQueue,
+                using: { [weak self] time in
+                    guard let currentItem = self?.player.currentItem else { return }
+
+                    guard currentItem.duration >= .zero, !currentItem.duration.seconds.isNaN else {
+                        return
+                    }
+                    self?.timeSlider.maximumValue = Float(currentItem.duration.seconds)
+                    self?.timeSlider.minimumValue = 0
+                    self?.timeSlider.value = Float(currentItem.currentTime().seconds)
+                    self?.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.currentTime())
+                    self?.streamPosition = CMTimeGetSeconds(time)
+                })
         } else {
             self.timeSlider.value = 1
         }
     }
-    
+
     func removeMediaPlayerObservers() {
-        NotificationCenter.default.removeObserver(self,
-                                           name: .AVPlayerItemDidPlayToEndTime,
-                                           object: player.currentItem)
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem)
         if observingMediaPlayer {
             if let mediaTimeObserverToRemove = mediaTimeObserver {
                 player.removeTimeObserver(mediaTimeObserverToRemove)
                 mediaTimeObserver = nil
             }
             if player.currentItem != nil {
-                NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-                                                          object: player.currentItem)
+                NotificationCenter.default.removeObserver(
+                    self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
+                    object: player.currentItem)
             }
             player.currentItem?.removeObserver(self, forKeyPath: "duration")
             player.currentItem?.removeObserver(self, forKeyPath: "timeControlStatus")
@@ -1180,12 +1200,12 @@ class PlayerView: UIView {
             observingMediaPlayer = false
         }
     }
-    
+
     func stop() {
         playerState = .stopped
         player.pause()
     }
-    
+
     func purgeMediaPlayer() {
         playerState = .stopped
         playerLayer.removeFromSuperlayer()
