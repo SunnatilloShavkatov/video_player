@@ -489,7 +489,7 @@ class PlayerView: UIView {
         removeMediaPlayerObservers()
         delegate?.close(duration: [
             Int(player.currentTime().seconds),
-            Int(player.currentItem!.duration.seconds),
+            Int(player.currentItem?.duration.seconds ?? 0),
         ]
         )
     }
