@@ -181,9 +181,8 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             // For each task, restore the state in the app by recreating Asset structs and reusing existing AVURLAsset objects.
             for task in tasksArray {
                 guard let assetDownloadTask = task as? AVAggregateAssetDownloadTask else { break }
-                guard assetDownloadTask.urlAsset.url.absoluteString != nil else { break }
                 let urlAsset = assetDownloadTask.urlAsset
-                let asset = MediaItemDownload(url: urlAsset.url.absoluteString, percent: 100, state: nil, downloadedBytes: 0)
+                _ = MediaItemDownload(url: urlAsset.url.absoluteString, percent: 100, state: nil, downloadedBytes: 0)
             }
         }
     }
@@ -283,9 +282,7 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         willDownloadTo location: URL
     ) {
-        print("STATE \(aggregateAssetDownloadTask.state.rawValue)")
         if aggregateAssetDownloadTask.state.rawValue == 3 {
-            print("rrrrr \(MediaItemDownload.STATE_COMPLETED)")
             self.getPercentComplete(
                 download: MediaItemDownload(url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: 100, state: MediaItemDownload.STATE_COMPLETED, downloadedBytes: 0)
             )
@@ -298,7 +295,7 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         didCompleteFor mediaSelection: AVMediaSelection
     ) {
-        guard let asset = activeDownloadsMap[aggregateAssetDownloadTask] else { return }
+        guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
 
     }
 
