@@ -179,7 +179,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         scaleGestureDetector = ScaleGestureDetector(this, this)
         brightnessSeekbar.max = 30
         brightnessSeekbar.progress = 15
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         setAudioFocus()
         maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toDouble()
         volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toDouble()
@@ -213,7 +213,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         if (context == null) return false
 
         val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            context.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         val capabilities =
             connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
                 ?: return false
@@ -759,7 +759,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             else nextButton.visibility = View.GONE
             else nextButton.visibility = View.GONE
             zoom.visibility = View.VISIBLE
-            orientation.setImageResource(R.drawable.ic_portrait)
             when (currentBottomSheet) {
                 BottomSheet.EPISODES -> {
                     backButtonEpisodeBottomSheet?.visibility = View.VISIBLE
@@ -784,7 +783,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             title.visibility = View.INVISIBLE
             nextButton.visibility = View.GONE
             zoom.visibility = View.GONE
-            orientation.setImageResource(R.drawable.ic_landscape)
             playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             when (currentBottomSheet) {
                 BottomSheet.EPISODES -> {

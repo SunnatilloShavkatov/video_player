@@ -74,7 +74,7 @@
                 android:layout_gravity="center"
                 android:layout_marginEnd="8dp"
                 android:padding="12dp"
-                android:src="@drawable/ic_more"
+                android:src="@drawable/ic_settings"
                 tools:ignore="ContentDescription" />
         </LinearLayout>
 
@@ -165,7 +165,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="10dp"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:visibility="visible">
 
         <LinearLayout
@@ -338,7 +338,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:padding="5dp"
-                    android:src="@drawable/ic_landscape"
+                    android:src="@drawable/ic_rotate"
                     tools:ignore="ContentDescription" />
             </LinearLayout>
         </LinearLayout>
@@ -348,8 +348,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="7dp"
-            app:played_color="@color/primary"
+            app:played_color="@color/white"
             app:scrubber_drawable="@drawable/custom_thumb"
-            app:unplayed_color="@color/white50" />
+            app:unplayed_color="@color/white27" />
     </LinearLayout>
 </RelativeLayout>

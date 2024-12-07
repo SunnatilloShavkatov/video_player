@@ -140,8 +140,8 @@ class PlayerView: UIView {
 
     private lazy var timeSlider: UISlider = {
         let slider = UISlider()
-        slider.tintColor = Colors.primary
-        slider.maximumTrackTintColor = Colors.white50
+        slider.tintColor = Colors.white
+        slider.maximumTrackTintColor = Colors.white27
         slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
         return slider
     }()
@@ -175,7 +175,7 @@ class PlayerView: UIView {
 
     private lazy var settingsButton: IconButton = {
         let button = IconButton()
-        if let icon = Svg.more {
+        if let icon = Svg.settings {
             button.setImage(icon, for: .normal)
         }
         button.addTarget(self, action: #selector(settingPressed(_:)), for: .touchUpInside)
@@ -336,7 +336,7 @@ class PlayerView: UIView {
             channelsButton.isHidden = true
         }
 
-        setSliderThumbTintColor(Colors.primary)
+        setSliderThumbTintColor(Colors.white)
 
         setTitle(title: playerConfiguration.title)
     }
@@ -354,7 +354,7 @@ class PlayerView: UIView {
         return image
     }
 
-    fileprivate func makeCircleWithBorder(size: CGSize, backgroundColor: UIColor, borderColor: UIColor, borderWidth: CGFloat) -> UIImage? {
+    fileprivate func makeCircleWithBorder(size: CGSize, backgroundColor: UIColor) -> UIImage? {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         let context = UIGraphicsGetCurrentContext()
 
@@ -364,12 +364,6 @@ class PlayerView: UIView {
         let bounds = CGRect(origin: .zero, size: size)
         context?.addEllipse(in: bounds)
         context?.drawPath(using: .fill)
-
-        // Draw the border
-        context?.setLineWidth(borderWidth)
-        context?.setStrokeColor(borderColor.cgColor)
-        context?.addEllipse(in: bounds.insetBy(dx: borderWidth / 2, dy: borderWidth / 2))
-        context?.drawPath(using: .stroke)
 
         // Get the image from the context
         let image = UIGraphicsGetImageFromCurrentImageContext()
@@ -385,8 +379,8 @@ class PlayerView: UIView {
         brightnessSlider.setThumbImage(circle, for: .normal)
         ///
         let circleImage = makeCircleWithBorder(
-            size: CGSize(width: 24, height: 24),
-            backgroundColor: color, borderColor: Colors.background, borderWidth: 3)
+            size: CGSize(width: 20, height: 20),
+            backgroundColor: color)
         timeSlider.setThumbImage(circleImage, for: .normal)
     }
 

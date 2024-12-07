@@ -8,9 +8,8 @@
 import Foundation
 
 struct Colors {
-    
-    static let primary = UIColor(hex: "#51A3FE")
-    static let white50 = UIColor(red:1, green: 1, blue: 1, alpha: 0.5)
+    static let primary = UIColor(hex: "#00A4FF")
+    static let white27 = UIColor(red:1, green: 1, blue: 1, alpha: 0.27)
     static let background = UIColor(hex: "#000000")
     
     static let black03 = UIColor(red:0, green: 0, blue: 0, alpha: 0.3)
@@ -22,9 +21,9 @@ struct Colors {
     static let mainBackground = UIColor(red: 17, green: 14, blue: 25)
     static let seasonColor = UIColor(red: 46, green: 46, blue: 48)
     static let black = UIColor(red:0, green: 0, blue: 0)
-    static let white = UIColor(red:1, green: 1, blue: 1)
+    static let white = UIColor(hex:"#FFFFFF")
     static let primary73 = UIColor(red: 2/255, green: 12/255, blue: 36/255, alpha: 0.73)
-    static let backgroundBottomSheet = UIColor(hex: "#1C1C1E")
+    static let backgroundBottomSheet = UIColor(hex: "#181818")
     static let blue = UIColor(hex: "#51A3FE")
 }
 
