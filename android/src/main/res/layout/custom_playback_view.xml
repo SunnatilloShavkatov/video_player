@@ -165,7 +165,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="10dp"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:visibility="visible">
 
         <LinearLayout
@@ -347,6 +347,7 @@
             android:id="@+id/exo_progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:paddingHorizontal="7dp"
             app:played_color="@color/white"
             app:scrubber_drawable="@drawable/custom_thumb"
