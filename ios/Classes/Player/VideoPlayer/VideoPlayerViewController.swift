@@ -115,9 +115,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 sortedResolutions.removeLast()
                 sortedResolutions.insert("1080p", at: 1)
             }
-            if quality == "480p" {
-                selectedQualityText = quality
-            }
+//             if quality == "480p" {
+//                 selectedQualityText = quality
+//             }
         }
         view.backgroundColor = .black
         playerView.delegate = self

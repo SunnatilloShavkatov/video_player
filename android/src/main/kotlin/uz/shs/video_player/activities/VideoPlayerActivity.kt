@@ -354,14 +354,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 }
             }
         })
-        playerConfiguration.resolutions.forEach {
-            if (it.key == "480p") {
-                currentQuality = "480p"
-                val bitrate = it.value.toIntOrNull()
-                if (bitrate != null) player.trackSelectionParameters =
-                    player.trackSelectionParameters.buildUpon().setMaxVideoBitrate(bitrate).build()
-            }
-        }
+//        playerConfiguration.resolutions.forEach {
+//            if (it.key == "480p") {
+//                currentQuality = "480p"
+//                val bitrate = it.value.toIntOrNull()
+//                if (bitrate != null) player.trackSelectionParameters =
+//                    player.trackSelectionParameters.buildUpon().setMaxVideoBitrate(bitrate).build()
+//            }
+//        }
         player.playWhenReady = true
     }
 
