@@ -270,8 +270,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         try {
             // Retrieve and set brightness
             val oldBrightness: Int = Settings.System.getInt(
-                this.contentResolver,
-                Settings.System.SCREEN_BRIGHTNESS
+                this.contentResolver, Settings.System.SCREEN_BRIGHTNESS
             )
             brightness = oldBrightness.toDouble() // Keep conversion if necessary
             brightnessSeekbar.progress = oldBrightness
@@ -1006,19 +1005,20 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             if (playerConfiguration.isSerial) {
                 if (playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions.isNotEmpty()) showQualitySpeedSheet(
                     currentQuality,
-                    playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions.keys.toList() as ArrayList,
+                    ArrayList(playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions.keys),
                     true,
                 )
             } else {
-                if (playerConfiguration.resolutions.isNotEmpty()) showQualitySpeedSheet(
-                    currentQuality,
-                    playerConfiguration.resolutions.keys.toList() as ArrayList,
-                    true,
-                )
+                if (playerConfiguration.resolutions.isNotEmpty()) {
+                    val resolutionsList = ArrayList(playerConfiguration.resolutions.keys)
+                    showQualitySpeedSheet(
+                        currentQuality, resolutionsList, true
+                    )
+                }
             }
         }
         speed?.setOnClickListener {
-            showQualitySpeedSheet(currentSpeed, speeds as ArrayList, false)
+            showQualitySpeedSheet(currentSpeed, ArrayList(speeds), false)
         }
         bottomSheetDialog.show()
         bottomSheetDialog.setOnDismissListener {
