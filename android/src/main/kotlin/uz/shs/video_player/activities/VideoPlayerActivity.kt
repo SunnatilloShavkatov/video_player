@@ -916,9 +916,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     bottomSheetDialog.dismiss()
                 }
             })
-        TabLayoutMediator(tabLayout!!, viewPager) { tab, position ->
-            tab.text = playerConfiguration.seasons[position].title
-        }.attach()
+        viewPager?.let {
+            TabLayoutMediator(tabLayout!!, it) { tab, position ->
+                tab.text = playerConfiguration.seasons[position].title
+            }
+        }?.attach()
         bottomSheetDialog.show()
         bottomSheetDialog.setOnDismissListener {
             currentBottomSheet = BottomSheet.NONE
