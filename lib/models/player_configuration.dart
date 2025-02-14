@@ -114,7 +114,8 @@ class PlayerConfiguration {
   }
 
   @override
-  String toString() => 'PlayerConfiguration{'
+  String toString() =>
+      'PlayerConfiguration{'
       'initialResolution: $initialResolution, '
       'resolutions: $resolutions, '
       'qualityText: $qualityText, '

@@ -1,10 +1,5 @@
 class MediaItemDownload {
-  const MediaItemDownload({
-    required this.url,
-    this.percent = 0,
-    this.state = 0,
-    required this.downloadedBytes,
-  });
+  const MediaItemDownload({required this.url, this.percent = 0, this.state = 0, required this.downloadedBytes});
 
   static const int stateQueued = 0;
   static const int stateStopped = 1;

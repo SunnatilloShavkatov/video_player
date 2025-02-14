@@ -1,10 +1,5 @@
 class TvChannel {
-  const TvChannel({
-    required this.id,
-    required this.image,
-    required this.name,
-    required this.resolutions,
-  });
+  const TvChannel({required this.id, required this.image, required this.name, required this.resolutions});
 
   final String id;
   final String image;

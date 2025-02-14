@@ -16,11 +16,11 @@ export 'package:video_player/models/season.dart';
 export 'package:video_player/models/tv_program.dart';
 
 class VideoPlayer {
-  VideoPlayer._();
+  const VideoPlayer._();
 
   static VideoPlayer get instance => _instance;
 
-  static final VideoPlayer _instance = VideoPlayer._();
+  static const VideoPlayer _instance = VideoPlayer._();
 
   Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
     final String jsonStringConfig = jsonEncode(playerConfig.toJson());

@@ -1,10 +1,7 @@
 import 'package:video_player/models/movie.dart';
 
 class Season {
-  const Season({
-    required this.title,
-    required this.movies,
-  });
+  const Season({required this.title, required this.movies});
 
   final String title;
   final List<Movie> movies;

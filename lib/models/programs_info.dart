@@ -1,10 +1,7 @@
 import 'package:video_player/models/tv_program.dart';
 
 class ProgramsInfo {
-  const ProgramsInfo({
-    required this.day,
-    required this.tvPrograms,
-  });
+  const ProgramsInfo({required this.day, required this.tvPrograms});
 
   final String day;
   final List<TvProgram> tvPrograms;

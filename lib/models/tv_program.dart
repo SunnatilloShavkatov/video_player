@@ -1,8 +1,5 @@
 class TvProgram {
-  const TvProgram({
-    required this.scheduledTime,
-    required this.programTitle,
-  });
+  const TvProgram({required this.scheduledTime, required this.programTitle});
 
   final String scheduledTime;
   final String programTitle;

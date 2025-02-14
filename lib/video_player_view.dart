@@ -43,9 +43,7 @@ class VideoPlayerView extends StatelessWidget {
           creationParamsCodec: const StandardMessageCodec(),
         );
       default:
-        return Text(
-          '$defaultTargetPlatform is not yet supported by the web_view plugin',
-        );
+        return Text('$defaultTargetPlatform is not yet supported by the web_view plugin');
     }
   }
 
@@ -75,13 +73,11 @@ class VideoPlayerViewController {
   Future<void> unMute() async => _channel.invokeMethod('un-mute');
 
   Stream<dynamic>? listener() {
-    _channel.setMethodCallHandler(
-      (call) async {
-        if (call.method == 'finished') {
-          return call.arguments;
-        }
-      },
-    );
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'finished') {
+        return call.arguments;
+      }
+    });
     return null;
   }
 }

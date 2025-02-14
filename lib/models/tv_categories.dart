@@ -1,11 +1,7 @@
 import 'tv_channel.dart';
 
 class TvCategories {
-  const TvCategories({
-    required this.id,
-    required this.title,
-    required this.tvChannels,
-  });
+  const TvCategories({required this.id, required this.title, required this.tvChannels});
 
   final String id;
   final String title;

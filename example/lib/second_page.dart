@@ -12,27 +12,24 @@ class SecondPage extends StatefulWidget {
 class _SecondPageState extends State<SecondPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
 
-  Stream<MediaItemDownload> currentProgressDownloadAsStream() =>
-      _videoPlayerPlugin.currentProgressDownloadAsStream;
+  Stream<MediaItemDownload> currentProgressDownloadAsStream() => _videoPlayerPlugin.currentProgressDownloadAsStream;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Plugin example app')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              StreamBuilder(
-                stream: currentProgressDownloadAsStream(),
-                builder: (context, snapshot) {
-                  final data = snapshot.data;
-                  return Text(data == null
-                      ? 'Not downloading'
-                      : '${data.percent}\n${data.state.toState()}');
-                },
-              )
-            ],
+    appBar: AppBar(title: const Text('Plugin example app')),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          StreamBuilder(
+            stream: currentProgressDownloadAsStream(),
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+              return Text(data == null ? 'Not downloading' : '${data.percent}\n${data.state.toState()}');
+            },
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }
