@@ -126,7 +126,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.edgesToSuperview()
         view.addSubview(screenshotPreventView)
         screenshotPreventView.edgesToSuperview()
-        screenshotPreventView.preventScreenCapture = true
+        screenshotPreventView.preventScreenCapture = false
     }
 
     override func viewWillAppear(_ animated: Bool) {
