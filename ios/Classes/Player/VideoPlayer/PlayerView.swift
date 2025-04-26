@@ -450,7 +450,7 @@ class PlayerView: UIView {
     func changeQuality(url: String?) {
         if url == nil { return }
         guard let bitrate = Double(url!) else {
-            self.player.currentItem?.preferredPeakBitRate = 5_687_102
+            self.player.currentItem?.preferredPeakBitRate = 0
             return
         }
         self.player.currentItem?.preferredPeakBitRate = bitrate
