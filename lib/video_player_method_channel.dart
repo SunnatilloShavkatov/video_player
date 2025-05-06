@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/models/media_item_download.dart';
 
-import 'video_player_platform_interface.dart';
+import 'package:video_player/video_player_platform_interface.dart';
 
 /// An implementation of [VideoPlayerPlatform] that uses method channels.
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
@@ -19,23 +19,25 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     final res = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
       'playerConfigJsonString': playerConfigJsonString,
     });
-    if (res == null) return null;
+    if (res == null) {
+      return null;
+    }
     final List<int> list = res.map((e) => (e ?? 1) as int).toList();
     return list;
   }
 
   @override
-  Future downloadVideo({required String downloadConfigJsonString}) async {
+  Future<void> downloadVideo({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod('downloadVideo', {'downloadConfigJsonString': downloadConfigJsonString});
   }
 
   @override
-  Future pauseDownload({required String downloadConfigJsonString}) async {
+  Future<void> pauseDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod('pauseDownload', {'downloadConfigJsonString': downloadConfigJsonString});
   }
 
   @override
-  Future resumeDownload({required String downloadConfigJsonString}) async {
+  Future<void> resumeDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod('resumeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
   }
 
@@ -60,12 +62,12 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     methodChannel.setMethodCallHandler((call) async {
       if (call.method == 'percent') {
         final json = call.arguments as String;
-        final decode = jsonDecode(json);
+        final Map<dynamic, dynamic> decode = jsonDecode(json);
         _streamController.add(
           MediaItemDownload(
             url: decode['url'],
-            percent: decode['percent'],
             state: decode['state'],
+            percent: decode['percent'],
             downloadedBytes: decode['downloadedBytes'],
           ),
         );
@@ -99,13 +101,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future removeDownload({required String downloadConfigJsonString}) async {
+  Future<void> removeDownload({required String downloadConfigJsonString}) async {
     await methodChannel.invokeMethod('removeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
   }
 
   @override
-  void dispose() {
-    _streamController.onCancel!();
+  Future<void> dispose() async {
+    _streamController.onCancel?.call();
   }
 
   @override

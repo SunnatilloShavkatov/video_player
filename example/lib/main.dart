@@ -1,3 +1,5 @@
+// ignore_for_file: discarded_futures
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +30,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
   static const String downloadUrl =
-      "https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8";
+      'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
 
   Future<void> download1() async {
     try {
@@ -150,7 +152,7 @@ class _MainPageState extends State<MainPage> {
           baseUrl: 'https://api.spec.uzd.udevs.io/v1/',
           initialResolution: {
             'Auto':
-                "https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8",
+                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
           },
           resolutions: {
             'Auto':
@@ -177,7 +179,7 @@ class _MainPageState extends State<MainPage> {
           episodeIndex: 0,
           isMegogo: false,
           isPremier: false,
-          videoId: "",
+          videoId: '',
           sessionId: '',
           megogoAccessToken: '',
           authorization: '',

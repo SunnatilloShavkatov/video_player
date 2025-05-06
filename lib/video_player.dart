@@ -5,7 +5,7 @@ import 'package:video_player/models/download_configuration.dart';
 import 'package:video_player/models/media_item_download.dart';
 import 'package:video_player/models/player_configuration.dart';
 
-import 'video_player_platform_interface.dart';
+import 'package:video_player/video_player_platform_interface.dart';
 
 export 'package:video_player/models/download_configuration.dart';
 export 'package:video_player/models/media_item_download.dart';
@@ -75,5 +75,5 @@ class VideoPlayer {
     return VideoPlayerPlatform.instance.removeDownload(downloadConfigJsonString: jsonStringConfig);
   }
 
-  void dispose() => VideoPlayerPlatform.instance.dispose();
+  Future<void> dispose() async => VideoPlayerPlatform.instance.dispose();
 }

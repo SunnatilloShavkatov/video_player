@@ -3,7 +3,7 @@ import 'dart:core';
 import 'package:video_player/models/programs_info.dart';
 import 'package:video_player/models/season.dart';
 
-import 'tv_categories.dart';
+import 'package:video_player/models/tv_categories.dart';
 
 export 'programs_info.dart';
 export 'season.dart';

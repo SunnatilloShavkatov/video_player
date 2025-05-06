@@ -1,4 +1,4 @@
-import 'tv_channel.dart';
+import 'package:video_player/models/tv_channel.dart';
 
 class TvCategories {
   const TvCategories({required this.id, required this.title, required this.tvChannels});

@@ -42,7 +42,13 @@ class VideoPlayerView extends StatelessWidget {
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
-      default:
+      case TargetPlatform.fuchsia:
+        return Text('$defaultTargetPlatform is not yet supported by the web_view plugin');
+      case TargetPlatform.windows:
+        return Text('$defaultTargetPlatform is not yet supported by the web_view plugin');
+      case TargetPlatform.linux:
+        return Text('$defaultTargetPlatform is not yet supported by the web_view plugin');
+      case TargetPlatform.macOS:
         return Text('$defaultTargetPlatform is not yet supported by the web_view plugin');
     }
   }
