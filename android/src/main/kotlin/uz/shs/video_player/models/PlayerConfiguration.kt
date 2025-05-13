@@ -28,8 +28,6 @@ data class PlayerConfiguration(
     val isLive: Boolean,
     @SerializedName("tvProgramsText")
     val tvProgramsText: String,
-    @SerializedName("programsInfoList")
-    val programsInfoList: List<ProgramsInfo>,
     @SerializedName("showController")
     val showController: Boolean,
     @SerializedName("playVideoFromAsset")
@@ -64,6 +62,4 @@ data class PlayerConfiguration(
     val selectChannelIndex: Int,
     @SerializedName("selectTvCategoryIndex")
     val selectTvCategoryIndex: Int,
-    @SerializedName("tvCategories")
-    val tvCategories: List<TvCategories>,
 ) : Serializable

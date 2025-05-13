@@ -24,17 +24,10 @@ class EpisodesRvAdapter(
     RecyclerView.Adapter<EpisodesRvAdapter.Vh>() {
 
     inner class Vh(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val title: TextView
-        val description: TextView
-        val duration: TextView
-        val image: ImageView
-
-        init {
-            title = itemView.findViewById(R.id.episode_item_title)
-            description = itemView.findViewById(R.id.episode_item_description)
-            duration = itemView.findViewById(R.id.episode_item_duration)
-            image = itemView.findViewById(R.id.episode_item_image)
-        }
+        val title: TextView = itemView.findViewById(R.id.episode_item_title)
+        val description: TextView = itemView.findViewById(R.id.episode_item_description)
+        val duration: TextView = itemView.findViewById(R.id.episode_item_duration)
+        val image: ImageView = itemView.findViewById(R.id.episode_item_image)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Vh {

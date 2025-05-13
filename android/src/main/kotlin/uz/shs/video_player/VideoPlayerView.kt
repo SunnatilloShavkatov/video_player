@@ -2,7 +2,6 @@ package uz.shs.video_player
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.net.Uri
 import android.view.View
 import androidx.media3.common.MediaItem
 import androidx.media3.datasource.DataSource
@@ -18,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 import uz.shs.video_player.models.VideoViewModel
+import androidx.core.net.toUri
 
 class VideoPlayerView internal constructor(
     context: Context,
@@ -31,11 +31,12 @@ class VideoPlayerView internal constructor(
     override fun getView(): View {
         return playerView
     }
+
     init {
         // Init WebView
         player = ExoPlayer.Builder(context).build()
         playerView = PlayerView(context)
-        methodChannel = MethodChannel(messenger, "plugins.udevs/video_player_view_$id")
+        methodChannel = MethodChannel(messenger, "plugins.video/video_player_view_$id")
         // Init methodCall Listener
         methodChannel.setMethodCallHandler(this)
     }
@@ -68,7 +69,7 @@ class VideoPlayerView internal constructor(
     @SuppressLint("UnsafeOptInUsageError")
     private fun setAssets(methodCall: MethodCall, result: MethodChannel.Result) {
         val args = VideoViewModel(methodCall.arguments as Map<*, *>)
-        val uri = Uri.parse("asset:///flutter_assets/${args.getUrl()}")
+        val uri = "asset:///flutter_assets/${args.getUrl()}".toUri()
         val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))

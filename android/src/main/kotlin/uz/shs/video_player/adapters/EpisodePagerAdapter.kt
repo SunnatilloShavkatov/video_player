@@ -24,10 +24,9 @@ class EpisodePagerAdapter(
 ) :
     RecyclerView.Adapter<EpisodePagerAdapter.Vh>() {
     inner class Vh(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val rv: RecyclerView
+        val rv: RecyclerView = itemView.findViewById(R.id.episodes_rv)
 
         init {
-            rv = itemView.findViewById(R.id.episodes_rv)
             rv.addOnItemTouchListener(object : OnItemTouchListener {
                 var lastX = 0
                 override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {

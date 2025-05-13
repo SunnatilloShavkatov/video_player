@@ -7,7 +7,6 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import uz.shs.video_player.models.MegogoStreamResponse
 import uz.shs.video_player.models.PremierStreamResponse
-import uz.shs.video_player.models.TvChannelResponse
 
 interface RetrofitService {
 
@@ -26,11 +25,4 @@ interface RetrofitService {
         @Path("video-id") videoId: String,
         @Path("episode-id") episodeId: String,
     ): Call<PremierStreamResponse>
-
-    @GET("tv/channel/{id}")
-    fun getSingleTvChannel(
-        @Header("Authorization") authorization: String,
-        @Path("id") id: String,
-        @Query("client_ip") clientIp: String,
-    ): Call<TvChannelResponse>
 }
