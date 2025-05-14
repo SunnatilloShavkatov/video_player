@@ -130,7 +130,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private val tag = "TAG1"
     private var currentOrientation: Int = Configuration.ORIENTATION_PORTRAIT
     private var titleText = ""
-    private var url: String? = null
+    private lateinit var url: String
     private var mPlaybackState: PlaybackState? = null
     private var channelIndex: Int = 0
     private var tvCategoryIndex: Int = 0
@@ -288,7 +288,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private fun playVideo() {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
         val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(url!!.toUri()))
+            .createMediaSource(MediaItem.fromUri(url.toUri()))
         player = ExoPlayer.Builder(this).build()
         playerView.player = player
         playerView.keepScreenOn = true
@@ -527,9 +527,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             } else {
                 url =
                     playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
+                        ?: ""
                 val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
                 val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(url!!.toUri()))
+                    .createMediaSource(MediaItem.fromUri(url.toUri()))
                 player.setMediaSource(hlsMediaSource)
                 player.prepare()
                 player.playWhenReady
@@ -816,10 +817,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     } else {
                         url =
                             playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
+                                ?: ""
                         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
                         val hlsMediaSource: HlsMediaSource =
                             HlsMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(MediaItem.fromUri(url!!.toUri()))
+                                .createMediaSource(MediaItem.fromUri(url.toUri()))
                         player.setMediaSource(hlsMediaSource)
                         player.prepare()
                         player.playWhenReady
