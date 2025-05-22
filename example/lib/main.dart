@@ -16,8 +16,11 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      MaterialApp(title: 'Plugin example', theme: ThemeData(primarySwatch: Colors.blue), home: const MainPage());
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'Plugin example',
+    theme: ThemeData(primarySwatch: Colors.blue),
+    home: const MainPage(),
+  );
 }
 
 class MainPage extends StatefulWidget {
@@ -306,7 +309,7 @@ class _MainPageState extends State<MainPage> {
                   data == null
                       ? 'Not downloading'
                       : data.url !=
-                          'https://cdn.uzd.udevs.io/uzdigital/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8'
+                            'https://cdn.uzd.udevs.io/uzdigital/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8'
                       ? 'Not downloading'
                       : data.percent.toString(),
                 ),
