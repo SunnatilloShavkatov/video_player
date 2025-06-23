@@ -9,7 +9,6 @@ import AVFoundation
 import AVKit
 import MediaPlayer
 import NVActivityIndicatorView
-import ScreenshotPreventing
 import SnapKit
 import TinyConstraints
 import UIKit
@@ -115,9 +114,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 sortedResolutions.removeLast()
                 sortedResolutions.insert("1080p", at: 1)
             }
-//             if quality == "480p" {
-//                 selectedQualityText = quality
-//             }
         }
         view.backgroundColor = .black
         playerView.delegate = self

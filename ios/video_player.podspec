@@ -18,7 +18,6 @@ A new Flutter plugin project.
   s.dependency 'TinyConstraints'
   s.dependency 'NVActivityIndicatorView'
   s.dependency 'XLActionController'
-  s.dependency 'ScreenshotPreventing', '~> 1.4.0'
   s.dependency 'SnapKit', '~> 4.0'
   s.dependency 'SDWebImage', '~> 5.0'
   s.resources = 'Assets/*'
