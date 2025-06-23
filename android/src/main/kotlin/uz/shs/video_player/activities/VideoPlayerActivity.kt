@@ -59,20 +59,13 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import uz.shs.video_player.EXTRA_ARGUMENT
 import uz.shs.video_player.PLAYER_ACTIVITY_FINISH
 import uz.shs.video_player.R
 import uz.shs.video_player.adapters.EpisodePagerAdapter
 import uz.shs.video_player.adapters.QualitySpeedAdapter
 import uz.shs.video_player.models.BottomSheet
-import uz.shs.video_player.models.MegogoStreamResponse
 import uz.shs.video_player.models.PlayerConfiguration
-import uz.shs.video_player.models.PremierStreamResponse
-import uz.shs.video_player.retrofit.Common
-import uz.shs.video_player.retrofit.RetrofitService
 import uz.shs.video_player.services.NetworkChangeReceiver
 import kotlin.math.abs
 import androidx.core.net.toUri
@@ -126,7 +119,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var sWidth: Int = 0
     private var seasonIndex: Int = 0
     private var episodeIndex: Int = 0
-    private var retrofitService: RetrofitService? = null
     private val tag = "TAG1"
     private var currentOrientation: Int = Configuration.ORIENTATION_PORTRAIT
     private var titleText = ""
@@ -163,8 +155,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         initializeViews()
         mPlaybackState = PlaybackState.PLAYING
 
-        retrofitService =
-            if (playerConfiguration.baseUrl.isNotEmpty()) Common.retrofitService(playerConfiguration.baseUrl) else null
         initializeClickListeners()
 
         sWidth = Resources.getSystem().displayMetrics.widthPixels
@@ -520,21 +510,15 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             }
             title.text =
                 "S${seasonIndex + 1} E${episodeIndex + 1} " + playerConfiguration.seasons[seasonIndex].movies[episodeIndex].title
-            if (playerConfiguration.isMegogo && playerConfiguration.isSerial) {
-                getMegogoStream()
-            } else if (playerConfiguration.isPremier && playerConfiguration.isSerial) {
-                getPremierStream()
-            } else {
-                url =
-                    playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
-                        ?: ""
-                val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-                val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(url.toUri()))
-                player.setMediaSource(hlsMediaSource)
-                player.prepare()
-                player.playWhenReady
-            }
+            url =
+                playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
+                    ?: ""
+            val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
+            val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(url.toUri()))
+            player.setMediaSource(hlsMediaSource)
+            player.prepare()
+            player.playWhenReady
         }
 
         zoom.setOnClickListener {
@@ -608,75 +592,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
             }
         }
-    }
-
-    private fun getMegogoStream() {
-        retrofitService?.getMegogoStream(
-            playerConfiguration.authorization,
-            playerConfiguration.sessionId,
-            playerConfiguration.seasons[seasonIndex].movies[episodeIndex].id,
-            playerConfiguration.megogoAccessToken
-        )?.enqueue(object : Callback<MegogoStreamResponse> {
-            override fun onResponse(
-                call: Call<MegogoStreamResponse>, response: Response<MegogoStreamResponse>
-            ) {
-                val body = response.body()
-                if (body != null) {
-                    val map: HashMap<String, String> = hashMapOf()
-                    map[playerConfiguration.autoText] = body.data!!.src!!
-                    body.data.bitrates?.forEach {
-                        map["${it!!.bitrate}p"] = it.src!!
-                    }
-                    playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions = map
-                    val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-                    val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(MediaItem.fromUri(playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]!!.toUri()))
-                    player.setMediaSource(hlsMediaSource)
-                    player.prepare()
-                    player.playWhenReady
-                }
-            }
-
-            override fun onFailure(call: Call<MegogoStreamResponse>, t: Throwable) {
-                t.printStackTrace()
-            }
-        })
-    }
-
-    private fun getPremierStream() {
-        retrofitService?.getPremierStream(
-            playerConfiguration.authorization,
-            playerConfiguration.sessionId,
-            playerConfiguration.videoId,
-            playerConfiguration.seasons[seasonIndex].movies[episodeIndex].id,
-        )?.enqueue(object : Callback<PremierStreamResponse> {
-            override fun onResponse(
-                call: Call<PremierStreamResponse>, response: Response<PremierStreamResponse>
-            ) {
-                val body = response.body()
-                if (body != null) {
-                    val map: HashMap<String, String> = hashMapOf()
-                    body.file_info?.forEach {
-                        if (it!!.quality == "auto") {
-                            map[playerConfiguration.autoText] = it.file_name!!
-                        } else {
-                            map[it.quality!!] = it.file_name!!
-                        }
-                    }
-                    playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions = map
-                    val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-                    val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(MediaItem.fromUri(playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]!!.toUri()))
-                    player.setMediaSource(hlsMediaSource)
-                    player.prepare()
-                    player.playWhenReady
-                }
-            }
-
-            override fun onFailure(call: Call<PremierStreamResponse>, t: Throwable) {
-                t.printStackTrace()
-            }
-        })
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -810,22 +725,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                         title1.text = ""
                         title1.visibility = View.GONE
                     }
-                    if (playerConfiguration.isMegogo && playerConfiguration.isSerial) {
-                        getMegogoStream()
-                    } else if (playerConfiguration.isPremier && playerConfiguration.isSerial) {
-                        getPremierStream()
-                    } else {
-                        url =
-                            playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
-                                ?: ""
-                        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-                        val hlsMediaSource: HlsMediaSource =
-                            HlsMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(MediaItem.fromUri(url.toUri()))
-                        player.setMediaSource(hlsMediaSource)
-                        player.prepare()
-                        player.playWhenReady
-                    }
+                    url =
+                        playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
+                            ?: ""
+                    val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
+                    val hlsMediaSource: HlsMediaSource =
+                        HlsMediaSource.Factory(dataSourceFactory)
+                            .createMediaSource(MediaItem.fromUri(url.toUri()))
+                    player.setMediaSource(hlsMediaSource)
+                    player.prepare()
+                    player.playWhenReady
                     bottomSheetDialog.dismiss()
                 }
             })

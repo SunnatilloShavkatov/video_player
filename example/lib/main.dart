@@ -1,4 +1,4 @@
-// ignore_for_file: discarded_futures
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +33,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
   static const String downloadUrl =
-      'https://cdn.uzd.udevs.io/uzdigital/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
+      'https://cdn.ooo.io/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
 
   Future<void> download1() async {
     try {
@@ -56,7 +56,7 @@ class _MainPageState extends State<MainPage> {
           await _videoPlayerPlugin.downloadVideo(
             downloadConfig: const DownloadConfiguration(
               title: 'She-Hulk 2',
-              url: 'https://cdn.uzd.udevs.io/uzdigital/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8',
+              url: 'https://cdn.ooo.io/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8',
             ),
           ) ??
           'nothing';
@@ -181,7 +181,6 @@ class _MainPageState extends State<MainPage> {
           episodeIndex: 0,
           videoId: '',
           sessionId: '',
-          authorization: '',
           autoText: 'Автонастройка',
           fromCache: true,
           selectChannelIndex: 0,
@@ -211,14 +210,14 @@ class _MainPageState extends State<MainPage> {
         ElevatedButton(onPressed: resumeDownload, child: const Text('Resume Download')),
         ElevatedButton(onPressed: removeDownload, child: const Text('Remove Download')),
         ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) => const SecondPage()));
+          onPressed: () async {
+            await Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) => const SecondPage()));
           },
           child: const Text('Got to next page'),
         ),
         ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) => const VideoPlayerPage()));
+          onPressed: () async {
+            await Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) => const VideoPlayerPage()));
           },
           child: const Text('Got to video view page'),
         ),
@@ -269,7 +268,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void dispose() {
-    _videoPlayerPlugin.dispose();
+    unawaited(_videoPlayerPlugin.dispose());
     super.dispose();
   }
 }

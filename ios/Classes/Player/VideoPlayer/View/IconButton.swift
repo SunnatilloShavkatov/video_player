@@ -1,6 +1,6 @@
 //
 //  PlayButton.swift
-//  udevs_video_player
+//  video_player
 //
 //  Created by Sunnatillo Shavkatov on 23/10/22.
 //

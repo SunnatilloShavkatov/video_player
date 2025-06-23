@@ -1,8 +1,8 @@
 //
 //  PlayerConfiguration.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 08/10/22.
+//  Created by Sunnatillo Shavkatov on 23/06/25.
 //
 
 import Foundation
@@ -26,20 +26,15 @@ struct PlayerConfiguration{
     var assetPath: String?
     var seasonIndex: Int
     var episodeIndex: Int
-    var isMegogo: Bool
-    var isPremier: Bool
     var videoId: String
     var sessionId: String
-    var megogoAccessToken: String
-    var authorization: String
     var autoText: String
-    var baseUrl: String
     var movieShareLink: String
     var selectChannelIndex: Int
     var selectTvCategoryIndex: Int
     var tvCategories: [TvCategories]
     
-    init(initialResolution: [String : String], resolutions: [String : String], qualityText: String, speedText: String, lastPosition: Int, title: String, isSerial: Bool, episodeButtonText: String, nextButtonText: String, seasons: [Season], isLive: Bool, tvProgramsText: String, programsInfoList: [ProgramInfo], showController: Bool, playVideoFromAsset: Bool, assetPath: String? = nil, seasonIndex: Int, episodeIndex: Int, isMegogo: Bool, isPremier: Bool, videoId: String, sessionId: String, megogoAccessToken: String, authorization: String, autoText: String, baseUrl: String,url: String,movieShareLink: String, selectChannelIndex: Int, selectTvCategoryIndex: Int, tvCategories: [TvCategories]) {
+    init(initialResolution: [String : String], resolutions: [String : String], qualityText: String, speedText: String, lastPosition: Int, title: String, isSerial: Bool, episodeButtonText: String, nextButtonText: String, seasons: [Season], isLive: Bool, tvProgramsText: String, programsInfoList: [ProgramInfo], showController: Bool, playVideoFromAsset: Bool, assetPath: String? = nil, seasonIndex: Int, episodeIndex: Int, videoId: String, sessionId: String, autoText: String, url: String,movieShareLink: String, selectChannelIndex: Int, selectTvCategoryIndex: Int, tvCategories: [TvCategories]) {
         self.initialResolution = initialResolution
         self.resolutions = resolutions
         self.qualityText = qualityText
@@ -58,14 +53,9 @@ struct PlayerConfiguration{
         self.assetPath = assetPath
         self.seasonIndex = seasonIndex
         self.episodeIndex = episodeIndex
-        self.isMegogo = isMegogo
-        self.isPremier = isPremier
         self.videoId = videoId
         self.sessionId = sessionId
-        self.megogoAccessToken = megogoAccessToken
-        self.authorization = authorization
         self.autoText = autoText
-        self.baseUrl = baseUrl
         self.url = url
         self.movieShareLink = movieShareLink
         self.selectChannelIndex = selectChannelIndex
@@ -115,14 +105,9 @@ struct PlayerConfiguration{
                                    assetPath:map["assetPath"] as? String,
                                    seasonIndex: map["seasonIndex"] as! Int,
                                    episodeIndex: map["episodeIndex"] as! Int,
-                                   isMegogo: map["isMegogo"] as! Bool,
-                                   isPremier: map["isPremier"] as! Bool,
                                    videoId: map["videoId"] as! String,
                                    sessionId: map["sessionId"] as! String,
-                                   megogoAccessToken: map["megogoAccessToken"] as! String,
-                                   authorization: map["authorization"] as! String,
                                    autoText: map["autoText"] as! String,
-                                   baseUrl: map["baseUrl"] as! String,
                                    url: (map["initialResolution"] as! [String:String]).values.first ?? "",
                                    movieShareLink: map["movieShareLink"] as! String,
                                    selectChannelIndex: map["selectChannelIndex"] as? Int ?? 0, selectTvCategoryIndex: map["selectTvCategoryIndex"] as? Int ?? 0,
@@ -146,8 +131,8 @@ struct Season {
         var movies: [Dictionary<String, Any>]?
         movies = map["movies"] as! [Dictionary<String, Any>]?
         movies?.forEach { data in
-            let movi = Movie.fromMap(map: data)
-            s.append(movi)
+            let movie = Movie.fromMap(map: data)
+            s.append(movie)
         }
         return Season(title:  map["title"] as? String, movies: s)
     }

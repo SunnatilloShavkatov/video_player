@@ -38,22 +38,12 @@ data class PlayerConfiguration(
     val seasonIndex: Int,
     @SerializedName("episodeIndex")
     val episodeIndex: Int,
-    @SerializedName("isMegogo")
-    val isMegogo: Boolean,
-    @SerializedName("isPremier")
-    val isPremier: Boolean,
     @SerializedName("videoId")
     val videoId: String,
     @SerializedName("sessionId")
     val sessionId: String,
-    @SerializedName("megogoAccessToken")
-    val megogoAccessToken: String,
-    @SerializedName("authorization")
-    val authorization: String,
     @SerializedName("autoText")
     val autoText: String,
-    @SerializedName("baseUrl")
-    val baseUrl: String,
     @SerializedName("fromCache")
     val fromCache: Boolean,
     @SerializedName("movieShareLink")

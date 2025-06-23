@@ -2,7 +2,7 @@
 //  CustomButton.swift
 //  Runner
 //
-//  Created by Shavaktov Sunnatillo on 21/04/22.
+//  Created by Shavkatov Sunnatillo on 21/04/22.
 //
 import UIKit
 

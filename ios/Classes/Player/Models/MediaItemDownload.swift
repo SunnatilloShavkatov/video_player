@@ -1,8 +1,8 @@
 //
 //  MediaItemDownload.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 23/11/22.
+//  Created by Sunnatillo Shavkatov on 23/06/25.
 //
 
 import Foundation

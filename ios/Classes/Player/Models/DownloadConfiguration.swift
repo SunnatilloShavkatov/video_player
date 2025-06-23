@@ -1,8 +1,8 @@
 //
 //  DownloadConfiguration.swift
-//  udevs_video_player
+//  video_player
 //
-//  Created by Udevs on 28/11/22.
+//  Created by Sunnatillo Shavkatov on 23/06/25.
 //
 
 struct DownloadConfiguration {

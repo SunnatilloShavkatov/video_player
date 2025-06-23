@@ -32,7 +32,6 @@ class PlayerConfiguration {
     required this.episodeIndex,
     required this.videoId,
     required this.sessionId,
-    required this.authorization,
     required this.autoText,
     required this.fromCache,
     required this.movieShareLink,
@@ -61,7 +60,6 @@ class PlayerConfiguration {
   final int episodeIndex;
   final String videoId;
   final String sessionId;
-  final String authorization;
   final String autoText;
   final String movieShareLink;
   final bool fromCache;
@@ -91,7 +89,6 @@ class PlayerConfiguration {
     map['episodeIndex'] = episodeIndex;
     map['videoId'] = videoId;
     map['sessionId'] = sessionId;
-    map['authorization'] = authorization;
     map['autoText'] = autoText;
     map['fromCache'] = fromCache;
     map['movieShareLink'] = movieShareLink;
@@ -124,7 +121,6 @@ class PlayerConfiguration {
       'episodeIndex: $episodeIndex, '
       'videoId: $videoId, '
       'sessionId: $sessionId, '
-      'authorization: $authorization, '
       'autoText: $autoText '
       'fromCache: $fromCache, '
       'movieShareLink: $movieShareLink, '

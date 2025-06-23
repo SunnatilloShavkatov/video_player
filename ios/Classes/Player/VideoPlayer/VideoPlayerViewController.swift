@@ -2,7 +2,7 @@
 //  VideoPlayerViewController.swift
 //  Runner
 //
-//  Created by Sunnatillo Shavkatov on 21/04/22.
+//  Created by Sunnatillo Shavkatov on 23/06/24.
 //
 
 import AVFoundation
@@ -331,7 +331,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
     }
 
-    //    //MARK: - Bottom Sheets Configurations
     // bottom sheet tapped
     func onBottomSheetCellTapped(index: Int, type: BottomSheetType) {
         switch type {
@@ -409,60 +408,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
     }
 
-    func getMegogoStream(parameters: [String: String], id: String) -> MegogoStreamResponse? {
-        var megogoResponse: MegogoStreamResponse?
-        let _url: String = playerConfiguration.baseUrl + "megogo/stream"
-        let result = Networking.sharedInstance.getMegogoStream(_url, token: self.playerConfiguration.authorization, sessionId: id, parameters: parameters)
-        switch result {
-        case .failure(let error):
-            print(error)
-            break
-        case .success(let success):
-            megogoResponse = success
-            break
-        }
-        return megogoResponse
-
-    }
-
-    func getPremierStream(episodeId: String) -> PremierStreamResponse? {
-        let _url: String = playerConfiguration.baseUrl + "premier/videos/\(playerConfiguration.videoId)/episodes/\(episodeId)/stream"
-        var premierSteamResponse: PremierStreamResponse?
-        let result = Networking.sharedInstance.getPremierStream(_url, token: playerConfiguration.authorization, sessionId: playerConfiguration.sessionId)
-        switch result {
-        case .failure(let error):
-            print(error)
-        case .success(let success):
-            premierSteamResponse = success
-        }
-        return premierSteamResponse
-    }
-
-    func getChannel(id: String) -> ChannelResponse? {
-        let _url: String = playerConfiguration.baseUrl + "tv/channel/\(id)"
-        var channelResponse: ChannelResponse?
-        let result = Networking.sharedInstance.getChannel(_url, token: playerConfiguration.authorization, sessionId: playerConfiguration.sessionId, parameters: ["client_ip": ""])
-        switch result {
-        case .failure(let error):
-            print(error)
-        case .success(let success):
-            channelResponse = success
-        }
-        return channelResponse
-    }
-
-    func getStreamUrl(url: String) -> String? {
-        var channelResponse: String?
-        let result = Networking.sharedInstance.getStreamUrl(url)
-        switch result {
-        case .failure(let error):
-            print(error)
-        case .success(let success):
-            channelResponse = success
-        }
-        return channelResponse
-    }
-
     func playSeason(_resolutions: [String: String], startAt: Int64?, _episodeIndex: Int, _seasonIndex: Int) {
         self.selectedSeason = _seasonIndex
         self.selectSeasonNum = _episodeIndex
@@ -500,64 +445,24 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
 }
 
 extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, EpisodeDelegate, SubtitleDelegate, ChannelTappedDelegate {
+    func onChannelTapped(channelIndex: Int, tvCategoryIndex: Int) {
+        
+    }
+    
 
     func onTvCategoryTapped(tvCategoryIndex: Int) {
         self.selectTvCategoryIndex = tvCategoryIndex
-    }
-
-    func onChannelTapped(channelIndex: Int, tvCategoryIndex: Int) {
-        if self.selectChannelIndex == channelIndex && self.selectTvCategoryIndex == tvCategoryIndex { return }
-        let channel = self.playerConfiguration.tvCategories[tvCategoryIndex].channels[channelIndex]
-        let success: ChannelResponse? = getChannel(id: channel.id ?? "")
-        if success != nil {
-            self.selectChannelIndex = channelIndex
-            self.selectTvCategoryIndex = tvCategoryIndex
-            self.url = success?.channelStreamIos ?? ""
-            self.resolutions = ["Auto": success?.channelStreamIos ?? ""]
-            self.playerView.changeUrl(url: self.url, title: channel.name ?? "")
-        }
     }
 
     func onEpisodeCellTapped(seasonIndex: Int, episodeIndex: Int) {
         var resolutions: [String: String] = [:]
         var startAt: Int64?
         let episodeId: String = seasons[seasonIndex].movies[episodeIndex].id ?? ""
-        if playerConfiguration.isMegogo {
-            let parameters: [String: String] = ["video_id": episodeId, "access_token": self.playerConfiguration.megogoAccessToken]
-            var success: MegogoStreamResponse?
-            success = self.getMegogoStream(parameters: parameters, id: episodeId)
-            if success != nil {
-
-                resolutions[self.playerConfiguration.autoText] = success?.data.src
-                success?.data.bitrates.forEach({ bitrate in
-                    resolutions["\(bitrate.bitrate)p"] = bitrate.src
-                })
-                startAt = Int64(success?.data.playStartTime ?? 0)
-                self.playSeason(_resolutions: resolutions, startAt: startAt, _episodeIndex: episodeIndex, _seasonIndex: seasonIndex)
-            }
+        seasons[seasonIndex].movies[episodeIndex].resolutions.map { (key: String, value: String) in
+             resolutions[key] = value
+             startAt = 0
         }
-        if playerConfiguration.isPremier {
-            var success: PremierStreamResponse?
-            success = self.getPremierStream(episodeId: episodeId)
-            if success != nil {
-                success?.fileInfo.forEach({ file in
-                    if file.quality == "auto" {
-                        resolutions[self.playerConfiguration.autoText] = file.fileName
-                    } else {
-                        resolutions["\(file.quality)"] = file.fileName
-                    }
-                })
-                startAt = 0
-                self.playSeason(_resolutions: resolutions, startAt: startAt, _episodeIndex: episodeIndex, _seasonIndex: seasonIndex)
-            }
-        }
-        if !playerConfiguration.isMegogo && !playerConfiguration.isPremier {
-            seasons[seasonIndex].movies[episodeIndex].resolutions.map { (key: String, value: String) in
-                resolutions[key] = value
-                startAt = 0
-            }
-            self.playSeason(_resolutions: resolutions, startAt: startAt, _episodeIndex: episodeIndex, _seasonIndex: seasonIndex)
-        }
+        self.playSeason(_resolutions: resolutions, startAt: startAt, _episodeIndex: episodeIndex, _seasonIndex: seasonIndex)
     }
 
     func speedBottomSheet() {
