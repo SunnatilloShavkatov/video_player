@@ -151,8 +151,7 @@ class _MainPageState extends State<MainPage> {
     try {
       final s = await _videoPlayerPlugin.playVideo(
         playerConfig: const PlayerConfiguration(
-          movieShareLink: 'https://uzd.udevs.io/movie/7963?type=premier',
-          baseUrl: 'https://api.spec.uzd.udevs.io/v1/',
+          movieShareLink: 'https://uzd.iiii.io/movie/7963?type=premier',
           initialResolution: {
             'Auto':
                 'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
@@ -180,11 +179,8 @@ class _MainPageState extends State<MainPage> {
           assetPath: '',
           seasonIndex: 0,
           episodeIndex: 0,
-          isMegogo: false,
-          isPremier: false,
           videoId: '',
           sessionId: '',
-          megogoAccessToken: '',
           authorization: '',
           autoText: 'Автонастройка',
           fromCache: true,
@@ -201,62 +197,6 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  Future<void> playVideoTV() async {
-    try {
-      final s =
-          await _videoPlayerPlugin.playVideo(
-            playerConfig: const PlayerConfiguration(
-              movieShareLink: 'https://uzd.udevs.io/movie/7963?type=premier',
-              baseUrl: 'https://api.spec.uzd.udevs.io/v1/',
-              initialResolution: {
-                'Автонастройка':
-                    'https://st1.uzdigital.tv/Setanta1HD/video.m3u8?token=316ee910a8ba3e654e262f580299fc93f0367a3b-41666c6b50654d5a7a62747149497458-1695113748-1695102948&remote=94.232.24.122',
-                '1080p':
-                    'http://st1.uzdigital.tv/Setanta1HD/tracks-v1a1a2/mono.m3u8?remote=94.232.24.122&token=316ee910a8ba3e654e262f580299fc93f0367a3b-41666c6b50654d5a7a62747149497458-1695113748-1695102948&remote=94.232.24.122',
-                '576p':
-                    'http://st1.uzdigital.tv/Setanta1HD/tracks-v2a1a2/mono.m3u8?remote=94.232.24.122&token=316ee910a8ba3e654e262f580299fc93f0367a3b-41666c6b50654d5a7a62747149497458-1695113748-1695102948&remote=94.232.24.122',
-              },
-              resolutions: {
-                'Автонастройка':
-                    'https://st1.uzdigital.tv/Setanta1HD/video.m3u8?token=316ee910a8ba3e654e262f580299fc93f0367a3b-41666c6b50654d5a7a62747149497458-1695113748-1695102948&remote=94.232.24.122',
-              },
-              qualityText: 'Качество',
-              speedText: 'Скорость',
-              lastPosition: 0,
-              title: 'S1 E1  "Женщина-Халк: Адвокат" ',
-              isSerial: false,
-              episodeButtonText: 'Эпизоды',
-              nextButtonText: 'След.эпизод',
-              seasons: [],
-              isLive: true,
-              tvProgramsText: 'Телеканалы',
-              programsInfoList: [],
-              showController: true,
-              playVideoFromAsset: false,
-              assetPath: '',
-              seasonIndex: 0,
-              episodeIndex: 0,
-              isMegogo: false,
-              isPremier: false,
-              videoId: '',
-              sessionId: '',
-              megogoAccessToken: '',
-              authorization: '',
-              autoText: 'Автонастройка',
-              fromCache: true,
-              selectChannelIndex: 0,
-              tvCategories: [],
-            ),
-          ) ??
-          'nothing';
-      if (kDebugMode) {
-        print('result: $s');
-      }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
-    }
-  }
-
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Video Player')),
@@ -265,7 +205,6 @@ class _MainPageState extends State<MainPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         ElevatedButton(onPressed: playVideo, child: const Text('Play Video')),
-        ElevatedButton(onPressed: playVideoTV, child: const Text('Play Video Tv')),
         ElevatedButton(onPressed: download1, child: const Text('Download1')),
         ElevatedButton(onPressed: download2, child: const Text('Download2')),
         ElevatedButton(onPressed: pauseDownload, child: const Text('Pause Download')),

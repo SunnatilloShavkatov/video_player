@@ -4,12 +4,7 @@ class DownloadConfiguration {
   final String title;
   final String url;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['title'] = title;
-    map['url'] = url;
-    return map;
-  }
+  Map<String, dynamic> toMap() => {'title': title, 'url': url};
 
   @override
   String toString() => 'DownloadConfiguration{title: $title, url: $url}';

@@ -6,12 +6,7 @@ class ProgramsInfo {
   final String day;
   final List<TvProgram> tvPrograms;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['day'] = day;
-    map['tvPrograms'] = tvPrograms.map((v) => v.toJson()).toList();
-    return map;
-  }
+  Map<String, dynamic> toMap() => {'day': day, 'tvPrograms': tvPrograms.map((v) => v.toMap()).toList()};
 
   @override
   String toString() => 'ProgramsInfo{day: $day, tvPrograms: $tvPrograms}';

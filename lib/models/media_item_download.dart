@@ -13,12 +13,7 @@ class MediaItemDownload {
   final int state;
   final int downloadedBytes;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['url'] = url;
-    map['percent'] = percent;
-    return map;
-  }
+  Map<String, dynamic> toMap() => {'url': url, 'percent': percent};
 
   @override
   String toString() => 'MediaItemDownload{url: $url, percent: $percent,  state: $state}';

@@ -6,14 +6,7 @@ class TvChannel {
   final String name;
   final Map<String, String> resolutions;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['id'] = id;
-    map['image'] = image;
-    map['name'] = name;
-    map['resolutions'] = resolutions;
-    return map;
-  }
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'image': image, 'resolutions': resolutions};
 
   @override
   String toString() => 'TvChannel{id: $id, image: $image, name: $name}';

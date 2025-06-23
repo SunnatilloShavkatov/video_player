@@ -30,14 +30,10 @@ class PlayerConfiguration {
     required this.assetPath,
     required this.seasonIndex,
     required this.episodeIndex,
-    required this.isMegogo,
-    required this.isPremier,
     required this.videoId,
     required this.sessionId,
-    required this.megogoAccessToken,
     required this.authorization,
     required this.autoText,
-    required this.baseUrl,
     required this.fromCache,
     required this.movieShareLink,
     required this.selectChannelIndex,
@@ -63,21 +59,17 @@ class PlayerConfiguration {
   final String assetPath;
   final int seasonIndex;
   final int episodeIndex;
-  final bool isMegogo;
-  final bool isPremier;
   final String videoId;
   final String sessionId;
-  final String megogoAccessToken;
   final String authorization;
   final String autoText;
-  final String baseUrl;
   final String movieShareLink;
   final bool fromCache;
   final List<TvCategories> tvCategories;
   final int selectChannelIndex;
   final int selectTvCategoryIndex;
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     final map = <String, dynamic>{};
     map['initialResolution'] = initialResolution;
     map['resolutions'] = resolutions;
@@ -88,28 +80,24 @@ class PlayerConfiguration {
     map['isSerial'] = isSerial;
     map['episodeButtonText'] = episodeButtonText;
     map['nextButtonText'] = nextButtonText;
-    map['seasons'] = seasons.map((v) => v.toJson()).toList();
+    map['seasons'] = seasons.map((v) => v.toMap()).toList();
     map['isLive'] = isLive;
     map['tvProgramsText'] = tvProgramsText;
-    map['programsInfoList'] = programsInfoList.map((v) => v.toJson()).toList();
+    map['programsInfoList'] = programsInfoList.map((v) => v.toMap()).toList();
     map['showController'] = showController;
     map['playVideoFromAsset'] = playVideoFromAsset;
     map['assetPath'] = assetPath;
     map['seasonIndex'] = seasonIndex;
     map['episodeIndex'] = episodeIndex;
-    map['isMegogo'] = isMegogo;
-    map['isPremier'] = isPremier;
     map['videoId'] = videoId;
     map['sessionId'] = sessionId;
-    map['megogoAccessToken'] = megogoAccessToken;
     map['authorization'] = authorization;
     map['autoText'] = autoText;
-    map['baseUrl'] = baseUrl;
     map['fromCache'] = fromCache;
     map['movieShareLink'] = movieShareLink;
     map['selectChannelIndex'] = selectChannelIndex;
     map['selectTvCategoryIndex'] = selectTvCategoryIndex;
-    map['tvCategories'] = tvCategories.map((v) => v.toJson()).toList();
+    map['tvCategories'] = tvCategories.map((v) => v.toMap()).toList();
     return map;
   }
 
@@ -134,14 +122,10 @@ class PlayerConfiguration {
       'assetPath: $assetPath, '
       'seasonIndex: $seasonIndex, '
       'episodeIndex: $episodeIndex, '
-      'isMegogo: $isMegogo, '
-      'isPremier: $isPremier, '
       'videoId: $videoId, '
       'sessionId: $sessionId, '
-      'megogoAccessToken: $megogoAccessToken, '
       'authorization: $authorization, '
       'autoText: $autoText '
-      'baseUrl: $baseUrl, '
       'fromCache: $fromCache, '
       'movieShareLink: $movieShareLink, '
       'channels: $tvCategories, '

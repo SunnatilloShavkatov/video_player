@@ -7,13 +7,7 @@ class TvCategories {
   final String title;
   final List<TvChannel> tvChannels;
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['id'] = id;
-    data['title'] = title;
-    data['tvChannels'] = tvChannels.map((v) => v.toJson()).toList();
-    return data;
-  }
+  Map<String, dynamic> toMap() => {'id': id, 'title': title, 'tvChannels': tvChannels.map((v) => v.toJson()).toList()};
 
   @override
   String toString() => 'TvCategories{id: $id, title: $title}';

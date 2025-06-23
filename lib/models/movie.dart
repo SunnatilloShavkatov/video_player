@@ -1,5 +1,5 @@
 class Movie {
-  Movie({
+  const Movie({
     required this.id,
     required this.title,
     required this.description,

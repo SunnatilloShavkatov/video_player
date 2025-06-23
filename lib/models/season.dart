@@ -6,12 +6,7 @@ class Season {
   final String title;
   final List<Movie> movies;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['title'] = title;
-    map['movies'] = movies.map((v) => v.toJson()).toList();
-    return map;
-  }
+  Map<String, dynamic> toMap() => {'title': title, 'movies': movies.map((v) => v.toJson()).toList()};
 
   @override
   String toString() => 'Season{title: $title, movies: $movies}';

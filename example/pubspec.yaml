@@ -1,7 +1,7 @@
 name: video_player_example
-description: Demonstrates how to use the video_player plugin.
-publish_to: 'none'
 version: 1.0.0+1
+publish_to: "none"
+description: "Demonstrates how to use the video_player plugin."
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -14,7 +14,7 @@ dependencies:
     path: ../
 
 dev_dependencies:
-  analysis_lints: ^1.0.1
+  analysis_lints: ^1.0.2
   flutter_test:
     sdk: flutter
 
