@@ -14,9 +14,6 @@ import TinyConstraints
 protocol PlayerViewDelegate: NSObjectProtocol {
     func close(duration: [Int])
     func settingsPressed()
-    func episodesButtonPressed()
-    func channelsButtonPressed()
-    func showPressed()
     func changeOrientation()
     func togglePictureInPictureMode()
     func share()
@@ -85,34 +82,6 @@ class PlayerView: UIView {
 
     private lazy var titleLabelPortrait: TitleLabel = TitleLabel()
     private lazy var titleLabelLandscape: TitleLabel = TitleLabel()
-
-    private lazy var liveLabel: UILabel = {
-        let label = UILabel()
-        label.text = "LIVE"
-        label.textColor = .red
-        label.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        label.isHidden = true
-        return label
-    }()
-
-    private lazy var liveCircle: UIView = {
-        let circle = UIView(frame: CGRect(x: 6, y: 5, width: 12, height: 12))
-        circle.layer.cornerRadius = (circle.frame.size.width) / 2
-        circle.backgroundColor = .red
-        let newCircle = UIView()
-        newCircle.addSubview(circle)
-        newCircle.isHidden = true
-        return newCircle
-    }()
-
-    private lazy var liveStackView: UIStackView = {
-        let liveView = UIStackView(arrangedSubviews: [liveCircle, liveLabel])
-        liveView.height(20)
-        liveView.sizeToFit()
-        liveView.axis = .horizontal
-        liveView.distribution = .equalSpacing
-        return liveView
-    }()
 
     private lazy var currentTimeLabel: UILabel = {
         let label = UILabel()
@@ -221,52 +190,6 @@ class PlayerView: UIView {
         return button
     }()
 
-    private lazy var episodesButton: UIButton = {
-        let button = UIButton()
-        button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
-        if let icon = Svg.serial {
-            button.setImage(icon, for: .normal)
-        }
-        button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
-        button.setTitle("", for: .normal)
-        button.layer.zPosition = 3
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        button.setTitleColor(.white, for: .normal)
-        button.imageView?.contentMode = .scaleAspectFit
-        button.addTarget(self, action: #selector(episodesButtonPressed(_:)), for: .touchUpInside)
-        return button
-    }()
-
-    private lazy var channelsButton: UIButton = {
-        let button = UIButton()
-        button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
-        if let icon = Svg.channels {
-            button.setImage(icon, for: .normal)
-        }
-        button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
-        button.setTitle("", for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        button.setTitleColor(.white, for: .normal)
-        button.imageView?.contentMode = .scaleAspectFit
-        button.addTarget(self, action: #selector(channelsButtonPressed(_:)), for: .touchUpInside)
-        return button
-    }()
-
-    private lazy var showsBtn: UIButton = {
-        let button = UIButton()
-        button.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
-        if let icon = Svg.programmes {
-            button.setImage(icon, for: .normal)
-        }
-        button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
-        button.setTitle("", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        button.imageView?.contentMode = .scaleAspectFit
-        button.addTarget(self, action: #selector(showPressed), for: .touchUpInside)
-        return button
-    }()
-
     private lazy var activityIndicatorView: NVActivityIndicatorView = {
         let activityView = NVActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 50, height: 50), type: .circleStrokeSpin, color: .white)
         return activityView
@@ -327,14 +250,6 @@ class PlayerView: UIView {
 
     private func uiSetup() {
         configureVolume()
-        episodesButton.setTitle(" " + playerConfiguration.episodeButtonText, for: .normal)
-        showsBtn.setTitle("", for: .normal)
-        if playerConfiguration.isLive {
-            episodesButton.isHidden = true
-        } else {
-            showsBtn.isHidden = true
-            channelsButton.isHidden = true
-        }
 
         setSliderThumbTintColor(Colors.white)
 
@@ -403,23 +318,12 @@ class PlayerView: UIView {
                 playerLayer.frame.size.width = videoView.bounds.height * videoAspectRatio
             }
         }
-        if playerConfiguration.isLive {
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                let orientation = windowScene.interfaceOrientation
-                if orientation == .landscapeLeft || orientation == .landscapeRight {
-                    playerLayer.videoGravity = .resize
-                } else {
-                    playerLayer.videoGravity = .resizeAspect
-                }
-            }
-        } else {
-            playerLayer.videoGravity = .resizeAspect
-        }
+        
+        playerLayer.videoGravity = .resizeAspect
         videoView.layer.addSublayer(playerLayer)
         layer.insertSublayer(playerLayer, above: videoView.layer)
-        if !playerConfiguration.isLive {
-            NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
-        }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
         playerConfiguration.resolutions.forEach { (key: String, value: String) in
             if "480p" == key {
                 changeQuality(url: value)
@@ -502,18 +406,6 @@ class PlayerView: UIView {
 
     @objc func changeOrientation(_ sender: UIButton) {
         delegate?.changeOrientation()
-    }
-
-    @objc func episodesButtonPressed(_ sender: UIButton) {
-        delegate?.episodesButtonPressed()
-    }
-
-    @objc func channelsButtonPressed(_ sender: UIButton) {
-        delegate?.channelsButtonPressed()
-    }
-
-    @objc func showPressed(_ sender: UIButton) {
-        delegate?.showPressed()
     }
 
     @objc func skipBackButtonPressed(_ sender: UIButton) {
@@ -623,11 +515,7 @@ class PlayerView: UIView {
         if gesture.state == .changed {
             let scale = gesture.scale
             if scale < 0.9 {
-                if playerConfiguration.isLive {
-                    self.playerLayer.videoGravity = .resize
-                } else {
-                    self.playerLayer.videoGravity = .resizeAspect
-                }
+                self.playerLayer.videoGravity = .resizeAspect
             } else {
                 self.playerLayer.videoGravity = .resizeAspectFill
             }
@@ -704,11 +592,7 @@ class PlayerView: UIView {
         bottomView.addSubview(durationTimeLabel)
         bottomView.addSubview(separatorLabel)
         bottomView.addSubview(timeSlider)
-        bottomView.addSubview(episodesButton)
-        bottomView.addSubview(channelsButton)
-        bottomView.addSubview(showsBtn)
         bottomView.addSubview(rotateButton)
-        bottomView.addSubview(liveStackView)
     }
 
     func addTopViewSubviews() {
@@ -726,8 +610,6 @@ class PlayerView: UIView {
     }
 
     private func addControlButtonConstraints() {
-
-        ///
         brightnessSlider.centerY(to: overlayView)
         brightnessSlider.width(120)
         brightnessSlider.height(12)
@@ -748,10 +630,6 @@ class PlayerView: UIView {
         activityIndicatorView.centerX(to: overlayView)
         activityIndicatorView.centerY(to: overlayView)
         activityIndicatorView.layer.cornerRadius = 20
-        if playerConfiguration.isLive {
-            skipForwardButton.isHidden = true
-            skipBackwardButton.isHidden = true
-        }
     }
 
     private func addBottomViewConstraints(area: UILayoutGuide) {
@@ -783,33 +661,9 @@ class PlayerView: UIView {
 
         separatorLabel.leftToRight(of: currentTimeLabel)
         separatorLabel.centerY(to: currentTimeLabel)
-        channelsButton.rightToLeft(of: rotateButton, offset: -8)
-        channelsButton.centerY(to: rotateButton)
-
+      
         durationTimeLabel.leftToRight(of: separatorLabel)
         durationTimeLabel.centerY(to: separatorLabel)
-
-        episodesButton.rightToLeft(of: rotateButton, offset: -8)
-        episodesButton.centerY(to: rotateButton)
-
-        showsBtn.rightToLeft(of: channelsButton, offset: -16)
-        showsBtn.centerY(to: channelsButton)
-
-        liveStackView.bottomToTop(of: timeSlider)
-        liveStackView.spacing = 24
-        liveStackView.leftToSuperview(offset: 2)
-
-        if !playerConfiguration.isSerial {
-            episodesButton.isHidden = true
-        }
-
-        if playerConfiguration.isLive {
-            liveCircle.isHidden = false
-            liveLabel.isHidden = false
-            currentTimeLabel.isHidden = true
-            durationTimeLabel.isHidden = true
-            separatorLabel.isHidden = true
-        }
     }
 
     private func addTopViewConstraints(area: UILayoutGuide) {
@@ -823,13 +677,9 @@ class PlayerView: UIView {
         //
         settingsButton.right(to: topView)
         settingsButton.centerY(to: topView)
-        if playerConfiguration.isLive {
-            shareButton.isHidden = true
-        } else {
-            shareButton.isHidden = false
-            shareButton.rightToLeft(of: settingsButton)
-            shareButton.centerY(to: topView)
-        }
+       
+        shareButton.rightToLeft(of: settingsButton)
+        shareButton.centerY(to: topView)
 
         pipButton.leftToRight(of: exitButton)
         pipButton.centerY(to: topView)
@@ -885,7 +735,7 @@ class PlayerView: UIView {
     }
 
     func handleMediaPlayerReady() {
-        if !playerConfiguration.isLive {
+        
             if let duration = player.currentItem?.duration, CMTIME_IS_INDEFINITE(duration) {
                 purgeMediaPlayer()
                 playOfflineAsset()
@@ -902,7 +752,6 @@ class PlayerView: UIView {
                     }
                 }
             }
-        }
         if !pendingPlayPosition.isNaN, pendingPlayPosition > 0 {
             player.seek(to: CMTimeMakeWithSeconds(pendingPlayPosition, preferredTimescale: 1)) { [weak self] _ in
                 if self?.playerState == .starting {
@@ -1151,7 +1000,6 @@ class PlayerView: UIView {
         player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
         player.currentItem?.addObserver(self, forKeyPath: "status", options: .new, context: nil)
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
-        if !playerConfiguration.isLive {
             let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
             let mainQueue = DispatchQueue.main
             player.addPeriodicTimeObserver(
@@ -1168,9 +1016,6 @@ class PlayerView: UIView {
                     self?.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.currentTime())
                     self?.streamPosition = CMTimeGetSeconds(time)
                 })
-        } else {
-            self.timeSlider.value = 1
-        }
     }
 
     func removeMediaPlayerObservers() {

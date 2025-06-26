@@ -148,9 +148,6 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                 vc.speedLabelText = playerConfiguration.speedText
                 vc.resolutions = sortedResolutions
                 vc.selectedQualityText = playerConfiguration.autoText
-                vc.seasons = playerConfiguration.seasons
-                vc.selectChannelIndex = playerConfiguration.selectChannelIndex
-                vc.selectTvCategoryIndex = playerConfiguration.selectTvCategoryIndex
                 SwiftVideoPlayerPlugin.viewController.present(vc, animated: true, completion: nil)
                 return
             }

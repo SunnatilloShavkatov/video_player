@@ -29,7 +29,7 @@ enum CastSessionStatus {
     case alreadyConnected
 }
 
-class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
+class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {    
 
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
 
@@ -44,14 +44,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     var qualityLabelText = ""
     var speedLabelText = ""
     var subtitleLabelText = "Субтитле"
-    var selectedSeason: Int = 0
-    var selectSeasonNum: Int = 0
-    var selectChannelIndex: Int = 0
-    var selectTvCategoryIndex: Int = 0
     var isRegular: Bool = false
     var resolutions: [String: String]?
     var sortedResolutions: [String] = []
-    var seasons: [Season] = [Season]()
     var qualityDelegate: QualityDelegate!
     var speedDelegate: SpeedDelegate!
     var subtitleDelegate: SubtitleDelegate!
@@ -192,16 +187,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         portraitConstraints.append(contentsOf: playerView.edgesToSuperview())
     }
 
-    func showPressed() {
-        let vc = ProgramViewController()
-        vc.modalPresentationStyle = .custom
-        vc.programInfo = self.playerConfiguration.programsInfoList
-        vc.menuHeight = self.playerConfiguration.programsInfoList.isEmpty ? 250 : UIScreen.main.bounds.height * 0.75
-        if !(vc.programInfo.isEmpty) {
-            self.present(vc, animated: true, completion: nil)
-        }
-    }
-
     func close(duration: [Int]) {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let orientation = windowScene.interfaceOrientation
@@ -248,32 +233,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 UIViewController.attemptRotationToDeviceOrientation()
             }
         }
-    }
-
-    func updateSeasonNum(index: Int) {
-        selectedSeason = index
-    }
-
-    //MARK: - ****** Channels *******
-    func channelsButtonPressed() {
-        let episodeVC = CollectionViewController()
-        episodeVC.modalPresentationStyle = .custom
-        episodeVC.channels = self.playerConfiguration.tvCategories[selectTvCategoryIndex].channels
-        episodeVC.tv = self.playerConfiguration.tvCategories
-        episodeVC.delegate = self
-        episodeVC.tvCategoryIndex = selectTvCategoryIndex
-        self.present(episodeVC, animated: true, completion: nil)
-    }
-
-    //MARK: - ****** SEASONS *******
-    func episodesButtonPressed() {
-        let episodeVC = EpisodeCollectionUI()
-        episodeVC.modalPresentationStyle = .custom
-        episodeVC.seasons = self.seasons
-        episodeVC.delegate = self
-        episodeVC.seasonIndex = selectedSeason
-        episodeVC.episodeIndex = selectSeasonNum
-        self.present(episodeVC, animated: true, completion: nil)
     }
 
     func settingsPressed() {
@@ -403,64 +362,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }
-
-    func playSeason(_resolutions: [String: String], startAt: Int64?, _episodeIndex: Int, _seasonIndex: Int) {
-        self.selectedSeason = _seasonIndex
-        self.selectSeasonNum = _episodeIndex
-        self.resolutions = SortFunctions.sortWithKeys(_resolutions)
-        let isFind =
-            resolutions?.contains(where: { (key, value) in
-                if key == self.selectedQualityText {
-                    return true
-                }
-                return false
-            }) ?? false
-        let title = seasons[_seasonIndex].movies[_episodeIndex].title ?? ""
-        if isFind {
-            let videoUrl = self.resolutions?[selectedQualityText]
-            guard videoUrl != nil else {
-                return
-            }
-            guard URL(string: videoUrl!) != nil else {
-                return
-            }
-            if self.playerConfiguration.url != videoUrl! {
-                self.playerView.changeUrl(url: videoUrl, title: "S\(_seasonIndex + 1)" + " " + "E\(_episodeIndex + 1)" + " \u{22}\(title)\u{22}")
-                self.url = videoUrl
-            } else {
-                print("ERROR")
-            }
-            return
-        } else if !self.resolutions!.isEmpty {
-            let videoUrl = Array(resolutions!.values)[0]
-            self.playerView.changeUrl(url: videoUrl, title: title)
-            self.url = videoUrl
-            return
-        }
-    }
 }
 
-extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, EpisodeDelegate, SubtitleDelegate, ChannelTappedDelegate {
-    func onChannelTapped(channelIndex: Int, tvCategoryIndex: Int) {
-        
-    }
-    
-
-    func onTvCategoryTapped(tvCategoryIndex: Int) {
-        self.selectTvCategoryIndex = tvCategoryIndex
-    }
-
-    func onEpisodeCellTapped(seasonIndex: Int, episodeIndex: Int) {
-        var resolutions: [String: String] = [:]
-        var startAt: Int64?
-        let episodeId: String = seasons[seasonIndex].movies[episodeIndex].id ?? ""
-        seasons[seasonIndex].movies[episodeIndex].resolutions.map { (key: String, value: String) in
-             resolutions[key] = value
-             startAt = 0
-        }
-        self.playSeason(_resolutions: resolutions, startAt: startAt, _episodeIndex: episodeIndex, _seasonIndex: seasonIndex)
-    }
-
+extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, SubtitleDelegate {
     func speedBottomSheet() {
         showSpeedBottomSheet()
     }

@@ -54,15 +54,11 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_ALWAYS
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_NEVER
-import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import uz.shs.video_player.EXTRA_ARGUMENT
 import uz.shs.video_player.PLAYER_ACTIVITY_FINISH
 import uz.shs.video_player.R
-import uz.shs.video_player.adapters.EpisodePagerAdapter
 import uz.shs.video_player.adapters.QualitySpeedAdapter
 import uz.shs.video_player.models.BottomSheet
 import uz.shs.video_player.models.PlayerConfiguration
@@ -93,11 +89,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private lateinit var timer: LinearLayout
     private lateinit var exoPosition: TextView
     private lateinit var videoPosition: TextView
-    private lateinit var live: LinearLayout
-    private lateinit var episodesButton: LinearLayout
-    private lateinit var episodesText: TextView
-    private lateinit var nextButton: LinearLayout
-    private lateinit var nextText: TextView
     private lateinit var zoom: ImageView
     private lateinit var orientation: ImageView
     private lateinit var exoProgress: DefaultTimeBar
@@ -117,15 +108,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var volume: Double = 0.0
     private var maxVolume: Double = 0.0
     private var sWidth: Int = 0
-    private var seasonIndex: Int = 0
-    private var episodeIndex: Int = 0
     private val tag = "TAG1"
     private var currentOrientation: Int = Configuration.ORIENTATION_PORTRAIT
     private var titleText = ""
     private lateinit var url: String
     private var mPlaybackState: PlaybackState? = null
-    private var channelIndex: Int = 0
-    private var tvCategoryIndex: Int = 0
 
     enum class PlaybackState {
         PLAYING, PAUSED, BUFFERING, IDLE
@@ -143,10 +130,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         window.navigationBarColor = Color.BLACK
 
         playerConfiguration = intent.getSerializableExtra(EXTRA_ARGUMENT) as PlayerConfiguration
-        seasonIndex = playerConfiguration.seasonIndex
-        episodeIndex = playerConfiguration.episodeIndex
-        channelIndex = playerConfiguration.selectChannelIndex
-        tvCategoryIndex = playerConfiguration.selectTvCategoryIndex
         currentQuality =
             if (playerConfiguration.initialResolution.isNotEmpty()) playerConfiguration.initialResolution.keys.first() else ""
         titleText = playerConfiguration.title
@@ -365,39 +348,18 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         playPause = findViewById(R.id.video_play_pause)
         progressbar = findViewById(R.id.video_progress_bar)
         timer = findViewById(R.id.timer)
-        if (playerConfiguration.isLive) {
-            timer.visibility = View.GONE
-        }
+
         videoPosition = findViewById(R.id.video_position)
         exoPosition = findViewById(R.id.exo_position)
-        live = findViewById(R.id.live)
-        if (playerConfiguration.isLive) {
-            shareMovieLinkIv.visibility = View.GONE
-            live.visibility = View.VISIBLE
-        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             pip.visibility = View.GONE
         }
-        episodesButton = findViewById(R.id.button_episodes)
-        episodesText = findViewById(R.id.text_episodes)
-        if (playerConfiguration.seasons.isNotEmpty()) {
-            episodesButton.visibility = View.VISIBLE
-            episodesText.text = playerConfiguration.episodeButtonText
-        }
-        nextButton = findViewById(R.id.button_next)
-        nextText = findViewById(R.id.text_next)
 
-        if (playerConfiguration.seasons.isNotEmpty()) if (playerConfiguration.isSerial && !(seasonIndex == playerConfiguration.seasons.size - 1 && episodeIndex == playerConfiguration.seasons[seasonIndex].movies.size - 1)) {
-            nextText.text = playerConfiguration.nextButtonText
-        }
         zoom = findViewById(R.id.zoom)
         orientation = findViewById(R.id.orientation)
         exoProgress = findViewById(R.id.exo_progress)
-        if (playerConfiguration.isLive) {
-            exoProgress.visibility = View.GONE
-            rewind.visibility = View.GONE
-            forward.visibility = View.GONE
-        }
+
         findViewById<PlayerView>(R.id.exo_player_view).setOnTouchListener { _, motionEvent ->
             if (motionEvent.pointerCount == 2) {
                 scaleGestureDetector.onTouchEvent(motionEvent)
@@ -489,38 +451,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             }
         }
 
-        episodesButton.setOnClickListener {
-            if (playerConfiguration.seasons.isNotEmpty()) showEpisodesBottomSheet()
-        }
-        nextButton.setOnClickListener {
-            if (playerConfiguration.seasons.isEmpty()) {
-                return@setOnClickListener
-            }
-            if (seasonIndex < playerConfiguration.seasons.size) {
-                if (episodeIndex < playerConfiguration.seasons[seasonIndex].movies.size - 1) {
-                    episodeIndex++
-                } else {
-                    seasonIndex++
-                }
-            }
-            if (isLastEpisode()) {
-                nextButton.visibility = View.GONE
-            } else {
-                nextButton.visibility = View.VISIBLE
-            }
-            title.text =
-                "S${seasonIndex + 1} E${episodeIndex + 1} " + playerConfiguration.seasons[seasonIndex].movies[episodeIndex].title
-            url =
-                playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
-                    ?: ""
-            val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-            val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(url.toUri()))
-            player.setMediaSource(hlsMediaSource)
-            player.prepare()
-            player.playWhenReady
-        }
-
         zoom.setOnClickListener {
             when (playerView.resizeMode) {
                 AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> {
@@ -547,9 +477,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 } else {
-                    if (playerConfiguration.isLive) {
-                        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                    }
                     ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
             it.postDelayed({
@@ -599,17 +526,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         currentOrientation = newConfig.orientation
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setFullScreen()
-            if (playerConfiguration.isLive) {
-                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            }
             title.text = title1.text
             title.visibility = View.VISIBLE
             title1.text = ""
             title1.visibility = View.GONE
-            if (playerConfiguration.isSerial) if (isLastEpisode()) nextButton.visibility =
-                View.VISIBLE
-            else nextButton.visibility = View.GONE
-            else nextButton.visibility = View.GONE
             zoom.visibility = View.VISIBLE
             when (currentBottomSheet) {
                 BottomSheet.EPISODES -> {
@@ -633,7 +553,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             title1.visibility = View.VISIBLE
             title.text = ""
             title.visibility = View.INVISIBLE
-            nextButton.visibility = View.GONE
             zoom.visibility = View.GONE
             playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             when (currentBottomSheet) {
@@ -673,89 +592,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private var currentBottomSheet = BottomSheet.NONE
 
-    private fun isLastEpisode(): Boolean {
-        return playerConfiguration.seasons.size == seasonIndex + 1 && playerConfiguration.seasons[playerConfiguration.seasons.size - 1].movies.size == episodeIndex + 1
-    }
-
-
     private var backButtonEpisodeBottomSheet: ImageView? = null
-    private fun showEpisodesBottomSheet() {
-        currentBottomSheet = BottomSheet.EPISODES
-        val bottomSheetDialog = BottomSheetDialog(this, R.style.BottomSheetDialog)
-        listOfAllOpenedBottomSheets.add(bottomSheetDialog)
-        bottomSheetDialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
-        bottomSheetDialog.setContentView(R.layout.episodes)
-        backButtonEpisodeBottomSheet = bottomSheetDialog.findViewById(R.id.episode_sheet_back)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            backButtonEpisodeBottomSheet?.visibility = View.GONE
-        } else {
-            backButtonEpisodeBottomSheet?.visibility = View.VISIBLE
-        }
-        backButtonEpisodeBottomSheet?.setOnClickListener {
-            bottomSheetDialog.dismiss()
-        }
-        val titleBottomSheet = bottomSheetDialog.findViewById<TextView>(R.id.episodes_sheet_title)
-        titleBottomSheet?.text = title.text
-        val tabLayout = bottomSheetDialog.findViewById<TabLayout>(R.id.episode_tabs)
-        val viewPager = bottomSheetDialog.findViewById<ViewPager2>(R.id.episode_view_pager)
-        viewPager?.adapter = EpisodePagerAdapter(
-            viewPager!!,
-            this,
-            playerConfiguration.seasons,
-            seasonIndex,
-            episodeIndex,
-            object : EpisodePagerAdapter.OnClickListener {
-                @SuppressLint("SetTextI18n")
-                override fun onClick(epIndex: Int, seasIndex: Int) {
-                    seasonIndex = seasIndex
-                    episodeIndex = epIndex
-                    if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                        titleText =
-                            "S${seasonIndex + 1} E${episodeIndex + 1} " + playerConfiguration.seasons[seasonIndex].movies[episodeIndex].title
-                        title.text = titleText
-                        title1.text = title.text
-                        title1.visibility = View.VISIBLE
-                        title.text = ""
-                        title.visibility = View.INVISIBLE
-                    } else {
-                        titleText =
-                            "S${seasonIndex + 1} E${episodeIndex + 1} " + playerConfiguration.seasons[seasonIndex].movies[episodeIndex].title
-                        title.text = titleText
-                        title.visibility = View.VISIBLE
-                        title1.text = ""
-                        title1.visibility = View.GONE
-                    }
-                    url =
-                        playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality]
-                            ?: ""
-                    val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-                    val hlsMediaSource: HlsMediaSource =
-                        HlsMediaSource.Factory(dataSourceFactory)
-                            .createMediaSource(MediaItem.fromUri(url.toUri()))
-                    player.setMediaSource(hlsMediaSource)
-                    player.prepare()
-                    player.playWhenReady
-                    bottomSheetDialog.dismiss()
-                }
-            })
-        viewPager?.let {
-            TabLayoutMediator(tabLayout!!, it) { tab, position ->
-                tab.text = playerConfiguration.seasons[position].title
-            }
-        }?.attach()
-        bottomSheetDialog.show()
-        bottomSheetDialog.setOnDismissListener {
-            currentBottomSheet = BottomSheet.NONE
-        }
-    }
-
     private fun dismissAllBottomSheets() {
         for (bottomSheet in listOfAllOpenedBottomSheets) {
             bottomSheet.dismiss()
         }
         listOfAllOpenedBottomSheets.clear()
     }
-
 
     private var speeds = mutableListOf("0.5x", "1.0x", "1.5x", "2.0x")
     private var currentQuality = ""
@@ -794,19 +637,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         qualityText?.text = currentQuality
         speedText?.text = currentSpeed
         quality?.setOnClickListener {
-            if (playerConfiguration.isSerial) {
-                if (playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions.isNotEmpty()) showQualitySpeedSheet(
-                    currentQuality,
-                    ArrayList(playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions.keys),
-                    true,
+            if (playerConfiguration.resolutions.isNotEmpty()) {
+                val resolutionsList = ArrayList(playerConfiguration.resolutions.keys)
+                showQualitySpeedSheet(
+                    currentQuality, resolutionsList, true
                 )
-            } else {
-                if (playerConfiguration.resolutions.isNotEmpty()) {
-                    val resolutionsList = ArrayList(playerConfiguration.resolutions.keys)
-                    showQualitySpeedSheet(
-                        currentQuality, resolutionsList, true
-                    )
-                }
             }
         }
         speed?.setOnClickListener {
@@ -895,9 +730,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                         if (player.isPlaying) {
                             player.pause()
                         }
-                        val url =
-                            if (playerConfiguration.isSerial) playerConfiguration.seasons[seasonIndex].movies[episodeIndex].resolutions[currentQuality] else playerConfiguration.resolutions[currentQuality]
-                        Log.d(tag, "onClick: $url")
+                        val url = playerConfiguration.resolutions[currentQuality]
                         val bitrate: Int? = url?.toIntOrNull()
                         if (bitrate != null) {
                             player.trackSelectionParameters =

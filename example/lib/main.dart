@@ -32,8 +32,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
-  static const String downloadUrl =
-      'https://cdn.ooo.io/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
+  static const String downloadUrl = 'https://cdn.ooo.io/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
 
   Future<void> download1() async {
     try {
@@ -167,24 +166,10 @@ class _MainPageState extends State<MainPage> {
           speedText: 'Скорость',
           lastPosition: 0,
           title: 'S1 E1  "Женщина-Халк: Адвокат" ',
-          isSerial: false,
-          episodeButtonText: 'Эпизоды',
-          nextButtonText: 'След.эпизод',
-          seasons: [],
-          isLive: false,
-          tvProgramsText: 'Телеканалы',
-          programsInfoList: [],
           showController: true,
           playVideoFromAsset: false,
           assetPath: '',
-          seasonIndex: 0,
-          episodeIndex: 0,
-          videoId: '',
-          sessionId: '',
           autoText: 'Автонастройка',
-          fromCache: true,
-          selectChannelIndex: 0,
-          tvCategories: [],
         ),
       );
       if (kDebugMode) {

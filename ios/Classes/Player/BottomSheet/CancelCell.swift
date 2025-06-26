@@ -9,7 +9,6 @@ import UIKit
 
 class CancelCell: UITableViewCell {
     
-    
     lazy var cancelView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
@@ -21,6 +20,7 @@ class CancelCell: UITableViewCell {
         div.backgroundColor = .gray.withAlphaComponent(0.6)
         return div
     }()
+    
     var cancelLabel : UILabel = {
         let label = UILabel()
         label.text = "Отменить"
@@ -28,6 +28,7 @@ class CancelCell: UITableViewCell {
         label.font = UIFont.systemFont(ofSize: 15,weight: .medium)
         return label
     }()
+    
     lazy var cancelBtn: UIImageView = {
         let imageView = UIImageView()
         let image = Svg.exit!
@@ -38,6 +39,7 @@ class CancelCell: UITableViewCell {
         imageView.isHidden = false
         return imageView
     }()
+    
     lazy var horizontalStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.addArrangedSubviews(cancelBtn, cancelLabel)
@@ -47,6 +49,7 @@ class CancelCell: UITableViewCell {
         stackView.backgroundColor = .clear
         return stackView
     }()
+    
     lazy var verticalStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.addArrangedSubviews(divider, horizontalStackView)
@@ -66,6 +69,7 @@ class CancelCell: UITableViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
     private func setupView() {
         addSubview(cancelView)
         setupConstraints()

@@ -22,9 +22,6 @@ struct Svg {
     static let done :UIImage? = UIImage(named: "done", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
     static let playSpeed :UIImage? = UIImage(named: "play_speed", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
     static let settings :UIImage? = UIImage(named: "settings", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
-    static let programmes :UIImage? = UIImage(named: "programmes", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
-    static let serial :UIImage? = UIImage(named: "serial", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
     static let serialPlay :UIImage? = UIImage(named: "serial_play", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
     static let share :UIImage? = UIImage(named: "share", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
-    static let channels :UIImage? = UIImage(named: "channels", in: Bundle(for: SwiftVideoPlayerPlugin.self), compatibleWith: nil)
 }

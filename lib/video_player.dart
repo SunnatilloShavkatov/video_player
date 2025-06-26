@@ -9,11 +9,7 @@ import 'package:video_player/video_player_platform_interface.dart';
 
 export 'package:video_player/models/download_configuration.dart';
 export 'package:video_player/models/media_item_download.dart';
-export 'package:video_player/models/movie.dart';
 export 'package:video_player/models/player_configuration.dart';
-export 'package:video_player/models/programs_info.dart';
-export 'package:video_player/models/season.dart';
-export 'package:video_player/models/tv_program.dart';
 
 final class VideoPlayer {
   const VideoPlayer._();

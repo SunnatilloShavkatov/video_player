@@ -192,3 +192,9 @@ extension String {
         return (self as NSString).floatValue
     }
 }
+
+extension UIStackView {
+    func addArrangedSubviews(_ views: UIView...) {
+        views.forEach { self.addArrangedSubview($0) }
+    }
+}
