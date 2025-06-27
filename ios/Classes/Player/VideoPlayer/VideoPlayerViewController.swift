@@ -188,10 +188,12 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     func close(duration: [Int]) {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let orientation = windowScene.interfaceOrientation
-            if orientation == .landscapeLeft || orientation == .landscapeRight {
-                changeOrientation()
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                let orientation = windowScene.interfaceOrientation
+                if orientation == .landscapeLeft || orientation == .landscapeRight {
+                    changeOrientation()
+                }
             }
         }
         self.dismiss(animated: true, completion: nil)
