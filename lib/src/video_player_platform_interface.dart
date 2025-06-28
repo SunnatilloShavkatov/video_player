@@ -1,7 +1,7 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:video_player/models/media_item_download.dart';
+import 'package:video_player/src/models/media_item_download.dart';
 
-import 'package:video_player/video_player_method_channel.dart';
+import 'package:video_player/src/video_player_method_channel.dart';
 
 abstract class VideoPlayerPlatform extends PlatformInterface {
   /// Constructs a VideoPlayerPlatform.

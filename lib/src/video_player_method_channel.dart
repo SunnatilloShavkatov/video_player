@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/models/media_item_download.dart';
+import 'package:video_player/src/models/media_item_download.dart';
 
-import 'package:video_player/video_player_platform_interface.dart';
+import 'package:video_player/src/video_player_platform_interface.dart';
 
 /// An implementation of [VideoPlayerPlatform] that uses method channels.
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
