@@ -265,7 +265,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         player = ExoPlayer.Builder(this).build()
         playerView.player = player
         playerView.keepScreenOn = true
-        playerView.useController = playerConfiguration.showController
+        playerView.useController = true
         player.setMediaSource(hlsMediaSource)
         player.seekTo(playerConfiguration.lastPosition * 1000)
         player.prepare()

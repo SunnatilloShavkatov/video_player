@@ -10,7 +10,6 @@ class PlayerConfiguration {
     required this.resolutions,
     required this.lastPosition,
     required this.movieShareLink,
-    required this.showController,
     required this.initialResolution,
     required this.playVideoFromAsset,
   });
@@ -21,27 +20,23 @@ class PlayerConfiguration {
   final String autoText;
   final String assetPath;
   final String qualityText;
-  final bool showController;
   final String movieShareLink;
   final bool playVideoFromAsset;
   final Map<String, String> resolutions;
   final Map<String, String> initialResolution;
 
-  Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{};
-    map['initialResolution'] = initialResolution;
-    map['resolutions'] = resolutions;
-    map['qualityText'] = qualityText;
-    map['speedText'] = speedText;
-    map['lastPosition'] = lastPosition;
-    map['title'] = title;
-    map['showController'] = showController;
-    map['playVideoFromAsset'] = playVideoFromAsset;
-    map['assetPath'] = assetPath;
-    map['autoText'] = autoText;
-    map['movieShareLink'] = movieShareLink;
-    return map;
-  }
+  Map<String, dynamic> toMap() => {
+    'title': title,
+    'autoText': autoText,
+    'assetPath': assetPath,
+    'speedText': speedText,
+    'qualityText': qualityText,
+    'lastPosition': lastPosition,
+    'movieShareLink': movieShareLink,
+    'playVideoFromAsset': playVideoFromAsset,
+    'resolutions': resolutions,
+    'initialResolution': initialResolution,
+  };
 
   @override
   String toString() =>
@@ -52,7 +47,6 @@ class PlayerConfiguration {
       'speedText: $speedText, '
       'lastPosition: $lastPosition, '
       'title: $title, '
-      'showController: $showController, '
       'playVideoFromAsset: $playVideoFromAsset, '
       'assetPath: $assetPath, '
       'autoText: $autoText '

@@ -9,22 +9,22 @@ import Foundation
 
 @IBDesignable
 class IconButton: UIButton {
-
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         shared()
     }
-
+    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         shared()
     }
-
+    
     override func prepareForInterfaceBuilder() {
         super.prepareForInterfaceBuilder()
         shared()
     }
-
+    
     func shared() {
         self.tintColor = .white
         self.layer.zPosition = 3

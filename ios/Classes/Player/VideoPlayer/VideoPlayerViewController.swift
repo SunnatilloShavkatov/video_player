@@ -29,13 +29,13 @@ enum CastSessionStatus {
     case alreadyConnected
 }
 
-class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {    
-
+class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
+    
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
-
+    
     private var pipController: AVPictureInPictureController!
     private var pipPossibleObservation: NSKeyValueObservation?
-
+    
     /// chrome cast
     private var localPlaybackImplicitlyPaused: Bool = false
     ///
@@ -57,31 +57,31 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var selectedSpeedText = "1.0x"
     var selectedQualityText = "Auto"
     private var selectedSubtitle = "None"
-
+    
     private lazy var playerView: PlayerView = {
         return PlayerView()
     }()
-
+    
     private lazy var screenshotPreventView = ScreenshotPreventingView(contentView: playerView)
-
+    
     private var portraitConstraints = Constraints()
     private var landscapeConstraints = Constraints()
-
+    
     init() {
         super.init(nibName: nil, bundle: nil)
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
     func setupPictureInPicture() {
         if AVPictureInPictureController.isPictureInPictureSupported() {
             pipController = AVPictureInPictureController(playerLayer: playerView.playerLayer)
             pipController.delegate = self
             pipPossibleObservation = pipController.observe(
                 \AVPictureInPictureController.isPictureInPicturePossible,
-                options: [.initial, .new]
+                 options: [.initial, .new]
             ) { [weak self] _, change in
                 self?.playerView.setIsPipEnabled(v: change.newValue ?? false)
             }
@@ -89,15 +89,15 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             playerView.setIsPipEnabled(v: false)
         }
     }
-
+    
     func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         playerView.isHiddenPiP(isPiP: true)
     }
-
+    
     func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         playerView.isHiddenPiP(isPiP: false)
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         url = playerConfiguration.url
@@ -119,28 +119,28 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         screenshotPreventView.edgesToSuperview()
         screenshotPreventView.preventScreenCapture = true
     }
-
+    
     override func viewWillAppear(_ animated: Bool) {
         switchToLocalPlayback()
         setupPictureInPicture()
         super.viewWillAppear(animated)
     }
-
+    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
-
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(true)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
-
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
         NotificationCenter.default.removeObserver(self)
     }
-
+    
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         playerView.changeConstraints()
@@ -152,41 +152,41 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 addVideoPortraitConstraints()
             }
         }
-
+        
     }
-
+    
     override var prefersHomeIndicatorAutoHidden: Bool {
         return true
     }
-
+    
     override var childForHomeIndicatorAutoHidden: UIViewController? {
         return nil
     }
-
+    
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
         return [.bottom]
     }
-
+    
     func populateMediaInfo(_ autoPlay: Bool, playPosition: TimeInterval) {
         playerView.loadMedia(autoPlay: autoPlay, playPosition: playPosition, area: view.safeAreaLayoutGuide)
     }
-
+    
     func switchToLocalPlayback() {
         let playPosition: TimeInterval = TimeInterval(playerConfiguration.lastPosition)
         populateMediaInfo(true, playPosition: playPosition)
     }
-
+    
     private func addVideosLandscapeConstraints() {
         portraitConstraints.deActivate()
         landscapeConstraints.append(contentsOf: playerView.edgesToSuperview())
     }
-
+    
     private func addVideoPortraitConstraints() {
         landscapeConstraints.deActivate()
         portraitConstraints.append(contentsOf: playerView.center(in: view))
         portraitConstraints.append(contentsOf: playerView.edgesToSuperview())
     }
-
+    
     func close(duration: [Int]) {
         if UIDevice.current.userInterfaceIdiom != .pad {
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
@@ -199,7 +199,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         self.dismiss(animated: true, completion: nil)
         delegate?.getDuration(duration: duration)
     }
-
+    
     func share() {
         if let link = NSURL(string: playerConfiguration.movieShareLink) {
             let objectsToShare = [link] as [Any]
@@ -208,7 +208,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.present(activityVC, animated: true, completion: nil)
         }
     }
-
+    
     func changeOrientation() {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let orientation = windowScene.interfaceOrientation
@@ -224,7 +224,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 windowScene.requestGeometryUpdate(
                     .iOS(
                         interfaceOrientations: (orientation == .landscapeLeft || orientation == .landscapeRight)
-                            ? .portrait : .landscapeRight)
+                        ? .portrait : .landscapeRight)
                 ) {
                     error in
                     print(error)
@@ -236,7 +236,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             }
         }
     }
-
+    
     func settingsPressed() {
         let vc = SettingVC()
         vc.modalPresentationStyle = .custom
@@ -249,7 +249,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         ]
         self.present(vc, animated: true, completion: nil)
     }
-
+    
     func togglePictureInPictureMode() {
         if pipController.isPictureInPictureActive {
             pipController.stopPictureInPicture()
@@ -257,7 +257,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             pipController.startPictureInPicture()
         }
     }
-
+    
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "pip" {
             if self.pipController.isPictureInPictureActive {
@@ -267,7 +267,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             }
         }
     }
-
+    
     // settings bottom sheet tapped
     func onSettingsBottomSheetCellTapped(index: Int) {
         switch index {
@@ -287,7 +287,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             break
         }
     }
-
+    
     // bottom sheet tapped
     func onBottomSheetCellTapped(index: Int, type: BottomSheetType) {
         switch type {
@@ -314,7 +314,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             break
         }
     }
-
+    
     private func showSubtitleBottomSheet() {
         let subtitles = playerView.setSubtitleCurrentItem()
         let bottomSheetVC = BottomSheetViewController()
@@ -328,7 +328,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }
-
+    
     func showQualityBottomSheet() {
         let resList = resolutions ?? ["480p": playerConfiguration.url]
         let array = Array(resList.keys)
@@ -351,7 +351,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }
-
+    
     func showSpeedBottomSheet() {
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .custom
@@ -370,11 +370,11 @@ extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, SubtitleDel
     func speedBottomSheet() {
         showSpeedBottomSheet()
     }
-
+    
     func qualityBottomSheet() {
         showQualityBottomSheet()
     }
-
+    
     func subtitleBottomSheet() {
         showSubtitleBottomSheet()
     }

@@ -5,12 +5,11 @@ import java.io.Serializable
 
 data class PlayerConfiguration(
     @SerializedName("title") val title: String,
-    @SerializedName("speedText") val speedText: String,
-    @SerializedName("lastPosition") val lastPosition: Long,
     @SerializedName("autoText") val autoText: String,
     @SerializedName("assetPath") val assetPath: String,
+    @SerializedName("speedText") val speedText: String,
     @SerializedName("qualityText") val qualityText: String,
-    @SerializedName("showController") val showController: Boolean,
+    @SerializedName("lastPosition") val lastPosition: Long,
     @SerializedName("movieShareLink") val movieShareLink: String,
     @SerializedName("playVideoFromAsset") val playVideoFromAsset: Boolean,
     @SerializedName("resolutions") var resolutions: HashMap<String, String>,

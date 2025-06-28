@@ -162,14 +162,13 @@ class _MainPageState extends State<MainPage> {
             '720p': '1321824',
             '360p': '1937246',
           },
-          qualityText: 'Качество',
-          speedText: 'Скорость',
+          qualityText: 'Quality',
+          speedText: 'Speed',
           lastPosition: 0,
-          title: 'S1 E1  "Женщина-Халк: Адвокат" ',
-          showController: true,
+          title: 'S1 E1   ',
           playVideoFromAsset: false,
           assetPath: '',
-          autoText: 'Автонастройка',
+          autoText: 'Auto',
         ),
       );
       if (kDebugMode) {

@@ -9,11 +9,11 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     private var videoView: UIView
     private var videoViewController: VideoViewController
     private var _methodChannel: FlutterMethodChannel
-
+    
     func view() -> UIView {
         return videoView
     }
-
+    
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
@@ -33,13 +33,13 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         super.init()
         _methodChannel.setMethodCallHandler(onMethodCall)
     }
-
+    
     deinit {
         self.videoViewController.dismiss(animated: true)
         NotificationCenter.default.removeObserver(self)
         self._methodChannel.setMethodCallHandler(nil)
     }
-
+    
     func onMethodCall(call: FlutterMethodCall, result: FlutterResult) {
         switch call.method {
         case "setUrl":
@@ -58,7 +58,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(FlutterMethodNotImplemented)
         }
     }
-
+    
     func setUrl(call: FlutterMethodCall, result: FlutterResult) {
         let arguments = call.arguments as? [String: Any]
         if let args = arguments {
@@ -69,7 +69,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(nil)
         }
     }
-
+    
     func setAssets(call: FlutterMethodCall, result: FlutterResult) {
         let arguments = call.arguments as? [String: Any]
         if let args = arguments {
@@ -80,19 +80,19 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             result(nil)
         }
     }
-
+    
     func setPause(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.pause()
     }
-
+    
     func setPlay(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.play()
     }
-
+    
     func setMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.mute()
     }
-
+    
     func setUnMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.unMute()
     }

@@ -4,18 +4,18 @@ import Flutter
 import UIKit
 
 public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegate {
-
+    
     public static var viewController = FlutterViewController()
     private var flutterResult: FlutterResult?
     private static var channel: FlutterMethodChannel?
-
+    
     private var didRestorePersistenceManager = false
     fileprivate let downloadIdentifier = "\(Bundle.main.bundleIdentifier!).background"
     /// The AVAssetDownloadURLSession to use for managing AVAssetDownloadTasks.
     fileprivate var assetDownloadURLSession: AVAssetDownloadURLSession!
     /// Internal map of AVAggregateAssetDownloadTask to its corresponding Asset.
     fileprivate var activeDownloadsMap = [AVAggregateAssetDownloadTask: MediaItemDownload]()
-
+    
     override private init() {
         super.init()
         let configuration = URLSessionConfiguration.background(withIdentifier: downloadIdentifier)
@@ -25,7 +25,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             delegateQueue: OperationQueue.main)
         restorePersistenceManager()
     }
-
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         viewController = (UIApplication.shared.delegate?.window??.rootViewController)! as! FlutterViewController
         channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger())
@@ -34,7 +34,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         let videoViewFactory = VideoPlayerViewFactory(registrar: registrar)
         registrar.register(videoViewFactory, withId: "plugins.video/video_player_view")
     }
-
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         flutterResult = result
         switch call.method {
@@ -158,21 +158,21 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             }
         }
     }
-
+    
     func getDuration(duration: [Int]) {
         flutterResult!(duration)
     }
-
+    
     private func getPercentComplete(download: MediaItemDownload) {
         SwiftVideoPlayerPlugin.channel?.invokeMethod("percent", arguments: download.fromString())
     }
-
+    
     /// Restores the Application state by getting all the AVAssetDownloadTasks and restoring their Asset structs.
     func restorePersistenceManager() {
         guard !didRestorePersistenceManager else { return }
-
+        
         didRestorePersistenceManager = true
-
+        
         // Grab all the tasks associated with the assetDownloadURLSession
         assetDownloadURLSession.getAllTasks { tasksArray in
             // For each task, restore the state in the app by recreating Asset structs and reusing existing AVURLAsset objects.
@@ -183,7 +183,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             }
         }
     }
-
+    
     /// is download video
     private func isDownloadVideo(for download: DownloadConfiguration) {
         guard UserDefaults.standard.value(forKey: download.url) is String else {
@@ -193,7 +193,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         flutterResult!(true)
         return
     }
-
+    
     /// get state download
     private func getStateDownload(for download: DownloadConfiguration) {
         var task: AVAggregateAssetDownloadTask?
@@ -203,7 +203,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         }
         flutterResult!(task?.state ?? MediaItemDownload.STATE_FAILED)
     }
-
+    
     /// download an AVAssetDownloadTask given an Asset.
     /// - Tag: DownloadDownload
     private func setupAssetDownload(download: DownloadConfiguration) {
@@ -229,20 +229,20 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         }
         getPercentComplete(download: MediaItemDownload(url: download.url, percent: 100, state: MediaItemDownload.STATE_COMPLETED, downloadedBytes: 0))
     }
-
+    
     /// Cancels an AVAssetDownloadTask given an Asset.
     /// - Tag: CancelDownload
     func cancelDownload(for asset: MediaItemDownload) {
         var task: AVAggregateAssetDownloadTask?
-
+        
         for (taskKey, assetVal) in activeDownloadsMap where (asset.url == assetVal.url) {
             task = taskKey
             break
         }
-
+        
         task?.cancel()
     }
-
+    
     /// suspend an AVAssetDownloadTask given an Asset.
     /// - Tag: SuspendDownload
     func pauseDownload(for asset: DownloadConfiguration) {
@@ -253,7 +253,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         }
         task?.suspend()
     }
-
+    
     /// Resume an AVAssetDownloadTask given an Asset.
     /// - Tag: ResumeDownload
     func resumeDownload(for asset: DownloadConfiguration) {
@@ -268,12 +268,12 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
 
 /// Extend `SwiftVideoPlayerPlugin` to conform to the `AVAssetDownloadDelegate` protocol.
 extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
-
+    
     /// Tells the delegate that the task finished transferring data.
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-
+        
     }
-
+    
     /// Method called when the an aggregate download task determines the location this asset will be downloaded to.
     public func urlSession(
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
@@ -286,16 +286,16 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
             UserDefaults.standard.set(location.relativePath, forKey: "\(aggregateAssetDownloadTask.urlAsset.url.absoluteURL)")
         }
     }
-
+    
     /// Method called when a child AVAssetDownloadTask completes.
     public func urlSession(
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         didCompleteFor mediaSelection: AVMediaSelection
     ) {
         guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
-
+        
     }
-
+    
     /// Method to adopt to subscribe to progress updates of an AVAggregateAssetDownloadTask.
     public func urlSession(
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
@@ -307,9 +307,9 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         for value in loadedTimeRanges {
             let loadedTimeRange: CMTimeRange = value.timeRangeValue
             percentComplete +=
-                loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
+            loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
         }
-
+        
         print("STATE \(aggregateAssetDownloadTask.state.rawValue)")
         percentComplete *= 100
         self.getPercentComplete(
