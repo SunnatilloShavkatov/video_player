@@ -324,11 +324,6 @@ class PlayerView: UIView {
         layer.insertSublayer(playerLayer, above: videoView.layer)
         
         NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
-        playerConfiguration.resolutions.forEach { (key: String, value: String) in
-            if "480p" == key {
-                changeQuality(url: value)
-            }
-        }
         addTimeObserver()
     }
     
