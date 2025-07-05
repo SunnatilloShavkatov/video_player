@@ -56,34 +56,34 @@ class PlayerView: UIView {
     var pendingPlay: Bool = false
     var seeking: Bool = false
     
-    private lazy var videoView: UIView = {
+    private var videoView: UIView = {
         let view = UIView()
         view.backgroundColor = Colors.background
         return view
     }()
     
-    private lazy var overlayView: UIView = {
+    private var overlayView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private lazy var bottomView: UIView = {
+    private var bottomView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private lazy var topView: UIView = {
+    private var topView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         return view
     }()
     
-    private lazy var titleLabelPortrait: TitleLabel = TitleLabel()
-    private lazy var titleLabelLandscape: TitleLabel = TitleLabel()
+    private var titleLabelPortrait: TitleLabel = TitleLabel()
+    private var titleLabelLandscape: TitleLabel = TitleLabel()
     
-    private lazy var currentTimeLabel: UILabel = {
+    private var currentTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
         label.textColor = .white
@@ -91,7 +91,7 @@ class PlayerView: UIView {
         return label
     }()
     
-    private lazy var durationTimeLabel: UILabel = {
+    private var durationTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "00:00"
         label.textColor = .white
@@ -99,7 +99,7 @@ class PlayerView: UIView {
         return label
     }()
     
-    private lazy var separatorLabel: UILabel = {
+    private var separatorLabel: UILabel = {
         let label = UILabel()
         label.text = " / "
         label.textColor = .white
@@ -190,7 +190,7 @@ class PlayerView: UIView {
         return button
     }()
     
-    private lazy var activityIndicatorView: NVActivityIndicatorView = {
+    private var activityIndicatorView: NVActivityIndicatorView = {
         let activityView = NVActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 50, height: 50), type: .circleStrokeSpin, color: .white)
         return activityView
     }()
