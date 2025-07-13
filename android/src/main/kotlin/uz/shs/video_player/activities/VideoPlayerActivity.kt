@@ -56,8 +56,8 @@ import androidx.media3.ui.PlayerView.SHOW_BUFFERING_ALWAYS
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_NEVER
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import uz.shs.video_player.EXTRA_ARGUMENT
-import uz.shs.video_player.PLAYER_ACTIVITY_FINISH
+import uz.shs.video_player.extraArgument
+import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.R
 import uz.shs.video_player.adapters.QualitySpeedAdapter
 import uz.shs.video_player.models.BottomSheet
@@ -129,7 +129,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
-        playerConfiguration = intent.getSerializableExtra(EXTRA_ARGUMENT) as PlayerConfiguration
+        val config = intent.getSerializableExtra(extraArgument) as? PlayerConfiguration
+        if (config == null) {
+            Log.e(tag, "PlayerConfiguration is null")
+            finish()
+            return
+        }
+        playerConfiguration = config
         currentQuality =
             if (playerConfiguration.initialResolution.isNotEmpty()) playerConfiguration.initialResolution.keys.first() else ""
         titleText = playerConfiguration.title
@@ -214,7 +220,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 val intent = Intent()
                 intent.putExtra("position", player.currentPosition / 1000)
                 intent.putExtra("duration", player.duration / 1000)
-                setResult(PLAYER_ACTIVITY_FINISH, intent)
+                setResult(playerActivityFinish, intent)
                 finish()
             }
         }
@@ -413,7 +419,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             val intent = Intent()
             intent.putExtra("position", player.currentPosition / 1000)
             intent.putExtra("duration", player.duration / 1000)
-            setResult(PLAYER_ACTIVITY_FINISH, intent)
+            setResult(playerActivityFinish, intent)
             finish()
         }
         pip.setOnClickListener {
