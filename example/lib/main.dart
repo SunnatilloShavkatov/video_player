@@ -18,17 +18,20 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Plugin example',
+    themeMode: ThemeMode.light,
     theme: ThemeData(
       primarySwatch: Colors.blue,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       appBarTheme: const AppBarTheme(
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.white,
           systemNavigationBarColor: Colors.white,
           systemNavigationBarContrastEnforced: false,
+          // iOS
+          statusBarBrightness: Brightness.light,
           // android
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarIconBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
+          systemNavigationBarIconBrightness: Brightness.dark,
         ),
       ),
     ),
