@@ -42,7 +42,7 @@
         </activity>
 
         <receiver
-            android:name="uz.udevs.video_player.services.NetworkChangeReceiver"
+            android:name="uz.shs.video_player.services.NetworkChangeReceiver"
             android:exported="true"
             android:label="NetworkChangeReceiver">
             <intent-filter>

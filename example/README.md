@@ -1,6 +1,6 @@
-# udevs_video_player_example
+# video_player_example
 
-Demonstrates how to use the udevs_video_player plugin.
+Demonstrates how to use the video_player plugin.
 
 ## Getting Started
 

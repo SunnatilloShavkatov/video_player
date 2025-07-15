@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'Plugin example',
     themeMode: ThemeMode.light,
+    debugShowCheckedModeBanner: false,
     theme: ThemeData(
       primarySwatch: Colors.blue,
       brightness: Brightness.light,
@@ -248,7 +249,7 @@ class _MainPageState extends State<MainPage> {
                   data == null
                       ? 'Not downloading'
                       : data.url !=
-                            'https://cdn.uzd.udevs.io/uzdigital/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8'
+                            'https://cdn.uzd.io/uzdigital/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8'
                       ? 'Not downloading'
                       : data.percent.toString(),
                 ),
