@@ -65,6 +65,8 @@ import uz.shs.video_player.models.PlayerConfiguration
 import uz.shs.video_player.services.NetworkChangeReceiver
 import kotlin.math.abs
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
+import androidx.core.view.updatePadding
 
 @Suppress("DEPRECATION", "UNNECESSARY_NOT_NULL_ASSERTION")
 @UnstableApi
@@ -128,6 +130,17 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
+        val rootView = findViewById<RelativeLayout>(R.id.player_activity)
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, insets ->
+            val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(
+                top = systemBarsInsets.top,
+                bottom = systemBarsInsets.bottom,
+                left = systemBarsInsets.left,
+                right = systemBarsInsets.right
+            )
+            insets
+        }
 
         val config = intent.getSerializableExtra(extraArgument) as? PlayerConfiguration
         if (config == null) {
