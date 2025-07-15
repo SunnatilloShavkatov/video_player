@@ -18,7 +18,21 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Plugin example',
-    theme: ThemeData(primarySwatch: Colors.blue),
+    theme: ThemeData(
+      primarySwatch: Colors.blue,
+      brightness: Brightness.dark,
+      appBarTheme: const AppBarTheme(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          systemNavigationBarColor: Colors.white,
+          systemNavigationBarContrastEnforced: false,
+          // android
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ),
+      ),
+    ),
+
     home: const MainPage(),
   );
 }
