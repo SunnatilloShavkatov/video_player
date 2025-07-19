@@ -61,9 +61,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private lazy var playerView: PlayerView = {
         return PlayerView()
     }()
-    
-    private lazy var screenshotPreventView = ScreenshotPreventingView(contentView: playerView)
-    
+  
     private var portraitConstraints = Constraints()
     private var landscapeConstraints = Constraints()
     
@@ -115,9 +113,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
         playerView.edgesToSuperview()
-        view.addSubview(screenshotPreventView)
-        screenshotPreventView.edgesToSuperview()
-        screenshotPreventView.preventScreenCapture = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -152,7 +147,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 addVideoPortraitConstraints()
             }
         }
-        
     }
     
     override var prefersHomeIndicatorAutoHidden: Bool {
@@ -189,11 +183,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     
     func close(duration: [Int]) {
         if UIDevice.current.userInterfaceIdiom != .pad {
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                let orientation = windowScene.interfaceOrientation
-                if orientation == .landscapeLeft || orientation == .landscapeRight {
-                    changeOrientation()
-                }
+            if let orientation = self.view.window?.windowScene?.interfaceOrientation,
+               orientation.isLandscape {
+                changeOrientation()
             }
         }
         self.dismiss(animated: true, completion: nil)

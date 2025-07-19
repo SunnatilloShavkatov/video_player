@@ -33,6 +33,10 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
         registrar.addMethodCallDelegate(instance, channel: channel!)
         let videoViewFactory = VideoPlayerViewFactory(registrar: registrar)
         registrar.register(videoViewFactory, withId: "plugins.video/video_player_view")
+        let window = UIApplication.shared.delegate?.window
+        let screenProtectorKit = ScreenProtectorKit(window: window as? UIWindow)
+        screenProtectorKit.configurePreventionScreenshot()
+        screenProtectorKit.enabledPreventScreenshot()
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
