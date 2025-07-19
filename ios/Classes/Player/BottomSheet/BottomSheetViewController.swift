@@ -164,7 +164,7 @@ class BottomSheetViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        var cell = tableView.dequeueReusableCell(withIdentifier: "BottomSheetCell") as! BottomSheetCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "BottomSheetCell") as! BottomSheetCell
         if bottomSheetType == .speed {
             cell.title = "\(items[indexPath.row])x"
         } else {
@@ -245,12 +245,6 @@ class BottomSheetViewController: UIViewController, UITableViewDelegate, UITableV
     //        @objc func handlePanGesture(gesture: UIPanGestureRecognizer) {}
     @objc func handlePanGesture(gesture: UIPanGestureRecognizer) {
         let translation = gesture.translation(in: view)
-        // Drag to top will be minus value and vice versa
-        print("Pan gesture y offset: \(translation.y)")
-        
-        // Get drag direction
-        let isDraggingDown = translation.y > 0
-        
         // New height is based on value of dragging plus current container height
         let newHeight = currentContainerHeight - translation.y
         

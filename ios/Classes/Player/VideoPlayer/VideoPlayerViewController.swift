@@ -41,6 +41,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     ///
     weak var delegate: VideoPlayerDelegate?
     private var url: String?
+    private var screenProtectorKit: ScreenProtectorKit?
     var qualityLabelText = ""
     var speedLabelText = ""
     var subtitleLabelText = "Субтитле"
@@ -61,7 +62,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private lazy var playerView: PlayerView = {
         return PlayerView()
     }()
-  
+    
     private var portraitConstraints = Constraints()
     private var landscapeConstraints = Constraints()
     
@@ -113,6 +114,14 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
         playerView.edgesToSuperview()
+        if let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) {
+            screenProtectorKit = ScreenProtectorKit(window: window)
+            screenProtectorKit?.configurePreventionScreenshot()
+            screenProtectorKit?.enabledPreventScreenshot()
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -182,6 +191,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
     
     func close(duration: [Int]) {
+        screenProtectorKit?.disablePreventScreenshot()
         if UIDevice.current.userInterfaceIdiom != .pad {
             if let orientation = self.view.window?.windowScene?.interfaceOrientation,
                orientation.isLandscape {
@@ -273,7 +283,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             showSubtitleBottomSheet()
             break
         case 3:
-            //            showAudioTrackBottomSheet()
             break
         default:
             break
@@ -296,7 +305,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.playerView.changeSpeed(rate: self.playerRate)
             break
         case .subtitle:
-            var subtitles = playerView.setSubtitleCurrentItem()
+            let subtitles = playerView.setSubtitleCurrentItem()
             let selectedSubtitleLabel = subtitles[index]
             if playerView.getSubtitleTrackIsEmpty(selectedSubtitleLabel: selectedSubtitleLabel) {
                 selectedSubtitle = selectedSubtitleLabel

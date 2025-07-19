@@ -129,6 +129,7 @@ class PlayerView: UIView {
         if let icon = Svg.exit {
             button.setImage(icon, for: .normal)
         }
+        button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.addTarget(self, action: #selector(exitButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
