@@ -139,7 +139,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 left = systemBarsInsets.left,
                 right = systemBarsInsets.right
             )
-            insets
+            WindowInsetsCompat.CONSUMED
         }
 
         val config = intent.getSerializableExtra(extraArgument) as? PlayerConfiguration
