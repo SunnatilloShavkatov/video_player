@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
@@ -507,13 +508,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onUserLeaveHint() {
-        val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50))
-                .setAutoEnterEnabled(false).build()
-        } else {
-            PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50)).build()
+        val supportsPiP = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+        if (supportsPiP) {
+            val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50))
+                    .setAutoEnterEnabled(false).build()
+            } else {
+                PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50)).build()
+            }
+            enterPictureInPictureMode(params)
         }
-        enterPictureInPictureMode(params)
     }
 
     private fun shareMovieLink() {
