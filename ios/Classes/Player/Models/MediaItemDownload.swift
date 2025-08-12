@@ -28,8 +28,14 @@ struct MediaItemDownload {
     static let STATE_REMOVING = 5
     static let STATE_RESTARTING = 7
     
-    static func fromMap(map : [String:Any]) -> MediaItemDownload {
-        return MediaItemDownload(url: map["url"] as! String, percent: map["percent"] as! Int, state: 0, downloadedBytes: 0)
+    static func fromMap(map: [String: Any]) -> MediaItemDownload? {
+        guard let url = map["url"] as? String,
+              let percent = map["percent"] as? Int else {
+            return nil
+        }
+        let state = map["state"] as? Int ?? 0
+        let downloadedBytes = map["downloadedBytes"] as? Int ?? 0
+        return MediaItemDownload(url: url, percent: percent, state: state, downloadedBytes: downloadedBytes)
     }
     
     func fromString() -> String {

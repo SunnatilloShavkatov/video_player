@@ -34,18 +34,34 @@ struct PlayerConfiguration{
         self.initialResolution = initialResolution
     }
     
-    static func fromMap(map : [String:Any])->PlayerConfiguration {
-        return PlayerConfiguration(initialResolution: map["initialResolution"] as! [String:String],
-                                   resolutions: map["resolutions"] as! [String:String],
-                                   qualityText: map["qualityText"] as! String,
-                                   speedText: map["speedText"] as! String,
-                                   lastPosition: map["lastPosition"] as! Int,
-                                   title: map["title"] as! String,
-                                   playVideoFromAsset : map["playVideoFromAsset"] as! Bool,
-                                   assetPath:map["assetPath"] as? String,
-                                   autoText: map["autoText"] as! String,
-                                   url: (map["initialResolution"] as! [String:String]).values.first ?? "",
-                                   movieShareLink: map["movieShareLink"] as! String
+    static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
+        guard let initialResolution = map["initialResolution"] as? [String: String],
+              let resolutions = map["resolutions"] as? [String: String],
+              let qualityText = map["qualityText"] as? String,
+              let speedText = map["speedText"] as? String,
+              let lastPosition = map["lastPosition"] as? Int,
+              let title = map["title"] as? String,
+              let playVideoFromAsset = map["playVideoFromAsset"] as? Bool,
+              let autoText = map["autoText"] as? String,
+              let movieShareLink = map["movieShareLink"] as? String else {
+            return nil
+        }
+        
+        let assetPath = map["assetPath"] as? String
+        let url = initialResolution.values.first ?? ""
+        
+        return PlayerConfiguration(
+            initialResolution: initialResolution,
+            resolutions: resolutions,
+            qualityText: qualityText,
+            speedText: speedText,
+            lastPosition: lastPosition,
+            title: title,
+            playVideoFromAsset: playVideoFromAsset,
+            assetPath: assetPath,
+            autoText: autoText,
+            url: url,
+            movieShareLink: movieShareLink
         )
     }
 }

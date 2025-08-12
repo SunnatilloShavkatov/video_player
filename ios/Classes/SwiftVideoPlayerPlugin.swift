@@ -10,13 +10,14 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
     private static var channel: FlutterMethodChannel?
     
     private var didRestorePersistenceManager = false
-    fileprivate let downloadIdentifier = "\(Bundle.main.bundleIdentifier!).background"
+    fileprivate let downloadIdentifier: String
     /// The AVAssetDownloadURLSession to use for managing AVAssetDownloadTasks.
     fileprivate var assetDownloadURLSession: AVAssetDownloadURLSession!
     /// Internal map of AVAggregateAssetDownloadTask to its corresponding Asset.
     fileprivate var activeDownloadsMap = [AVAggregateAssetDownloadTask: MediaItemDownload]()
     
     override private init() {
+        self.downloadIdentifier = "\(Bundle.main.bundleIdentifier ?? "video_player").background"
         super.init()
         let configuration = URLSessionConfiguration.background(withIdentifier: downloadIdentifier)
         assetDownloadURLSession = AVAssetDownloadURLSession(
@@ -27,7 +28,11 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
     }
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        viewController = (UIApplication.shared.delegate?.window??.rootViewController)! as! FlutterViewController
+        guard let rootViewController = UIApplication.shared.delegate?.window??.rootViewController as? FlutterViewController else {
+            print("Warning: Could not cast root view controller to FlutterViewController")
+            return
+        }
+        viewController = rootViewController
         channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger())
         let instance = SwiftVideoPlayerPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel!)
@@ -45,99 +50,100 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             }
         case "downloadVideo":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 setupAssetDownload(download: download)
                 return
             }
         case "pauseDownload":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 pauseDownload(for: download)
                 return
             }
         case "resumeDownload":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 resumeDownload(for: download)
                 return
             }
         case "getStateDownload":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 getStateDownload(for: download)
                 return
             }
         case "getBytesDownloaded":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 getStateDownload(for: download)
                 return
             }
         case "getContentBytesDownload":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 getStateDownload(for: download)
                 return
             }
         case "checkIsDownloadedVideo":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["downloadConfigJsonString"] ?? "") else {
-                    return
-                }
-                let download: DownloadConfiguration = DownloadConfiguration.fromMap(map: json)
                 isDownloadVideo(for: download)
                 return
             }
         case "playVideo":
             do {
-                guard let args = call.arguments else {
+                guard let args = call.arguments as? [String: String],
+                      let playerConfigJsonString = args["playerConfigJsonString"],
+                      let json = convertStringToDictionary(text: playerConfigJsonString),
+                      let playerConfiguration = PlayerConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid player configuration", details: nil))
                     return
                 }
-                guard let json = convertStringToDictionary(text: (args as! [String: String])["playerConfigJsonString"] ?? "") else {
-                    return
-                }
-                let playerConfiguration: PlayerConfiguration = PlayerConfiguration.fromMap(map: json)
                 let sortedResolutions = SortFunctions.sortWithKeys(playerConfiguration.resolutions)
                 guard URL(string: playerConfiguration.url) != nil else {
+                    flutterResult?(FlutterError(code: "INVALID_URL", message: "Invalid video URL", details: nil))
                     return
                 }
                 let vc = VideoPlayerViewController()
@@ -187,10 +193,10 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
     /// is download video
     private func isDownloadVideo(for download: DownloadConfiguration) {
         guard UserDefaults.standard.value(forKey: download.url) is String else {
-            flutterResult!(false)
+            flutterResult?(false)
             return
         }
-        flutterResult!(true)
+        flutterResult?(true)
         return
     }
     
@@ -201,7 +207,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             task = taskKey
             break
         }
-        flutterResult!(task?.state ?? MediaItemDownload.STATE_FAILED)
+        flutterResult?(task?.state.rawValue ?? MediaItemDownload.STATE_FAILED)
     }
     
     /// download an AVAssetDownloadTask given an Asset.
@@ -271,7 +277,25 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
     
     /// Tells the delegate that the task finished transferring data.
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let downloadTask = task as? AVAggregateAssetDownloadTask,
+              let mediaDownload = activeDownloadsMap[downloadTask] else {
+            return
+        }
         
+        if let error = error {
+            print("Download failed with error: \(error.localizedDescription)")
+            getPercentComplete(download: MediaItemDownload(
+                url: mediaDownload.url,
+                percent: mediaDownload.percent,
+                state: MediaItemDownload.STATE_FAILED,
+                downloadedBytes: mediaDownload.downloadedBytes
+            ))
+        } else {
+            print("Download completed successfully for: \(mediaDownload.url)")
+        }
+        
+        // Clean up
+        activeDownloadsMap.removeValue(forKey: downloadTask)
     }
     
     /// Method called when the an aggregate download task determines the location this asset will be downloaded to.
@@ -279,11 +303,18 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         willDownloadTo location: URL
     ) {
-        if aggregateAssetDownloadTask.state.rawValue == 3 {
-            self.getPercentComplete(
-                download: MediaItemDownload(url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: 100, state: MediaItemDownload.STATE_COMPLETED, downloadedBytes: 0)
+        // Check if download is completed (state rawValue 3 = completed)
+        if aggregateAssetDownloadTask.state == .completed {
+            getPercentComplete(
+                download: MediaItemDownload(
+                    url: aggregateAssetDownloadTask.urlAsset.url.absoluteString,
+                    percent: 100,
+                    state: MediaItemDownload.STATE_COMPLETED,
+                    downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)
+                )
             )
-            UserDefaults.standard.set(location.relativePath, forKey: "\(aggregateAssetDownloadTask.urlAsset.url.absoluteURL)")
+            // Store the download location for offline playback
+            UserDefaults.standard.set(location.relativePath, forKey: aggregateAssetDownloadTask.urlAsset.url.absoluteString)
         }
     }
     
@@ -292,8 +323,10 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         didCompleteFor mediaSelection: AVMediaSelection
     ) {
-        guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
+        guard let mediaDownload = activeDownloadsMap[aggregateAssetDownloadTask] else { return }
         
+        print("Media selection completed for download: \(mediaDownload.url)")
+        // Additional completion handling can be added here if needed
     }
     
     /// Method to adopt to subscribe to progress updates of an AVAggregateAssetDownloadTask.
@@ -303,24 +336,25 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         timeRangeExpectedToLoad: CMTimeRange, for mediaSelection: AVMediaSelection
     ) {
         guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
+        
         var percentComplete = 0.0
         for value in loadedTimeRanges {
             let loadedTimeRange: CMTimeRange = value.timeRangeValue
-            percentComplete +=
-            loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
+            percentComplete += loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
         }
         
-        print("STATE \(aggregateAssetDownloadTask.state.rawValue)")
-        percentComplete *= 100
-        self.getPercentComplete(
+        // Convert to percentage and ensure it's between 0-100
+        percentComplete = min(max(percentComplete * 100, 0), 100)
+        
+        print("Download progress: \(Int(percentComplete))% for URL: \(aggregateAssetDownloadTask.urlAsset.url.absoluteString)")
+        
+        getPercentComplete(
             download: MediaItemDownload(
-                url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: Int(percentComplete), state: MediaItemDownload.STATE_DOWNLOADING,
-                downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)))
-        if percentComplete == 100 {
-            self.getPercentComplete(
-                download: MediaItemDownload(
-                    url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: Int(percentComplete), state: MediaItemDownload.STATE_COMPLETED,
-                    downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)))
-        }
+                url: aggregateAssetDownloadTask.urlAsset.url.absoluteString,
+                percent: Int(percentComplete),
+                state: percentComplete >= 100 ? MediaItemDownload.STATE_COMPLETED : MediaItemDownload.STATE_DOWNLOADING,
+                downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)
+            )
+        )
     }
 }

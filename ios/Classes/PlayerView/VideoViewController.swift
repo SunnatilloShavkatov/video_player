@@ -60,7 +60,11 @@ class VideoViewController: UIViewController {
             }
             videoURL = URL(fileURLWithPath: path)
         } else {
-            videoURL = URL(string: url)!
+            guard let url = URL(string: url) else {
+                debugPrint("Invalid video URL")
+                return
+            }
+            videoURL = url
         }
         player.automaticallyWaitsToMinimizeStalling = true
         player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))

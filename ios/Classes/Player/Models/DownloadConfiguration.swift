@@ -5,6 +5,8 @@
 //  Created by Sunnatillo Shavkatov on 23/06/25.
 //
 
+import Foundation
+
 struct DownloadConfiguration {
     var url: String
     var title: String
@@ -14,7 +16,11 @@ struct DownloadConfiguration {
         self.title = title
     }
     
-    static func fromMap(map : [String:Any]) -> DownloadConfiguration {
-        return DownloadConfiguration(url: map["url"] as! String, title: map["title"] as! String)
+    static func fromMap(map: [String: Any]) -> DownloadConfiguration? {
+        guard let url = map["url"] as? String,
+              let title = map["title"] as? String else {
+            return nil
+        }
+        return DownloadConfiguration(url: url, title: title)
     }
 }
