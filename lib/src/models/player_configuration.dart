@@ -49,7 +49,7 @@ class PlayerConfiguration {
       'title: $title, '
       'playVideoFromAsset: $playVideoFromAsset, '
       'assetPath: $assetPath, '
-      'autoText: $autoText '
-      'movieShareLink: $movieShareLink, '
+      'autoText: $autoText, '
+      'movieShareLink: $movieShareLink'
       '}';
 }

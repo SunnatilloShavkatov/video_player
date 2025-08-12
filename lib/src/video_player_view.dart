@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 typedef FlutterVideoPayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
+  /// Platform view type name for video player
+  static const String _viewType = 'plugins.video/video_player_view';
+  
   const VideoPlayerView({
     super.key,
     required this.onMapViewCreated,
@@ -18,6 +21,13 @@ class VideoPlayerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Validate URL parameter
+    if (url.isEmpty) {
+      return const Center(
+        child: Text('Error: URL cannot be empty'),
+      );
+    }
+
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(
@@ -27,7 +37,7 @@ class VideoPlayerView extends StatelessWidget {
             if (url.contains('assets')) 'assets': url,
             'resizeMode': resizeMode.name,
           },
-          viewType: 'plugins.video/video_player_view',
+          viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
         );
       case TargetPlatform.iOS:
@@ -38,7 +48,7 @@ class VideoPlayerView extends StatelessWidget {
             if (url.contains('assets')) 'assets': url,
             'resizeMode': resizeMode.name,
           },
-          viewType: 'plugins.video/video_player_view',
+          viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -59,7 +69,10 @@ class VideoPlayerView extends StatelessWidget {
 
 // VideoPlayerView Controller class to set url etc
 class VideoPlayerViewController {
-  VideoPlayerViewController._(int id) : _channel = MethodChannel('plugins.video/video_player_view_$id');
+  /// Method channel name prefix for video player view controllers
+  static const String _channelPrefix = 'plugins.video/video_player_view_';
+  
+  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
 
   final MethodChannel _channel;
 
@@ -76,15 +89,16 @@ class VideoPlayerViewController {
 
   Future<void> mute() async => _channel.invokeMethod('mute');
 
-  Future<void> unMute() async => _channel.invokeMethod('un-mute');
+  Future<void> unmute() async => _channel.invokeMethod('unmute');
 
-  Stream<dynamic>? listener() {
+  /// Sets up a method call handler for video player events
+  /// Returns the arguments when the video is finished
+  void setEventListener(Function(dynamic)? onFinished) {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'finished') {
-        return call.arguments;
+      if (call.method == 'finished' && onFinished != null) {
+        onFinished(call.arguments);
       }
     });
-    return null;
   }
 }
 
