@@ -38,7 +38,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     try {
       await methodChannel.invokeMethod('downloadVideo', {'downloadConfigJsonString': downloadConfigJsonString});
       return true;
-    } catch (e) {
+    } on Exception catch (_) {
       return false;
     }
   }
@@ -48,7 +48,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     try {
       await methodChannel.invokeMethod('pauseDownload', {'downloadConfigJsonString': downloadConfigJsonString});
       return true;
-    } catch (e) {
+    } on Exception catch (_) {
       return false;
     }
   }
@@ -58,7 +58,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     try {
       await methodChannel.invokeMethod('resumeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
       return true;
-    } catch (e) {
+    } on Exception catch (_) {
       return false;
     }
   }
@@ -134,7 +134,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     try {
       await methodChannel.invokeMethod('removeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
       return true;
-    } catch (e) {
+    } on Exception catch (_) {
       return false;
     }
   }

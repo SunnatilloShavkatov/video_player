@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_annotating_with_dynamic
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,15 +7,15 @@ import 'package:flutter/services.dart';
 typedef FlutterVideoPayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
-  /// Platform view type name for video player
-  static const String _viewType = 'plugins.video/video_player_view';
-  
   const VideoPlayerView({
     super.key,
     required this.onMapViewCreated,
     required this.url,
     this.resizeMode = ResizeMode.fit,
   });
+
+  /// Platform view type name for video player
+  static const String _viewType = 'plugins.video/video_player_view';
 
   final FlutterVideoPayerViewCreatedCallback onMapViewCreated;
   final String url;
@@ -23,9 +25,7 @@ class VideoPlayerView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Validate URL parameter
     if (url.isEmpty) {
-      return const Center(
-        child: Text('Error: URL cannot be empty'),
-      );
+      return const Center(child: Text('Error: URL cannot be empty'));
     }
 
     switch (defaultTargetPlatform) {
@@ -69,10 +69,10 @@ class VideoPlayerView extends StatelessWidget {
 
 // VideoPlayerView Controller class to set url etc
 class VideoPlayerViewController {
+  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
+
   /// Method channel name prefix for video player view controllers
   static const String _channelPrefix = 'plugins.video/video_player_view_';
-  
-  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
 
   final MethodChannel _channel;
 
@@ -93,7 +93,7 @@ class VideoPlayerViewController {
 
   /// Sets up a method call handler for video player events
   /// Returns the arguments when the video is finished
-  void setEventListener(Function(dynamic)? onFinished) {
+  void setEventListener(void Function(dynamic)? onFinished) {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'finished' && onFinished != null) {
         onFinished(call.arguments);

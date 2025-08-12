@@ -120,7 +120,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                 getStateDownload(for: download)
                 return
             }
-        case "checkIsDownloadedVideo":
+        case "isDownloadVideo":
             do {
                 guard let args = call.arguments as? [String: String],
                       let downloadConfigJsonString = args["downloadConfigJsonString"],
@@ -147,12 +147,12 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                     return
                 }
                 let vc = VideoPlayerViewController()
-                vc.modalPresentationStyle = .fullScreen
                 vc.delegate = self
-                vc.playerConfiguration = playerConfiguration
-                vc.qualityLabelText = playerConfiguration.qualityText
-                vc.speedLabelText = playerConfiguration.speedText
                 vc.resolutions = sortedResolutions
+                vc.modalPresentationStyle = .fullScreen
+                vc.playerConfiguration = playerConfiguration
+                vc.speedLabelText = playerConfiguration.speedText
+                vc.qualityLabelText = playerConfiguration.qualityText
                 vc.selectedQualityText = playerConfiguration.autoText
                 SwiftVideoPlayerPlugin.viewController.present(vc, animated: true, completion: nil)
                 return

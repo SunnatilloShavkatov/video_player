@@ -55,9 +55,7 @@ class _MainPageState extends State<MainPage> {
   /// Helper method to show snack bar messages
   void _showSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -141,38 +139,33 @@ class _MainPageState extends State<MainPage> {
 
   Future<int> getStateDownload() async {
     try {
-      final state = await _videoPlayerPlugin.getStateDownload(
-        downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
-      ) ?? -1;
-      
+      final state =
+          await _videoPlayerPlugin.getStateDownload(
+            downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
+          ) ??
+          -1;
+
       if (kDebugMode) {
         print('Download state: $state');
       }
-      
+
       // Show user-friendly state message
       String stateMessage;
       switch (state) {
         case 0:
           stateMessage = 'Queued';
-          break;
         case 1:
           stateMessage = 'Stopped';
-          break;
         case 2:
           stateMessage = 'Downloading';
-          break;
         case 3:
           stateMessage = 'Completed';
-          break;
         case 4:
           stateMessage = 'Failed';
-          break;
         case 5:
           stateMessage = 'Removing';
-          break;
         case 7:
           stateMessage = 'Restarting';
-          break;
         default:
           stateMessage = 'Unknown ($state)';
       }
@@ -239,7 +232,7 @@ class _MainPageState extends State<MainPage> {
     } on PlatformException catch (e) {
       debugPrint('Failed to play video: ${e.message}');
       _showSnackBar('Failed to play video: ${e.message}');
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('Unexpected error playing video: $e');
       _showSnackBar('Unexpected error occurred');
     }

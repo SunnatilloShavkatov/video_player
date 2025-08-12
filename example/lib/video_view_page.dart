@@ -65,7 +65,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             child: IconButton(
               onPressed: () {
                 if (isMute) {
-                  controller?.unMute();
+                  controller?.unmute();
                 } else {
                   controller?.mute();
                 }
@@ -84,7 +84,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   // load default assets
   void _onMapViewCreated(VideoPlayerViewController ctr) {
     controller = ctr;
-    ctr.listener()?.listen((event) {
+    ctr.setEventListener((event) {
       if (kDebugMode) {
         print(event);
       }
