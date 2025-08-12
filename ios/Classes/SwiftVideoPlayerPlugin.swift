@@ -277,7 +277,25 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
     
     /// Tells the delegate that the task finished transferring data.
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let downloadTask = task as? AVAggregateAssetDownloadTask,
+              let mediaDownload = activeDownloadsMap[downloadTask] else {
+            return
+        }
         
+        if let error = error {
+            print("Download failed with error: \(error.localizedDescription)")
+            getPercentComplete(download: MediaItemDownload(
+                url: mediaDownload.url,
+                percent: mediaDownload.percent,
+                state: MediaItemDownload.STATE_FAILED,
+                downloadedBytes: mediaDownload.downloadedBytes
+            ))
+        } else {
+            print("Download completed successfully for: \(mediaDownload.url)")
+        }
+        
+        // Clean up
+        activeDownloadsMap.removeValue(forKey: downloadTask)
     }
     
     /// Method called when the an aggregate download task determines the location this asset will be downloaded to.
@@ -285,11 +303,18 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         willDownloadTo location: URL
     ) {
-        if aggregateAssetDownloadTask.state.rawValue == 3 {
-            self.getPercentComplete(
-                download: MediaItemDownload(url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: 100, state: MediaItemDownload.STATE_COMPLETED, downloadedBytes: 0)
+        // Check if download is completed (state rawValue 3 = completed)
+        if aggregateAssetDownloadTask.state == .completed {
+            getPercentComplete(
+                download: MediaItemDownload(
+                    url: aggregateAssetDownloadTask.urlAsset.url.absoluteString,
+                    percent: 100,
+                    state: MediaItemDownload.STATE_COMPLETED,
+                    downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)
+                )
             )
-            UserDefaults.standard.set(location.relativePath, forKey: "\(aggregateAssetDownloadTask.urlAsset.url.absoluteURL)")
+            // Store the download location for offline playback
+            UserDefaults.standard.set(location.relativePath, forKey: aggregateAssetDownloadTask.urlAsset.url.absoluteString)
         }
     }
     
@@ -298,8 +323,10 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         _ session: URLSession, aggregateAssetDownloadTask: AVAggregateAssetDownloadTask,
         didCompleteFor mediaSelection: AVMediaSelection
     ) {
-        guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
+        guard let mediaDownload = activeDownloadsMap[aggregateAssetDownloadTask] else { return }
         
+        print("Media selection completed for download: \(mediaDownload.url)")
+        // Additional completion handling can be added here if needed
     }
     
     /// Method to adopt to subscribe to progress updates of an AVAggregateAssetDownloadTask.
@@ -309,24 +336,25 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         timeRangeExpectedToLoad: CMTimeRange, for mediaSelection: AVMediaSelection
     ) {
         guard activeDownloadsMap[aggregateAssetDownloadTask] != nil else { return }
+        
         var percentComplete = 0.0
         for value in loadedTimeRanges {
             let loadedTimeRange: CMTimeRange = value.timeRangeValue
-            percentComplete +=
-            loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
+            percentComplete += loadedTimeRange.duration.seconds / timeRangeExpectedToLoad.duration.seconds
         }
         
-        print("STATE \(aggregateAssetDownloadTask.state.rawValue)")
-        percentComplete *= 100
-        self.getPercentComplete(
+        // Convert to percentage and ensure it's between 0-100
+        percentComplete = min(max(percentComplete * 100, 0), 100)
+        
+        print("Download progress: \(Int(percentComplete))% for URL: \(aggregateAssetDownloadTask.urlAsset.url.absoluteString)")
+        
+        getPercentComplete(
             download: MediaItemDownload(
-                url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: Int(percentComplete), state: MediaItemDownload.STATE_DOWNLOADING,
-                downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)))
-        if percentComplete == 100 {
-            self.getPercentComplete(
-                download: MediaItemDownload(
-                    url: aggregateAssetDownloadTask.urlAsset.url.absoluteString, percent: Int(percentComplete), state: MediaItemDownload.STATE_COMPLETED,
-                    downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)))
-        }
+                url: aggregateAssetDownloadTask.urlAsset.url.absoluteString,
+                percent: Int(percentComplete),
+                state: percentComplete >= 100 ? MediaItemDownload.STATE_COMPLETED : MediaItemDownload.STATE_DOWNLOADING,
+                downloadedBytes: Int(aggregateAssetDownloadTask.countOfBytesReceived)
+            )
+        )
     }
 }
