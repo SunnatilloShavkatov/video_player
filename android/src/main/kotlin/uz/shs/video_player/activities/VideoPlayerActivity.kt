@@ -133,6 +133,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var mPlaybackState: PlaybackState? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var isNetworkReceiverRegistered = false
 
     enum class PlaybackState {
         PLAYING, PAUSED, BUFFERING, IDLE
@@ -194,6 +195,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun listenConnection() {
+        if (isNetworkReceiverRegistered) {
+            return // Already registered
+        }
+        
         // IntentFilter create
         intentFilter = IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
 
@@ -209,7 +214,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
 
         // BroadcastReceiver active
-        registerReceiver(networkChangeReceiver, intentFilter)
+        try {
+            registerReceiver(networkChangeReceiver, intentFilter)
+            isNetworkReceiverRegistered = true
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to register network receiver", e)
+        }
     }
 
     private fun isNetworkAvailable(context: Context?): Boolean {
@@ -233,8 +243,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun rePlayVideo() {
-        player.prepare()
-        player.play()
+        if (::player.isInitialized) {
+            player.prepare()
+            player.play()
+        } else {
+            Log.w(tag, "Player not initialized, cannot replay video")
+        }
     }
 
     private val onBackPressedCallback: OnBackPressedCallback =
@@ -253,11 +267,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onPause() {
         super.onPause()
-        val isPlaying = player.isPlaying
-        player.playWhenReady = false
-        if (isInPictureInPictureMode) {
-            player.playWhenReady = isPlaying
-            dismissAllBottomSheets()
+        
+        if (::player.isInitialized) {
+            val isPlaying = player.isPlaying
+            player.playWhenReady = false
+            
+            if (isInPictureInPictureMode) {
+                // In PiP mode, restore playing state
+                player.playWhenReady = isPlaying
+                dismissAllBottomSheets()
+            }
         }
     }
 
@@ -285,7 +304,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onRestart() {
         super.onRestart()
-        player.playWhenReady = true
+        if (::player.isInitialized) {
+            player.playWhenReady = true
+        }
     }
 
     override fun onStop() {
@@ -644,10 +665,24 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private var backButtonEpisodeBottomSheet: ImageView? = null
     private fun dismissAllBottomSheets() {
-        for (bottomSheet in listOfAllOpenedBottomSheets) {
-            bottomSheet.dismiss()
-        }
+        // Create a copy of the list to avoid concurrent modification
+        val bottomSheetsToClose = listOfAllOpenedBottomSheets.toList()
         listOfAllOpenedBottomSheets.clear()
+        
+        for (bottomSheet in bottomSheetsToClose) {
+            try {
+                if (bottomSheet.isShowing) {
+                    bottomSheet.dismiss()
+                }
+            } catch (e: Exception) {
+                Log.w(tag, "Error dismissing bottom sheet", e)
+            }
+        }
+        
+        // Reset bottom sheet states
+        isSettingsBottomSheetOpened = false
+        isQualitySpeedBottomSheetOpened = false
+        currentBottomSheet = BottomSheet.NONE
     }
 
     private var speeds = mutableListOf("0.5x", "1.0x", "1.5x", "2.0x")
@@ -946,8 +981,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         
         // Unregister broadcast receiver safely
         try {
-            if (::networkChangeReceiver.isInitialized) {
+            if (isNetworkReceiverRegistered && ::networkChangeReceiver.isInitialized) {
                 unregisterReceiver(networkChangeReceiver)
+                isNetworkReceiverRegistered = false
             }
         } catch (e: IllegalArgumentException) {
             // Receiver was not registered, ignore
