@@ -9,9 +9,12 @@ import 'package:video_player/src/video_player_platform_interface.dart';
 
 /// An implementation of [VideoPlayerPlatform] that uses method channels.
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
+  /// Method channel name for video player communication
+  static const String _channelName = 'video_player';
+  
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('video_player');
+  final methodChannel = const MethodChannel(_channelName);
   final StreamController<MediaItemDownload> _streamController = StreamController<MediaItemDownload>.broadcast();
 
   @override
@@ -27,23 +30,38 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> downloadVideo({required String downloadConfigJsonString}) async {
-    await methodChannel.invokeMethod('downloadVideo', {'downloadConfigJsonString': downloadConfigJsonString});
+  Future<bool> downloadVideo({required String downloadConfigJsonString}) async {
+    try {
+      await methodChannel.invokeMethod('downloadVideo', {'downloadConfigJsonString': downloadConfigJsonString});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
-  Future<void> pauseDownload({required String downloadConfigJsonString}) async {
-    await methodChannel.invokeMethod('pauseDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+  Future<bool> pauseDownload({required String downloadConfigJsonString}) async {
+    try {
+      await methodChannel.invokeMethod('pauseDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
-  Future<void> resumeDownload({required String downloadConfigJsonString}) async {
-    await methodChannel.invokeMethod('resumeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+  Future<bool> resumeDownload({required String downloadConfigJsonString}) async {
+    try {
+      await methodChannel.invokeMethod('resumeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
   Future<bool> isDownloadVideo({required String downloadConfigJsonString}) async {
-    final res = await methodChannel.invokeMethod<bool?>('checkIsDownloadedVideo', {
+    final res = await methodChannel.invokeMethod<bool?>('isDownloadVideo', {
       'downloadConfigJsonString': downloadConfigJsonString,
     });
     return res ?? false;
@@ -101,15 +119,25 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> removeDownload({required String downloadConfigJsonString}) async {
-    await methodChannel.invokeMethod('removeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+  Future<bool> removeDownload({required String downloadConfigJsonString}) async {
+    try {
+      await methodChannel.invokeMethod('removeDownload', {'downloadConfigJsonString': downloadConfigJsonString});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
   Future<void> dispose() async {
-    _streamController.onCancel?.call();
+    await _streamController.close();
   }
 
   @override
-  Future<int?> getPercentDownload({required String downloadConfigJsonString}) => Future.value(0);
+  Future<int?> getPercentDownload({required String downloadConfigJsonString}) async {
+    final res = await methodChannel.invokeMethod<int>('getPercentDownload', {
+      'downloadConfigJsonString': downloadConfigJsonString,
+    });
+    return res;
+  }
 }

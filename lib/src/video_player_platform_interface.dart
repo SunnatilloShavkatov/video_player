@@ -26,11 +26,11 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   Future<List<int>?> playVideo({required String playerConfigJsonString});
 
-  Future<void> downloadVideo({required String downloadConfigJsonString});
+  Future<bool> downloadVideo({required String downloadConfigJsonString});
 
-  Future<void> pauseDownload({required String downloadConfigJsonString});
+  Future<bool> pauseDownload({required String downloadConfigJsonString});
 
-  Future<void> resumeDownload({required String downloadConfigJsonString});
+  Future<bool> resumeDownload({required String downloadConfigJsonString});
 
   Future<bool> isDownloadVideo({required String downloadConfigJsonString});
 
@@ -46,7 +46,7 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   Future<int?> getContentBytesDownload({required String downloadConfigJsonString});
 
-  Future<void> removeDownload({required String downloadConfigJsonString});
+  Future<bool> removeDownload({required String downloadConfigJsonString});
 
   Future<void> dispose();
 }
