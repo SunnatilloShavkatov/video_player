@@ -4,10 +4,11 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'video_player'
-  s.version          = '1.0.0'
-  s.summary          = 'A new Flutter plugin project.'
+  s.version          = '2.0.0'
+  s.summary          = 'A Flutter video player plugin with download support and advanced features.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+A comprehensive Flutter video player plugin that supports playing videos from URLs and assets,
+downloading videos for offline playback, quality selection, and screen protection features.
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
