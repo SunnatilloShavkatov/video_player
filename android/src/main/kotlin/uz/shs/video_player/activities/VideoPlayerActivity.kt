@@ -74,6 +74,21 @@ import androidx.core.view.updatePadding
 class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListener,
     ScaleGestureDetector.OnScaleGestureListener, AudioManager.OnAudioFocusChangeListener {
 
+    companion object {
+        private const val SEEK_INCREMENT_MS = 10000L
+        private const val DOUBLE_CLICK_TIMEOUT_MS = 300L
+        private const val BRIGHTNESS_MAX = 30
+        private const val BRIGHTNESS_DEFAULT = 15
+        private const val BRIGHTNESS_STEP = 0.2
+        private const val VOLUME_STEP = 0.2
+        private const val SCREEN_BRIGHTNESS_SCALE = 1.0f / 30
+        private const val ORIENTATION_CHANGE_DELAY_MS = 3000L
+        private const val PIP_ASPECT_RATIO_WIDTH = 16
+        private const val PIP_ASPECT_RATIO_HEIGHT = 9
+        private const val PIP_ASPECT_RATIO_WIDTH_HINT = 100
+        private const val PIP_ASPECT_RATIO_HEIGHT_HINT = 50
+    }
+
     private lateinit var playerView: PlayerView
     private lateinit var player: ExoPlayer
     private lateinit var networkChangeReceiver: NetworkChangeReceiver
@@ -106,8 +121,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var isSettingsBottomSheetOpened: Boolean = false
     private var isQualitySpeedBottomSheetOpened: Boolean = false
     private val listOfAllOpenedBottomSheets = mutableListOf<BottomSheetDialog>()
-    private var brightness: Double = 15.0
-    private var maxBrightness: Double = 31.0
+    private var brightness: Double = BRIGHTNESS_DEFAULT.toDouble()
+    private var maxBrightness: Double = BRIGHTNESS_MAX + 1.0
     private var volume: Double = 0.0
     private var maxVolume: Double = 0.0
     private var sWidth: Int = 0
@@ -116,6 +131,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var titleText = ""
     private lateinit var url: String
     private var mPlaybackState: PlaybackState? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var isNetworkReceiverRegistered = false
 
     enum class PlaybackState {
         PLAYING, PAUSED, BUFFERING, IDLE
@@ -163,8 +181,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         sWidth = Resources.getSystem().displayMetrics.widthPixels
         gestureDetector = GestureDetector(this, this)
         scaleGestureDetector = ScaleGestureDetector(this, this)
-        brightnessSeekbar.max = 30
-        brightnessSeekbar.progress = 15
+        brightnessSeekbar.max = BRIGHTNESS_MAX
+        brightnessSeekbar.progress = BRIGHTNESS_DEFAULT
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         setAudioFocus()
         maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toDouble()
@@ -177,6 +195,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun listenConnection() {
+        if (isNetworkReceiverRegistered) {
+            return // Already registered
+        }
+        
         // IntentFilter create
         intentFilter = IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
 
@@ -192,37 +214,41 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
 
         // BroadcastReceiver active
-        registerReceiver(networkChangeReceiver, intentFilter)
+        try {
+            registerReceiver(networkChangeReceiver, intentFilter)
+            isNetworkReceiverRegistered = true
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to register network receiver", e)
+        }
     }
 
-    fun isNetworkAvailable(context: Context?): Boolean {
+    private fun isNetworkAvailable(context: Context?): Boolean {
         if (context == null) return false
 
         val connectivityManager =
             context.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val capabilities =
-            connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-                ?: return false
-
-        // Flexible connectivity check: Any of the specified transports indicates usable connection
-        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || capabilities.hasTransport(
-                NetworkCapabilities.TRANSPORT_WIFI
-            ) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-        ) {
-            return true
+        
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val activeNetwork = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+            
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            val activeNetworkInfo = connectivityManager.activeNetworkInfo
+            activeNetworkInfo != null && activeNetworkInfo.isConnected
         }
-
-        // Optional: Check for validated internet connectivity
-        if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-            return true
-        }
-
-        return false
     }
 
     private fun rePlayVideo() {
-        player.prepare()
-        player.play()
+        if (::player.isInitialized) {
+            player.prepare()
+            player.play()
+        } else {
+            Log.w(tag, "Player not initialized, cannot replay video")
+        }
     }
 
     private val onBackPressedCallback: OnBackPressedCallback =
@@ -241,39 +267,60 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onPause() {
         super.onPause()
-        val isPlaying = player.isPlaying
-        player.playWhenReady = false
-        if (isInPictureInPictureMode) {
-            player.playWhenReady = isPlaying
-            dismissAllBottomSheets()
+        
+        if (::player.isInitialized) {
+            val isPlaying = player.isPlaying
+            player.playWhenReady = false
+            
+            if (isInPictureInPictureMode) {
+                // In PiP mode, restore playing state
+                player.playWhenReady = isPlaying
+                dismissAllBottomSheets()
+            }
         }
     }
 
     override fun onResume() {
-        setAudioFocus()
         super.onResume()
-        player.playWhenReady = true
+        setAudioFocus()
+        if (::player.isInitialized) {
+            player.playWhenReady = true
+        }
+        
         try {
-            // Retrieve and set brightness
-            val oldBrightness: Int = Settings.System.getInt(
+            // Retrieve and set brightness safely
+            val currentBrightness: Int = Settings.System.getInt(
                 this.contentResolver, Settings.System.SCREEN_BRIGHTNESS
             )
-            brightness = oldBrightness.toDouble() // Keep conversion if necessary
-            brightnessSeekbar.progress = oldBrightness
+            brightness = currentBrightness.toDouble().coerceIn(0.0, BRIGHTNESS_MAX.toDouble())
+            brightnessSeekbar.progress = brightness.toInt()
         } catch (e: Settings.SettingNotFoundException) {
-            e.printStackTrace()  // Handle error, maybe notify the user or log appropriately
+            Log.w(tag, "Could not retrieve system brightness setting", e)
+            // Fallback to default brightness
+            brightness = BRIGHTNESS_DEFAULT.toDouble()
+            brightnessSeekbar.progress = BRIGHTNESS_DEFAULT
         }
     }
 
     override fun onRestart() {
         super.onRestart()
-        player.playWhenReady = true
+        if (::player.isInitialized) {
+            player.playWhenReady = true
+        }
     }
 
     override fun onStop() {
         super.onStop()
         if (isInPictureInPictureMode) {
-            player.release()
+            // Don't release player in PiP mode, just pause if needed
+            if (!player.isPlaying) {
+                player.pause()
+            }
+        } else {
+            // Normal stop behavior - release resources
+            if (::player.isInitialized) {
+                player.release()
+            }
             finish()
         }
     }
@@ -403,21 +450,21 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 } else {
                     if (isDoubleClicked(lastClicked1)) {
                         if (motionEvent!!.x < sWidth / 2) {
-                            player.seekTo(player.currentPosition - 10000)
+                            player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
                         } else {
-                            player.seekTo(player.currentPosition + 10000)
+                            player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
                         }
                     } else {
                         playerView.hideController()
                     }
                     -1L
                 }
-                Handler(Looper.getMainLooper()).postDelayed({
+                mainHandler.postDelayed({
                     if (lastClicked1 != -1L) {
                         playerView.hideController()
                         lastClicked1 = -1L
                     }
-                }, 300)
+                }, DOUBLE_CLICK_TIMEOUT_MS)
             }
             return@setOnTouchListener true
         }
@@ -439,29 +486,28 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         pip.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // For Android S (API 31) and above
-                val params = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT))
                     .setAutoEnterEnabled(false).build()
                 enterPictureInPictureMode(params)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // For Android O (API 26) to R (API 30)
-                val params =
-                    PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build()
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT)).build()
                 enterPictureInPictureMode(params)
             } else {
                 // For devices below API 26
                 Toast.makeText(this, "Picture-in-Picture not supported!", Toast.LENGTH_SHORT).show()
             }
-
         }
         more.setOnClickListener {
             showSettingsBottomSheet()
         }
         rewind.setOnClickListener {
-            player.seekTo(player.currentPosition - 10000)
+            player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
         }
         forward.setOnClickListener {
-            player.seekTo(player.currentPosition + 10000)
-
+            player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
         }
         playPause.setOnClickListener {
             if (player.isPlaying) {
@@ -501,7 +547,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 }
             it.postDelayed({
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            }, 3000)
+            }, ORIENTATION_CHANGE_DELAY_MS)
         }
     }
 
@@ -511,10 +557,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         val supportsPiP = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
         if (supportsPiP) {
             val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50))
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH_HINT, PIP_ASPECT_RATIO_HEIGHT_HINT))
                     .setAutoEnterEnabled(false).build()
             } else {
-                PictureInPictureParams.Builder().setAspectRatio(Rational(100, 50)).build()
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH_HINT, PIP_ASPECT_RATIO_HEIGHT_HINT)).build()
             }
             enterPictureInPictureMode(params)
         }
@@ -617,10 +665,24 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private var backButtonEpisodeBottomSheet: ImageView? = null
     private fun dismissAllBottomSheets() {
-        for (bottomSheet in listOfAllOpenedBottomSheets) {
-            bottomSheet.dismiss()
-        }
+        // Create a copy of the list to avoid concurrent modification
+        val bottomSheetsToClose = listOfAllOpenedBottomSheets.toList()
         listOfAllOpenedBottomSheets.clear()
+        
+        for (bottomSheet in bottomSheetsToClose) {
+            try {
+                if (bottomSheet.isShowing) {
+                    bottomSheet.dismiss()
+                }
+            } catch (e: Exception) {
+                Log.w(tag, "Error dismissing bottom sheet", e)
+            }
+        }
+        
+        // Reset bottom sheet states
+        isSettingsBottomSheetOpened = false
+        isQualitySpeedBottomSheetOpened = false
+        currentBottomSheet = BottomSheet.NONE
     }
 
     private var speeds = mutableListOf("0.5x", "1.0x", "1.5x", "2.0x")
@@ -721,19 +783,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     auto = it
                 }
             }
-            for (i in 0 until l.size) {
-                for (j in i until l.size) {
-                    val first = l[i]
-                    val second = l[j]
-                    if (first.substring(0, first.length - 1).toInt() < second.substring(
-                            0, second.length - 1
-                        ).toInt()
-                    ) {
-                        val a = l[i]
-                        l[i] = l[j]
-                        l[j] = a
-                    }
-                }
+            // Use efficient sorting instead of bubble sort
+            l.sortByDescending { quality ->
+                quality.substring(0, quality.length - 1).toIntOrNull() ?: 0
             }
             if (auto.isNotEmpty()) {
                 l.add(0, auto)
@@ -794,26 +846,26 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         } else {
             if (isDoubleClicked(lastClicked)) {
                 if (event.x < sWidth / 2) {
-                    player.seekTo(player.currentPosition - 10000)
+                    player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
                 } else {
-                    player.seekTo(player.currentPosition + 10000)
+                    player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
                 }
             } else {
                 playerView.showController()
             }
             -1L
         }
-        Handler(Looper.getMainLooper()).postDelayed({
+        mainHandler.postDelayed({
             if (lastClicked != -1L) {
                 playerView.showController()
                 lastClicked = -1L
             }
-        }, 300)
+        }, DOUBLE_CLICK_TIMEOUT_MS)
         return false
     }
 
     private fun isDoubleClicked(lastClicked: Long): Boolean =
-        lastClicked - System.currentTimeMillis() <= 300
+        System.currentTimeMillis() - lastClicked <= DOUBLE_CLICK_TIMEOUT_MS
 
     override fun onLongPress(p0: MotionEvent) = Unit
 
@@ -827,27 +879,30 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 layoutBrightness.visibility = View.VISIBLE
                 layoutVolume.visibility = View.GONE
                 val increase = distanceY > 0
-                val newValue: Double = if (increase) brightness + 0.2 else brightness - 0.2
-                if (newValue in 0.0..maxBrightness) brightness = newValue
-                brightnessSeekbar.progress = brightness.toInt()
-                setScreenBrightness(brightness.toInt())
+                val newValue: Double = if (increase) brightness + BRIGHTNESS_STEP else brightness - BRIGHTNESS_STEP
+                if (newValue in 0.0..maxBrightness) {
+                    brightness = newValue
+                    brightnessSeekbar.progress = brightness.toInt()
+                    setScreenBrightness(brightness.toInt())
+                }
             } else {
                 layoutBrightness.visibility = View.GONE
                 layoutVolume.visibility = View.VISIBLE
                 val increase = distanceY > 0
-                val newValue = if (increase) volume + 0.2 else volume - 0.2
-                if (newValue in 0.0..maxVolume) volume = newValue
-                volumeSeekBar.progress = volume.toInt()
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume.toInt(), 0)
+                val newValue = if (increase) volume + VOLUME_STEP else volume - VOLUME_STEP
+                if (newValue in 0.0..maxVolume) {
+                    volume = newValue
+                    volumeSeekBar.progress = volume.toInt()
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume.toInt(), 0)
+                }
             }
         }
         return true
     }
 
     private fun setScreenBrightness(value: Int) {
-        val d = 1.0f / 30
         val lp = this.window.attributes
-        lp.screenBrightness = d * value
+        lp.screenBrightness = SCREEN_BRIGHTNESS_SCALE * value
         this.window.attributes = lp
     }
 
@@ -880,22 +935,62 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private fun setAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioManager.requestAudioFocus(
-                AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
-                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
-                ).setAcceptsDelayedFocusGain(true).setOnAudioFocusChangeListener(this).build()
-            )
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .build()
+                )
+                .setAcceptsDelayedFocusGain(true)
+                .setOnAudioFocusChangeListener(this)
+                .build()
+            audioManager.requestAudioFocus(audioFocusRequest!!)
         } else {
-            @Suppress("DEPRECATION") audioManager.requestAudioFocus(
+            @Suppress("DEPRECATION") 
+            audioManager.requestAudioFocus(
                 this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN
             )
         }
     }
 
+    private fun abandonAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { 
+                audioManager.abandonAudioFocusRequest(it)
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(this)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        // BroadcastReceiver on destroy
-        unregisterReceiver(networkChangeReceiver)
+        
+        // Clean up player resources
+        if (::player.isInitialized) {
+            player.release()
+        }
+        
+        // Remove handler callbacks to prevent memory leaks
+        mainHandler.removeCallbacksAndMessages(null)
+        
+        // Abandon audio focus
+        abandonAudioFocus()
+        
+        // Unregister broadcast receiver safely
+        try {
+            if (isNetworkReceiverRegistered && ::networkChangeReceiver.isInitialized) {
+                unregisterReceiver(networkChangeReceiver)
+                isNetworkReceiverRegistered = false
+            }
+        } catch (e: IllegalArgumentException) {
+            // Receiver was not registered, ignore
+            Log.d(tag, "NetworkChangeReceiver was not registered: ${e.message}")
+        }
+        
+        // Dismiss all bottom sheets
+        dismissAllBottomSheets()
     }
 }
