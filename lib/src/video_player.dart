@@ -42,16 +42,25 @@ final class VideoPlayer {
   /// 
   /// Returns true if download was successfully started, false otherwise.
   Future<bool> downloadVideo({required DownloadConfiguration downloadConfig}) {
+    if (!downloadConfig.isValid) {
+      throw ArgumentError('Invalid download configuration: URL is empty or malformed');
+    }
     final String jsonStringConfig = _encodeConfig(downloadConfig.toMap());
     return VideoPlayerPlatform.instance.downloadVideo(downloadConfigJsonString: jsonStringConfig);
   }
 
   Future<bool> pauseDownload({required DownloadConfiguration downloadConfig}) {
+    if (!downloadConfig.isValid) {
+      throw ArgumentError('Invalid download configuration: URL is empty or malformed');
+    }
     final String jsonStringConfig = _encodeConfig(downloadConfig.toMap());
     return VideoPlayerPlatform.instance.pauseDownload(downloadConfigJsonString: jsonStringConfig);
   }
 
   Future<bool> resumeDownload({required DownloadConfiguration downloadConfig}) {
+    if (!downloadConfig.isValid) {
+      throw ArgumentError('Invalid download configuration: URL is empty or malformed');
+    }
     final String jsonStringConfig = _encodeConfig(downloadConfig.toMap());
     return VideoPlayerPlatform.instance.resumeDownload(downloadConfigJsonString: jsonStringConfig);
   }

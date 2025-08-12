@@ -52,121 +52,160 @@ class _MainPageState extends State<MainPage> {
   final _videoPlayerPlugin = VideoPlayer.instance;
   static const String downloadUrl = 'https://cdn.ooo.io/videos/772a7a12977cd08a10b6f6843ae80563/240p/index.m3u8';
 
+  /// Helper method to show snack bar messages
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   Future<void> download1() async {
     try {
-      final s =
-          await _videoPlayerPlugin.downloadVideo(
-            downloadConfig: const DownloadConfiguration(title: 'She-Hulk 2', url: downloadUrl),
-          ) ??
-          'nothing';
+      final success = await _videoPlayerPlugin.downloadVideo(
+        downloadConfig: const DownloadConfiguration(title: 'She-Hulk 2', url: downloadUrl),
+      );
       if (kDebugMode) {
-        print('result: $s');
+        print('Download 1 ${success ? 'started successfully' : 'failed to start'}');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      _showSnackBar(success ? 'Download started' : 'Download failed to start');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to start download: ${e.message}');
+      _showSnackBar('Error: ${e.message}');
     }
   }
 
   Future<void> download2() async {
     try {
-      final s =
-          await _videoPlayerPlugin.downloadVideo(
-            downloadConfig: const DownloadConfiguration(
-              title: 'She-Hulk 2',
-              url: 'https://cdn.ooo.io/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8',
-            ),
-          ) ??
-          'nothing';
+      final success = await _videoPlayerPlugin.downloadVideo(
+        downloadConfig: const DownloadConfiguration(
+          title: 'She-Hulk 2',
+          url: 'https://cdn.ooo.io/videos/a04c9257216b2f2085c88be31a13e5d7/240p/index.m3u8',
+        ),
+      );
       if (kDebugMode) {
-        print('result: $s');
+        print('Download 2 ${success ? 'started successfully' : 'failed to start'}');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      _showSnackBar(success ? 'Download started' : 'Download failed to start');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to start download: ${e.message}');
+      _showSnackBar('Error: ${e.message}');
     }
   }
 
   Future<void> pauseDownload() async {
     try {
-      final s =
-          await _videoPlayerPlugin.pauseDownload(
-            downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
-          ) ??
-          'nothing';
+      final success = await _videoPlayerPlugin.pauseDownload(
+        downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
+      );
       if (kDebugMode) {
-        print('result: $s');
+        print('Pause download ${success ? 'successful' : 'failed'}');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      _showSnackBar(success ? 'Download paused' : 'Failed to pause download');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to pause download: ${e.message}');
+      _showSnackBar('Error: ${e.message}');
     }
   }
 
   Future<void> resumeDownload() async {
     try {
-      final s =
-          await _videoPlayerPlugin.resumeDownload(
-            downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
-          ) ??
-          'nothing';
+      final success = await _videoPlayerPlugin.resumeDownload(
+        downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
+      );
       if (kDebugMode) {
-        print('result: $s');
+        print('Resume download ${success ? 'successful' : 'failed'}');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      _showSnackBar(success ? 'Download resumed' : 'Failed to resume download');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to resume download: ${e.message}');
+      _showSnackBar('Error: ${e.message}');
     }
   }
 
   Future<void> removeDownload() async {
     try {
-      final s =
-          await _videoPlayerPlugin.removeDownload(
-            downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
-          ) ??
-          'nothing';
+      final success = await _videoPlayerPlugin.removeDownload(
+        downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
+      );
       if (kDebugMode) {
-        print('result: $s');
+        print('Remove download ${success ? 'successful' : 'failed'}');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      _showSnackBar(success ? 'Download removed' : 'Failed to remove download');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to remove download: ${e.message}');
+      _showSnackBar('Error: ${e.message}');
     }
   }
 
   Future<int> getStateDownload() async {
-    int state = -1;
     try {
-      state =
-          await _videoPlayerPlugin.getStateDownload(
-            downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
-          ) ??
-          -1;
+      final state = await _videoPlayerPlugin.getStateDownload(
+        downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
+      ) ?? -1;
+      
       if (kDebugMode) {
-        print('result: $state');
+        print('Download state: $state');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      
+      // Show user-friendly state message
+      String stateMessage;
+      switch (state) {
+        case 0:
+          stateMessage = 'Queued';
+          break;
+        case 1:
+          stateMessage = 'Stopped';
+          break;
+        case 2:
+          stateMessage = 'Downloading';
+          break;
+        case 3:
+          stateMessage = 'Completed';
+          break;
+        case 4:
+          stateMessage = 'Failed';
+          break;
+        case 5:
+          stateMessage = 'Removing';
+          break;
+        case 7:
+          stateMessage = 'Restarting';
+          break;
+        default:
+          stateMessage = 'Unknown ($state)';
+      }
+      _showSnackBar('Download state: $stateMessage');
+      return state;
+    } on PlatformException catch (e) {
+      debugPrint('Failed to get download state: ${e.message}');
+      _showSnackBar('Error getting state: ${e.message}');
+      return -1;
     }
-    return state;
   }
 
   Future<bool> checkIsDownloaded() async {
-    bool isDownloaded = false;
     try {
-      isDownloaded = await _videoPlayerPlugin.isDownloadVideo(
+      final isDownloaded = await _videoPlayerPlugin.isDownloadVideo(
         downloadConfig: const DownloadConfiguration(title: 'She-Hulk', url: downloadUrl),
       );
       if (kDebugMode) {
-        print('result: $isDownloaded');
+        print('Is downloaded: $isDownloaded');
       }
-    } on PlatformException {
-      debugPrint('Failed to get platform version.');
+      return isDownloaded;
+    } on PlatformException catch (e) {
+      debugPrint('Failed to check download status: ${e.message}');
+      _showSnackBar('Error checking download: ${e.message}');
+      return false;
     }
-    return isDownloaded;
   }
 
   Stream<MediaItemDownload> currentProgressDownloadAsStream() => _videoPlayerPlugin.currentProgressDownloadAsStream;
 
   Future<void> playVideo() async {
     try {
-      final s = await _videoPlayerPlugin.playVideo(
+      final playbackTimes = await _videoPlayerPlugin.playVideo(
         playerConfig: const PlayerConfiguration(
           movieShareLink: 'https://uzd.iiii.io/movie/7963?type=premier',
           initialResolution: {
@@ -190,11 +229,19 @@ class _MainPageState extends State<MainPage> {
         ),
       );
       if (kDebugMode) {
-        print('Result Time: $s');
+        print('Playback completed. Times: $playbackTimes');
       }
-    } on Exception catch (e, s) {
-      debugPrint('$e, $s');
-      debugPrint('Failed to get platform version.');
+      if (playbackTimes != null && playbackTimes.isNotEmpty) {
+        _showSnackBar('Video played successfully');
+      } else {
+        _showSnackBar('Video playback completed with no time data');
+      }
+    } on PlatformException catch (e) {
+      debugPrint('Failed to play video: ${e.message}');
+      _showSnackBar('Failed to play video: ${e.message}');
+    } catch (e) {
+      debugPrint('Unexpected error playing video: $e');
+      _showSnackBar('Unexpected error occurred');
     }
   }
 

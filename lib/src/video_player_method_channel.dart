@@ -16,6 +16,10 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel(_channelName);
   final StreamController<MediaItemDownload> _streamController = StreamController<MediaItemDownload>.broadcast();
+  
+  /// Timer for debouncing progress updates
+  Timer? _debounceTimer;
+  MediaItemDownload? _lastProgress;
 
   @override
   Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
@@ -81,14 +85,21 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       if (call.method == 'percent') {
         final json = call.arguments as String;
         final Map<dynamic, dynamic> decode = jsonDecode(json);
-        _streamController.add(
-          MediaItemDownload(
-            url: decode['url'],
-            state: decode['state'],
-            percent: decode['percent'],
-            downloadedBytes: decode['downloadedBytes'],
-          ),
+        final progress = MediaItemDownload(
+          url: decode['url'],
+          state: decode['state'],
+          percent: decode['percent'],
+          downloadedBytes: decode['downloadedBytes'],
         );
+        
+        // Debounce progress updates to avoid excessive UI updates
+        _lastProgress = progress;
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+          if (_lastProgress != null) {
+            _streamController.add(_lastProgress!);
+          }
+        });
       }
     });
     return _streamController.stream;
@@ -130,6 +141,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
 
   @override
   Future<void> dispose() async {
+    _debounceTimer?.cancel();
     await _streamController.close();
   }
 
