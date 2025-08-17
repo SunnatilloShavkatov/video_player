@@ -27,10 +27,18 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     body: Stack(
       children: [
         Align(
-          child: VideoPlayerView(
-            url: 'assets/splash.mp4',
-            resizeMode: ResizeMode.fill,
-            onMapViewCreated: _onMapViewCreated,
+          alignment: Alignment.topCenter,
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width,
+              height: MediaQuery.sizeOf(context).width * 9 / 16,
+              child: VideoPlayerView(
+                url: 'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
+                resizeMode: ResizeMode.fill,
+                onMapViewCreated: _onMapViewCreated,
+              ),
+            ),
           ),
         ),
         Positioned(

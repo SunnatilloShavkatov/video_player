@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_annotating_with_dynamic
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,13 +15,12 @@ class VideoPlayerView extends StatelessWidget {
   /// Platform view type name for video player
   static const String _viewType = 'plugins.video/video_player_view';
 
-  final FlutterVideoPayerViewCreatedCallback onMapViewCreated;
   final String url;
   final ResizeMode resizeMode;
+  final FlutterVideoPayerViewCreatedCallback onMapViewCreated;
 
   @override
   Widget build(BuildContext context) {
-    // Validate URL parameter
     if (url.isEmpty) {
       return const Center(child: Text('Error: URL cannot be empty'));
     }
@@ -31,24 +28,25 @@ class VideoPlayerView extends StatelessWidget {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(
+          viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           creationParams: <String, dynamic>{
+            'resizeMode': resizeMode.name,
             if (url.contains('http')) 'url': url,
             if (url.contains('assets')) 'assets': url,
-            'resizeMode': resizeMode.name,
           },
-          viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
+          creationParamsCodec: const StandardMessageCodec(),
         );
       case TargetPlatform.iOS:
         return UiKitView(
+          viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           creationParams: <String, dynamic>{
+            'resizeMode': resizeMode.name,
             if (url.contains('http')) 'url': url,
             if (url.contains('assets')) 'assets': url,
-            'resizeMode': resizeMode.name,
           },
-          viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -93,7 +91,7 @@ class VideoPlayerViewController {
 
   /// Sets up a method call handler for video player events
   /// Returns the arguments when the video is finished
-  void setEventListener(void Function(dynamic)? onFinished) {
+  void setEventListener(void Function(Object object)? onFinished) {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'finished' && onFinished != null) {
         onFinished(call.arguments);

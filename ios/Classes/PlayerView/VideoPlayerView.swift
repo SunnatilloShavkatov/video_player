@@ -52,7 +52,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             setPlay(call: call, result: result)
         case "mute":
             setMute(call: call, result: result)
-        case "un-mute":
+        case "unmute":
             setUnMute(call: call, result: result)
         default:
             result(FlutterMethodNotImplemented)
