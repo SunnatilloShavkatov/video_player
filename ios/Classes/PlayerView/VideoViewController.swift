@@ -67,7 +67,6 @@ class VideoViewController: UIViewController {
             videoURL = url
         }
         player.automaticallyWaitsToMinimizeStalling = true
-        player.translatesAutoresizingMaskIntoConstraints = false
         player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = self.view.bounds
