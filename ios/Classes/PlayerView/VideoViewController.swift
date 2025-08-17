@@ -74,12 +74,6 @@ class VideoViewController: UIViewController {
         playerLayer.videoGravity = gravity
         self.videoView.layer.addSublayer(playerLayer)
         player.play()
-        NSLayoutConstraint.activate([
-            player.topAnchor.constraint(equalTo: _view.topAnchor),
-            player.leadingAnchor.constraint(equalTo: _view.leadingAnchor),
-            player.trailingAnchor.constraint(equalTo: _view.trailingAnchor),
-            player.bottomAnchor.constraint(equalTo: _view.bottomAnchor)
-        ])
     }
     
     func pause() {
