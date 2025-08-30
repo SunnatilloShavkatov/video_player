@@ -300,7 +300,7 @@ class PlayerView: UIView {
         timeSlider.setThumbImage(circleImage, for: .normal)
     }
     
-    func loadMediaPlayer(asset: AVURLAsset) {
+    private func loadMediaPlayer(asset: AVURLAsset) {
         player.automaticallyWaitsToMinimizeStalling = true
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
         playerLayer = AVPlayerLayer(player: player)
@@ -328,7 +328,7 @@ class PlayerView: UIView {
         addTimeObserver()
     }
     
-    func playOfflineAsset() {
+    private func playOfflineAsset() {
         guard let url = URL(string: playerConfiguration.url) else {
             return
         }
@@ -378,14 +378,20 @@ class PlayerView: UIView {
         self.titleLabelLandscape.text = title ?? ""
     }
     
+    private func safeIntFromSeconds(_ seconds: Double) -> Int {
+        guard seconds.isFinite && !seconds.isNaN else {
+            return 0
+        }
+        return Int(seconds)
+    }
+    
     @objc func exitButtonPressed(_ sender: UIButton) {
         purgeMediaPlayer()
         removeMediaPlayerObservers()
-        delegate?.close(duration: [
-            Int(player.currentTime().seconds),
-            Int(player.currentItem?.duration.seconds ?? 0),
-        ]
-        )
+        // Safe conversion
+        let currentSeconds = safeIntFromSeconds(player.currentTime().seconds)
+        let durationSeconds = safeIntFromSeconds(player.currentItem?.duration.seconds ?? 0)
+        delegate?.close(duration: [currentSeconds, durationSeconds])
     }
     
     @objc func togglePictureInPictureMode(_ sender: UIButton) {
@@ -480,7 +486,7 @@ class PlayerView: UIView {
         }
     }
     
-    func showControls() {
+    private func showControls() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
         UIView.animate(
             withDuration: 0.3, delay: 0.2, options: options,
@@ -497,7 +503,7 @@ class PlayerView: UIView {
         
     }
     
-    func resetTimer() {
+    private func resetTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(timeInterval: 3.0, target: self, selector: #selector(hideControls), userInfo: nil, repeats: false)
     }
@@ -526,7 +532,7 @@ class PlayerView: UIView {
         playerLayer.frame = fullFrame()
     }
     
-    func fullFrame() -> CGRect {
+    private func fullFrame() -> CGRect {
         return bounds
     }
     
@@ -556,14 +562,14 @@ class PlayerView: UIView {
         titleLabelPortrait.isHidden = false
     }
     
-    func addGestures() {
+    private func addGestures() {
         swipeGesture = UIPanGestureRecognizer(target: self, action: #selector(swipePan))
         tapGesture = UITapGestureRecognizer(target: self, action: #selector(tapGestureControls))
         addGestureRecognizer(swipeGesture)
         addGestureRecognizer(tapGesture)
     }
     
-    func addSubviews() {
+    private func addSubviews() {
         addSubview(videoView)
         addSubview(overlayView)
         addSubview(brightnessSlider)
@@ -583,7 +589,7 @@ class PlayerView: UIView {
     }
     
     // MARK: - addBottomViewSubviews
-    func addBottomViewSubviews() {
+    private func addBottomViewSubviews() {
         bottomView.addSubview(currentTimeLabel)
         bottomView.addSubview(durationTimeLabel)
         bottomView.addSubview(separatorLabel)
@@ -591,7 +597,7 @@ class PlayerView: UIView {
         bottomView.addSubview(rotateButton)
     }
     
-    func addTopViewSubviews() {
+    private func addTopViewSubviews() {
         topView.addSubview(exitButton)
         topView.addSubview(titleLabelLandscape)
         topView.addSubview(settingsButton)
@@ -599,7 +605,7 @@ class PlayerView: UIView {
         topView.addSubview(pipButton)
     }
     
-    func addConstraints(area: UILayoutGuide) {
+    private func addConstraints(area: UILayoutGuide) {
         addBottomViewConstraints(area: area)
         addTopViewConstraints(area: area)
         addControlButtonConstraints()
@@ -690,18 +696,36 @@ class PlayerView: UIView {
     }
     
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "duration", let duration = player.currentItem?.duration.seconds, duration > 0.0 {
-            self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: player.currentItem!.duration)
+        if keyPath == "duration" {
+            if let duration = player.currentItem?.duration.seconds,
+               duration.isFinite && !duration.isNaN && duration > 0.0 {
+                self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: player.currentItem!.duration)
+            } else {
+                if let item = player.currentItem,
+                   let seekableRange = item.seekableTimeRanges.last?.timeRangeValue {
+                    let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
+                    let seconds = CMTimeGetSeconds(endTime)
+                    if seconds.isFinite && !seconds.isNaN && seconds > 0 {
+                        self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: endTime)
+                    }
+                }
+            }
         }
+        
+        // STATUS
         if keyPath == "status" {
             if player.status == .readyToPlay {
                 handleMediaPlayerReady()
-            } else if player.status == .readyToPlay {
-                
+            } else if player.status == .failed {
+                print("Player failed: \(player.error?.localizedDescription ?? "Unknown error")")
             }
         }
-        if keyPath == "timeControlStatus", let change = change, let newValue = change[NSKeyValueChangeKey.newKey] as? Int, let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int
-        {
+        
+        // TIME CONTROL STATUS
+        if keyPath == "timeControlStatus", let change = change,
+           let newValue = change[NSKeyValueChangeKey.newKey] as? Int,
+           let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int {
+            
             if newValue != oldValue {
                 DispatchQueue.main.async { [weak self] in
                     if newValue == 2 {
@@ -720,45 +744,79 @@ class PlayerView: UIView {
                         self?.playButton.alpha = 0.0
                         self?.activityIndicatorView.startAnimating()
                         self?.enableGesture = false
-                        
                     }
                 }
-            }
-            if player.timeControlStatus == .paused {
-                // Player is paused
             }
         }
     }
     
-    func handleMediaPlayerReady() {
-        
+    private func handleMediaPlayerReady() {
         if let duration = player.currentItem?.duration, CMTIME_IS_INDEFINITE(duration) {
             purgeMediaPlayer()
             playOfflineAsset()
             return
         }
+        
         if streamDuration == nil {
             if let duration = player.currentItem?.duration {
-                streamDuration = CMTimeGetSeconds(duration)
-                if let streamDuration = streamDuration {
-                    timeSlider.maximumValue = Float(streamDuration)
-                    timeSlider.minimumValue = 0
-                    timeSlider.value = Float(pendingPlayPosition)
-                    timeSlider.isEnabled = true
+                let durationSeconds = CMTimeGetSeconds(duration)
+                if durationSeconds.isFinite && !durationSeconds.isNaN && durationSeconds > 0 {
+                    streamDuration = durationSeconds
+                    DispatchQueue.main.async { [weak self] in
+                        if let streamDuration = self?.streamDuration {
+                            self?.timeSlider.maximumValue = Float(streamDuration)
+                            self?.timeSlider.minimumValue = 0
+                            let safePosition = self?.pendingPlayPosition ?? 0
+                            if safePosition.isFinite && !safePosition.isNaN && safePosition >= 0 {
+                                self?.timeSlider.value = Float(safePosition)
+                            } else {
+                                self?.timeSlider.value = 0
+                            }
+                            self?.timeSlider.isEnabled = true
+                        }
+                    }
+                } else {
+                    if let item = player.currentItem,
+                       let seekableRange = item.seekableTimeRanges.last?.timeRangeValue {
+                        let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
+                        let seconds = CMTimeGetSeconds(endTime)
+                        if seconds.isFinite && !seconds.isNaN && seconds > 0 {
+                            streamDuration = seconds
+                            DispatchQueue.main.async { [weak self] in
+                                self?.timeSlider.maximumValue = Float(seconds)
+                                self?.timeSlider.minimumValue = 0
+                                self?.timeSlider.value = 0
+                                self?.timeSlider.isEnabled = true
+                            }
+                        }
+                    }
                 }
             }
         }
-        if !pendingPlayPosition.isNaN, pendingPlayPosition > 0 {
-            player.seek(to: CMTimeMakeWithSeconds(pendingPlayPosition, preferredTimescale: 1)) { [weak self] _ in
-                if self?.playerState == .starting {
-                    self?.pendingPlay = true
+        
+        if let pendingPosition = pendingPlayPosition as Double?,
+           pendingPosition.isFinite && !pendingPosition.isNaN && pendingPosition > 0 {
+            let seekTime = CMTimeMakeWithSeconds(pendingPosition, preferredTimescale: 600)
+            player.seek(to: seekTime) { [weak self] completed in
+                DispatchQueue.main.async {
+                    if completed {
+                        if self?.playerState == .starting {
+                            self?.pendingPlay = true
+                        }
+                        self?.handleSeekFinished()
+                    } else {
+                        print("⚠️ Seek operation failed")
+                        self?.activityIndicatorView.stopAnimating()
+                    }
                 }
-                self?.handleSeekFinished()
             }
             return
         } else {
-            activityIndicatorView.stopAnimating()
+            DispatchQueue.main.async { [weak self] in
+                self?.activityIndicatorView.stopAnimating()
+            }
         }
+        
         if pendingPlay {
             pendingPlay = false
             player.play()
@@ -768,7 +826,7 @@ class PlayerView: UIView {
         }
     }
     
-    func handleSeekFinished() {
+    private func handleSeekFinished() {
         activityIndicatorView.stopAnimating()
         if pendingPlay {
             pendingPlay = false
@@ -844,7 +902,7 @@ class PlayerView: UIView {
         }
     }
     
-    func verticalMoved(_ value: CGFloat) {
+    private func verticalMoved(_ value: CGFloat) {
         if isVolume {
             self.volumeViewSlider.value -= Float(value / 10000)
         } else {
@@ -854,7 +912,7 @@ class PlayerView: UIView {
         }
     }
     
-    func showBlockControls() {
+    private func showBlockControls() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
         UIView.animate(
             withDuration: 0.3, delay: 0.2, options: options,
@@ -865,7 +923,7 @@ class PlayerView: UIView {
             }, completion: nil)
     }
     
-    func toggleViews() {
+    private func toggleViews() {
         let options: UIView.AnimationOptions = [.curveEaseIn]
         UIView.animate(
             withDuration: 0.05, delay: 0, options: options,
@@ -885,7 +943,7 @@ class PlayerView: UIView {
             }, completion: nil)
     }
     
-    func fastForward() {
+    private func fastForward() {
         self.forwardTouches += 1
         if forwardTouches < 2 {
             self.forwardGestureTimer?.invalidate()
@@ -904,7 +962,7 @@ class PlayerView: UIView {
         }
     }
     
-    func fastBackward() {
+    private func fastBackward() {
         self.backwardTouches += 1
         if backwardTouches < 2 {
             self.backwardGestureTimer?.invalidate()
@@ -923,21 +981,21 @@ class PlayerView: UIView {
         }
     }
     
-    func resetSeekForwardTimer() {
+    private func resetSeekForwardTimer() {
         seekForwardTimer?.invalidate()
         seekForwardTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(hideSeekForwardButton), userInfo: nil, repeats: false)
     }
     
-    func resetSeekBackwardTimer() {
+    private func resetSeekBackwardTimer() {
         seekBackwardTimer?.invalidate()
         seekBackwardTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(hideSeekBackwardButton), userInfo: nil, repeats: false)
     }
     
-    func showSeekForwardButton() {
+    private func showSeekForwardButton() {
         skipForwardButton.alpha = 1.0
     }
     
-    func showSeekBackwardButton() {
+    private func showSeekBackwardButton() {
         skipBackwardButton.alpha = 1.0
     }
     
@@ -987,7 +1045,7 @@ class PlayerView: UIView {
     }
     
     /// MARK: - Time logic
-    func addTimeObserver() {
+    private func addTimeObserver() {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(playerDidFinishPlaying),
@@ -998,42 +1056,57 @@ class PlayerView: UIView {
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         let mainQueue = DispatchQueue.main
-        player.addPeriodicTimeObserver(
-            forInterval: interval, queue: mainQueue,
+        
+        mediaTimeObserver = player.addPeriodicTimeObserver(
+            forInterval: interval,
+            queue: mainQueue,
             using: { [weak self] time in
-                guard let currentItem = self?.player.currentItem else { return }
-                
-                guard currentItem.duration >= .zero, !currentItem.duration.seconds.isNaN else {
+                guard let self = self,
+                      let currentItem = self.player.currentItem else { return }
+                let duration = currentItem.duration
+                let durationSeconds = CMTimeGetSeconds(duration)
+                guard duration.isValid,
+                      !CMTIME_IS_INDEFINITE(duration),
+                      durationSeconds.isFinite,
+                      !durationSeconds.isNaN,
+                      durationSeconds > 0 else {
+                    if let seekableRange = currentItem.seekableTimeRanges.last?.timeRangeValue {
+                        let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
+                        let seekableSeconds = CMTimeGetSeconds(endTime)
+                        if seekableSeconds.isFinite && !seekableSeconds.isNaN && seekableSeconds > 0 {
+                            self.timeSlider.maximumValue = Float(seekableSeconds)
+                        }
+                    }
                     return
                 }
-                self?.timeSlider.maximumValue = Float(currentItem.duration.seconds)
-                self?.timeSlider.minimumValue = 0
-                self?.timeSlider.value = Float(currentItem.currentTime().seconds)
-                self?.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.currentTime())
-                self?.streamPosition = CMTimeGetSeconds(time)
+                let currentTime = currentItem.currentTime()
+                let currentSeconds = CMTimeGetSeconds(currentTime)
+                guard currentSeconds.isFinite && !currentSeconds.isNaN else { return }
+                let newSliderValue = Float(currentSeconds)
+                if abs(self.timeSlider.value - newSliderValue) > 0.1 {
+                    self.timeSlider.maximumValue = Float(durationSeconds)
+                    self.timeSlider.minimumValue = 0
+                    self.timeSlider.value = newSliderValue
+                }
+                self.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentTime)
+                self.streamPosition = currentSeconds
             })
     }
     
-    func removeMediaPlayerObservers() {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem)
+    private func removeMediaPlayerObservers() {
+        if let timeObserver = mediaTimeObserver {
+            player.removeTimeObserver(timeObserver)
+            mediaTimeObserver = nil
+        }
         if observingMediaPlayer {
-            if let mediaTimeObserverToRemove = mediaTimeObserver {
-                player.removeTimeObserver(mediaTimeObserverToRemove)
-                mediaTimeObserver = nil
+            if let currentItem = player.currentItem {
+                currentItem.removeObserver(self, forKeyPath: "duration", context: nil)
+                currentItem.removeObserver(self, forKeyPath: "status", context: nil)
             }
-            if player.currentItem != nil {
-                NotificationCenter.default.removeObserver(
-                    self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-                    object: player.currentItem)
-            }
-            player.currentItem?.removeObserver(self, forKeyPath: "duration")
-            player.currentItem?.removeObserver(self, forKeyPath: "timeControlStatus")
-            player.currentItem?.removeObserver(self, forKeyPath: "status")
+            player.removeObserver(self, forKeyPath: "timeControlStatus", context: nil)
             observingMediaPlayer = false
         }
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: player.currentItem)
     }
     
     func stop() {
