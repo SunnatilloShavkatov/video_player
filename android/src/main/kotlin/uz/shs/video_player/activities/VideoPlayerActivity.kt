@@ -134,6 +134,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var audioFocusRequest: AudioFocusRequest? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isNetworkReceiverRegistered = false
+    private var wasInPictureInPicture: Boolean = false
 
     enum class PlaybackState {
         PLAYING, PAUSED, BUFFERING, IDLE
@@ -255,7 +256,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onPause() {
         super.onPause()
-
         if (::player.isInitialized) {
             val isPlaying = player.isPlaying
             player.playWhenReady = false
@@ -274,7 +274,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         if (::player.isInitialized) {
             player.playWhenReady = true
         }
-
         try {
             // Retrieve and set brightness safely
             val currentBrightness: Int = Settings.System.getInt(
@@ -305,12 +304,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 player.pause()
             }
         } else {
-            // Normal stop behavior - release resources and finish activity
-            if (::player.isInitialized) {
-                player.release()
+            // Do not release player on stop during orientation/fullscreen changes
+            // or when the activity is simply going to background. Rely on onDestroy
+            // to release resources when the activity is actually finishing.
+            // If you want to conserve resources in background, you can pause here.
+            if (::player.isInitialized && player.isPlaying) {
+                player.pause()
             }
-            // Don't call finish() here as it will be handled by onPictureInPictureModeChanged
-            // when PiP is properly closed
         }
     }
 
@@ -582,22 +582,35 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 // Entering PiP mode
                 playerView.hideController()
                 playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                wasInPictureInPicture = true
             } else {
-                // Exiting PiP mode - user closed PiP window or returned to app
-                if (::player.isInitialized) {
-                    player.stop()
-                }
-
-                // Return result and finish activity
-                val intent = Intent()
-                intent.putExtra(
-                    "position", if (::player.isInitialized) player.currentPosition / 1000 else 0
-                )
-                intent.putExtra(
-                    "duration", if (::player.isInitialized) player.duration / 1000 else 0
-                )
-                setResult(playerActivityFinish, intent)
-                finish()
+                // Exiting PiP mode - determine if user dismissed PiP or returned to app
+                // Wait a bit for lifecycle to settle (orientation/fullscreen changes, etc.)
+                mainHandler.postDelayed({
+                    val isVisible =
+                        lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+                    val isConfigChange = isChangingConfigurations
+                    if (!isVisible && !isConfigChange && wasInPictureInPicture) {
+                        // PiP window was closed (user dismissed it) → finish with result
+                        if (::player.isInitialized) {
+                            player.stop()
+                        }
+                        val intent = Intent()
+                        intent.putExtra(
+                            "position",
+                            if (::player.isInitialized) player.currentPosition / 1000 else 0
+                        )
+                        intent.putExtra(
+                            "duration", if (::player.isInitialized) player.duration / 1000 else 0
+                        )
+                        setResult(playerActivityFinish, intent)
+                        finish()
+                    } else {
+                        // Returned to the app or orientation/fullscreen change → restore UI
+                        playerView.showController()
+                    }
+                    wasInPictureInPicture = false
+                }, 300)
             }
         }
     }
