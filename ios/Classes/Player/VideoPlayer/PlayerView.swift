@@ -303,6 +303,7 @@ class PlayerView: UIView {
     private func loadMediaPlayer(asset: AVURLAsset) {
         player.automaticallyWaitsToMinimizeStalling = true
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
+        player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = bounds
         if let videoTrack = player.currentItem?.asset.tracks(withMediaType: .video).first {
@@ -342,7 +343,7 @@ class PlayerView: UIView {
         self.setTitle(title: title)
         self.player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))
         self.player.seek(to: CMTime.zero)
-        self.player.currentItem?.preferredForwardBufferDuration = TimeInterval(1)
+        self.player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
         self.player.automaticallyWaitsToMinimizeStalling = true
         self.player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
     }
