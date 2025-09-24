@@ -6,14 +6,13 @@ plugins {
 
 android {
     namespace = "uz.shs.video_player_example"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "uz.shs.video_player_example"
         minSdk = 24
-        // noinspection OldTargetApi
-        targetSdk = 34
         multiDexEnabled = true
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -23,8 +22,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 
     sourceSets["main"].java.srcDirs("src/main/kotlin")
@@ -32,6 +33,12 @@ android {
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }

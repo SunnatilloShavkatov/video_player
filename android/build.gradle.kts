@@ -12,8 +12,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.11.1")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        classpath("com.android.tools.build:gradle:8.13.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
     }
 }
 
@@ -26,7 +26,7 @@ allprojects {
 
 android {
     namespace = "uz.shs.video_player"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -38,8 +38,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 
     sourceSets["main"].java.srcDirs("src/main/kotlin")
@@ -62,17 +64,17 @@ dependencies {
     implementation("androidx.multidex:multidex:$multidexVersion")
 
     // Retrofit
-    val retrofitVersion = "2.11.0"
-    implementation("com.google.code.gson:gson:2.12.0")
+    val retrofitVersion = "3.0.0"
+    implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
     implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
 
     // Cronet
-    implementation("org.checkerframework:checker-qual:3.42.0")
+    implementation("org.checkerframework:checker-qual:3.51.0")
     implementation("com.google.android.gms:play-services-cronet:18.1.0")
 
     // UI
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.github.bumptech.glide:glide:4.15.1")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.github.bumptech.glide:glide:5.0.5")
+    implementation("com.google.android.material:material:1.13.0")
 }
