@@ -14,7 +14,7 @@ dependencies:
     path: ../
 
 dev_dependencies:
-  analysis_lints: ^1.0.2
+  analysis_lints: ^1.0.3
   flutter_test:
     sdk: flutter
 

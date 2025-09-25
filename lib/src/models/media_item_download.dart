@@ -10,7 +10,7 @@ class MediaItemDownload {
   static const int stateFailed = 4;
   static const int stateRemoving = 5;
   static const int stateRestarting = 7; // Fixed typo from 'stateRestating'
-  
+
   final String url;
   final int percent;
   final int state;
@@ -18,10 +18,10 @@ class MediaItemDownload {
 
   /// Returns true if the download is currently in progress
   bool get isDownloading => state == stateDownloading;
-  
+
   /// Returns true if the download is completed
   bool get isCompleted => state == stateCompleted;
-  
+
   /// Returns true if the download has failed
   bool get hasFailed => state == stateFailed;
 

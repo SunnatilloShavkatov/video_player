@@ -11,12 +11,12 @@ import 'package:video_player/src/video_player_platform_interface.dart';
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   /// Method channel name for video player communication
   static const String _channelName = 'video_player';
-  
+
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel(_channelName);
   final StreamController<MediaItemDownload> _streamController = StreamController<MediaItemDownload>.broadcast();
-  
+
   /// Timer for debouncing progress updates
   Timer? _debounceTimer;
   MediaItemDownload? _lastProgress;
@@ -91,7 +91,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
           percent: decode['percent'],
           downloadedBytes: decode['downloadedBytes'],
         );
-        
+
         // Debounce progress updates to avoid excessive UI updates
         _lastProgress = progress;
         _debounceTimer?.cancel();

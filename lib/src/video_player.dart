@@ -12,7 +12,7 @@ export 'package:video_player/src/models/media_item_download.dart';
 export 'package:video_player/src/models/player_configuration.dart';
 
 /// Main video player class that provides video playback and download functionality.
-/// 
+///
 /// This class follows the singleton pattern and provides methods for:
 /// - Playing videos with custom configurations
 /// - Downloading videos for offline playback
@@ -30,7 +30,7 @@ final class VideoPlayer {
   String _encodeConfig(Map<String, dynamic> config) => jsonEncode(config);
 
   /// Plays a video with the given player configuration.
-  /// 
+  ///
   /// Returns a list of integers representing playback time information,
   /// or null if playback fails.
   Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
@@ -39,7 +39,7 @@ final class VideoPlayer {
   }
 
   /// Downloads a video for offline playback.
-  /// 
+  ///
   /// Returns true if download was successfully started, false otherwise.
   Future<bool> downloadVideo({required DownloadConfiguration downloadConfig}) {
     if (!downloadConfig.isValid) {

@@ -11,8 +11,8 @@ android {
     defaultConfig {
         applicationId = "uz.shs.video_player_example"
         minSdk = 24
+        targetSdk = 36
         multiDexEnabled = true
-        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
