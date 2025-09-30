@@ -244,7 +244,6 @@ class BottomSheetViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     // MARK: Pan gesture handler
-    //        @objc func handlePanGesture(gesture: UIPanGestureRecognizer) {}
     @objc func handlePanGesture(gesture: UIPanGestureRecognizer) {
         let translation = gesture.translation(in: view)
         // New height is based on value of dragging plus current container height
