@@ -34,9 +34,7 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -408,10 +406,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         videoPosition = findViewById(R.id.video_position)
         exoPosition = findViewById(R.id.exo_position)
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            pip.visibility = View.GONE
-        }
-
         zoom = findViewById(R.id.zoom)
         orientation = findViewById(R.id.orientation)
         exoProgress = findViewById(R.id.exo_progress)
@@ -479,15 +473,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT))
                     .setAutoEnterEnabled(false).build()
                 enterPictureInPictureMode(params)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            } else {
                 // For Android O (API 26) to R (API 30)
                 val params = PictureInPictureParams.Builder()
                     .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT))
                     .build()
                 enterPictureInPictureMode(params)
-            } else {
-                // For devices below API 26
-                Toast.makeText(this, "Picture-in-Picture not supported!", Toast.LENGTH_SHORT).show()
             }
         }
         more.setOnClickListener {
@@ -542,7 +533,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onUserLeaveHint() {
         val supportsPiP = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
         if (supportsPiP && !isInPictureInPictureMode) {
@@ -576,42 +566,40 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean, newConfig: Configuration
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-            if (isInPictureInPictureMode) {
-                // Entering PiP mode
-                playerView.hideController()
-                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                wasInPictureInPicture = true
-            } else {
-                // Exiting PiP mode - determine if user dismissed PiP or returned to app
-                // Wait a bit for lifecycle to settle (orientation/fullscreen changes, etc.)
-                mainHandler.postDelayed({
-                    val isVisible =
-                        lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
-                    val isConfigChange = isChangingConfigurations
-                    if (!isVisible && !isConfigChange && wasInPictureInPicture) {
-                        // PiP window was closed (user dismissed it) → finish with result
-                        if (::player.isInitialized) {
-                            player.stop()
-                        }
-                        val intent = Intent()
-                        intent.putExtra(
-                            "position",
-                            if (::player.isInitialized) player.currentPosition / 1000 else 0
-                        )
-                        intent.putExtra(
-                            "duration", if (::player.isInitialized) player.duration / 1000 else 0
-                        )
-                        setResult(playerActivityFinish, intent)
-                        finish()
-                    } else {
-                        // Returned to the app or orientation/fullscreen change → restore UI
-                        playerView.showController()
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) {
+            // Entering PiP mode
+            playerView.hideController()
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            wasInPictureInPicture = true
+        } else {
+            // Exiting PiP mode - determine if user dismissed PiP or returned to app
+            // Wait a bit for lifecycle to settle (orientation/fullscreen changes, etc.)
+            mainHandler.postDelayed({
+                val isVisible =
+                    lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+                val isConfigChange = isChangingConfigurations
+                if (!isVisible && !isConfigChange && wasInPictureInPicture) {
+                    // PiP window was closed (user dismissed it) → finish with result
+                    if (::player.isInitialized) {
+                        player.stop()
                     }
-                    wasInPictureInPicture = false
-                }, 300)
-            }
+                    val intent = Intent()
+                    intent.putExtra(
+                        "position",
+                        if (::player.isInitialized) player.currentPosition / 1000 else 0
+                    )
+                    intent.putExtra(
+                        "duration", if (::player.isInitialized) player.duration / 1000 else 0
+                    )
+                    setResult(playerActivityFinish, intent)
+                    finish()
+                } else {
+                    // Returned to the app or orientation/fullscreen change → restore UI
+                    playerView.showController()
+                }
+                wasInPictureInPicture = false
+            }, 300)
         }
     }
 
@@ -958,27 +946,17 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun setAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest =
-                AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
-                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
-                ).setAcceptsDelayedFocusGain(true).setOnAudioFocusChangeListener(this).build()
-            audioManager.requestAudioFocus(audioFocusRequest!!)
-        } else {
-            @Suppress("DEPRECATION") audioManager.requestAudioFocus(
-                this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN
-            )
-        }
+        audioFocusRequest =
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
+            ).setAcceptsDelayedFocusGain(true).setOnAudioFocusChangeListener(this).build()
+        audioManager.requestAudioFocus(audioFocusRequest!!)
     }
 
     private fun abandonAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest?.let {
-                audioManager.abandonAudioFocusRequest(it)
-            }
-        } else {
-            @Suppress("DEPRECATION") audioManager.abandonAudioFocus(this)
+        audioFocusRequest?.let {
+            audioManager.abandonAudioFocusRequest(it)
         }
     }
 

@@ -45,33 +45,33 @@ class VideoPlayerView internal constructor(
         when (methodCall.method) {
             "setUrl" -> setUrl(methodCall, result)
             "setAssets" -> setAssets(methodCall, result)
-            "pause" -> pause(methodCall, result)
-            "play" -> play(methodCall, result)
-            "mute" -> mute(methodCall, result)
-            "unmute" -> unmute(methodCall, result)
+            "pause" -> pause(result)
+            "play" -> play(result)
+            "mute" -> mute(result)
+            "unmute" -> unmute(result)
             else -> result.notImplemented()
         }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
-    private fun pause(methodCall: MethodCall, result: MethodChannel.Result) {
+    private fun pause(result: MethodChannel.Result) {
         player.pause()
         result.success(null)
     }
 
-    private fun play(methodCall: MethodCall, result: MethodChannel.Result) {
+    private fun play(result: MethodChannel.Result) {
         player.play()
         result.success(null)
     }
 
     @SuppressLint("UnsafeOptInUsageError")
-    private fun mute(methodCall: MethodCall, result: MethodChannel.Result) {
+    private fun mute(result: MethodChannel.Result) {
         player.volume = 0f
         result.success(null)
     }
 
     @SuppressLint("UnsafeOptInUsageError")
-    private fun unmute(methodCall: MethodCall, result: MethodChannel.Result) {
+    private fun unmute(result: MethodChannel.Result) {
         player.volume = 1f
         result.success(null)
     }
