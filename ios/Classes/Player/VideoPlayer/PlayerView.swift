@@ -8,7 +8,6 @@
 import AVFoundation
 import AVKit
 import MediaPlayer
-import NVActivityIndicatorView
 import TinyConstraints
 
 protocol PlayerViewDelegate: NSObjectProtocol {
@@ -191,8 +190,9 @@ class PlayerView: UIView {
         return button
     }()
 
-    private var activityIndicatorView: NVActivityIndicatorView = {
-        let activityView = NVActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 50, height: 50), type: .circleStrokeSpin, color: .white)
+    private var activityIndicatorView: UIActivityIndicatorView = {
+        let activityView = UIActivityIndicatorView(style: .large)
+        activityView.color = .white
         return activityView
     }()
 

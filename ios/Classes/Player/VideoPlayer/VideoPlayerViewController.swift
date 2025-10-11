@@ -8,7 +8,6 @@
 import AVFoundation
 import AVKit
 import MediaPlayer
-import NVActivityIndicatorView
 import SnapKit
 import TinyConstraints
 import UIKit

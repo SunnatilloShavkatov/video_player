@@ -67,12 +67,7 @@ import 'package:video_player/video_player.dart';
 // Play a video from URL
 VideoPlayer.playVideo(PlayerConfiguration(
   title: 'Sample Video',
-  initialResolution: {'720p': 'https://example.com/video_720p.m3u8'},
-  resolutions: {
-    '1080p': 'https://example.com/video_1080p.m3u8',
-    '720p': 'https://example.com/video_720p.m3u8',
-    '480p': 'https://example.com/video_480p.m3u8',
-  },
+  videoUrl: 'https://example.com/video.mp4',
   qualityText: 'Quality',
   speedText: 'Speed',
   autoText: 'Auto',
@@ -125,6 +120,13 @@ VideoPlayerView(
 ```
 
 ## iOS-Specific Features
+
+### Native UI Components
+
+The iOS implementation uses native iOS components for optimal performance:
+- **UIActivityIndicatorView**: Native loading indicators for video buffering and loading states
+- **AVPlayer & AVKit**: Core video playback functionality
+- **Native gestures**: Swipe for volume/brightness, tap to play/pause, double-tap to seek
 
 ### Screen Protection
 
@@ -228,11 +230,18 @@ iOS implementation uses `AVAssetDownloadURLSession` for reliable background down
 ## Dependencies
 
 ### iOS
-- TinyConstraints
-- NVActivityIndicatorView  
-- XLActionController
-- SnapKit (~> 4.0)
-- SDWebImage (~> 5.0)
+
+**Third-party Libraries:**
+- **TinyConstraints**: Auto Layout DSL for Swift
+- **XLActionController**: Customizable action sheets
+- **SnapKit (~> 4.0)**: Swift Auto Layout DSL
+- **SDWebImage (~> 5.0)**: Image loading and caching
+
+**Native iOS Frameworks:**
+- **UIKit**: For native UI components (UIActivityIndicatorView, etc.)
+- **AVFoundation**: Core video playback engine
+- **AVKit**: Advanced video playback features and Picture-in-Picture
+- **MediaPlayer**: Volume controls and media information
 
 ## Contributing
 
