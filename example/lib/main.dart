@@ -200,18 +200,9 @@ class _MainPageState extends State<MainPage> {
     try {
       final playbackTimes = await _videoPlayerPlugin.playVideo(
         playerConfig: const PlayerConfiguration(
+          videoUrl:
+              'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
           movieShareLink: 'https://uzd.iiii.io/movie/7963?type=premier',
-          initialResolution: {
-            'Auto':
-                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
-          },
-          resolutions: {
-            'Auto':
-                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
-            '480p': '1014624',
-            '720p': '1321824',
-            '360p': '1937246',
-          },
           qualityText: 'Quality',
           speedText: 'Speed',
           lastPosition: 0,

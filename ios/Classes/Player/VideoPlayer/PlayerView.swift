@@ -719,7 +719,7 @@ class PlayerView: UIView {
             if player.status == .readyToPlay {
                 handleMediaPlayerReady()
             } else if player.status == .failed {
-                print("Player failed: \(player.error?.localizedDescription ?? "Unknown error")")
+                // Player failed
             }
         }
 
@@ -807,7 +807,6 @@ class PlayerView: UIView {
                         }
                         self?.handleSeekFinished()
                     } else {
-                        print("⚠️ Seek operation failed")
                         self?.activityIndicatorView.stopAnimating()
                     }
                 }

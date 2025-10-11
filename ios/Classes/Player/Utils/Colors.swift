@@ -23,7 +23,7 @@ struct Colors {
     static let black = UIColor(red:0, green: 0, blue: 0)
     static let white = UIColor(hex:"#FFFFFF")
     static let primary73 = UIColor(red: 2/255, green: 12/255, blue: 36/255, alpha: 0.73)
-    static let backgroundBottomSheet = UIColor(hex: "#181818")
+    static let backgroundBottomSheet = UIColor(hex: "#25272D")
     static let blue = UIColor(hex: "#51A3FE")
 }
 

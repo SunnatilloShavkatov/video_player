@@ -46,12 +46,12 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     var speedLabelText = ""
     var subtitleLabelText = "Субтитле"
     var isRegular: Bool = false
-    var resolutions: [String: String]?
-    var sortedResolutions: [String] = []
     var qualityDelegate: QualityDelegate!
     var speedDelegate: SpeedDelegate!
     var subtitleDelegate: SubtitleDelegate!
     var playerConfiguration: PlayerConfiguration!
+    private var availableQualities: [QualityVariant] = []
+    private var isLoadingQualities: Bool = false
     private var isVolume = false
     private var volumeViewSlider: UISlider!
     private var playerRate: Float = 1.0
@@ -101,15 +101,10 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         super.viewDidLoad()
         url = playerConfiguration.url
         title = playerConfiguration.title
-        let resList = resolutions ?? ["480p": playerConfiguration.url]
-        sortedResolutions = Array(resList.keys).sorted().reversed()
-        Array(resList.keys).sorted().reversed().forEach { quality in
-            if quality == "1080p" {
-                sortedResolutions.removeLast()
-                sortedResolutions.insert("1080p", at: 1)
-            }
-        }
         view.backgroundColor = .black
+        
+        // Parse HLS master playlist to get quality variants
+        loadQualityVariants()
         playerView.delegate = self
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
@@ -227,11 +222,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                     .iOS(
                         interfaceOrientations: (orientation == .landscapeLeft || orientation == .landscapeRight)
                         ? .portrait : .landscapeRight)
-                ) {
-                    error in
-                    print(error)
-                    print(windowScene.effectiveGeometry)
-                }
+                ) { _ in }
             } else {
                 UIDevice.current.setValue(value, forKey: "orientation")
                 UIViewController.attemptRotationToDeviceOrientation()
@@ -293,11 +284,26 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     func onBottomSheetCellTapped(index: Int, type: BottomSheetType) {
         switch type {
         case .quality:
-            let resList = resolutions ?? ["480p": playerConfiguration.url]
-            self.selectedQualityText = sortedResolutions[index]
-            let url = resList[sortedResolutions[index]]
-            self.playerView.changeQuality(url: url)
-            self.url = url
+            // Build quality list (same as showQualityBottomSheet)
+            var qualities = ["Auto"]
+            if !availableQualities.isEmpty {
+                qualities.append(contentsOf: availableQualities.map { $0.displayName })
+            }
+            
+            guard index < qualities.count else { return }
+            
+            self.selectedQualityText = qualities[index]
+            
+            // Set quality using preferredPeakBitRate
+            if selectedQualityText == "Auto" {
+                // Auto mode - adaptive streaming
+                playerView.changeQuality(url: "0")
+            } else {
+                // Find the variant and use its bandwidth
+                if let variant = availableQualities.first(where: { $0.displayName == selectedQualityText }) {
+                    playerView.changeQuality(url: "\(variant.bandwidth)")
+                }
+            }
             break
         case .speed:
             self.playerRate = Float(speedList[index])!
@@ -330,17 +336,32 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
     }
     
-    func showQualityBottomSheet() {
-        let resList = resolutions ?? ["480p": playerConfiguration.url]
-        let array = Array(resList.keys)
-        var listOfQuality = [String]()
-        listOfQuality = array.sorted().reversed()
-        array.sorted().reversed().forEach { quality in
-            if quality == "1080p" {
-                listOfQuality.removeLast()
-                listOfQuality.insert("1080p", at: 1)
+    private func loadQualityVariants() {
+        let videoUrl = playerConfiguration.url
+        guard !videoUrl.isEmpty else {
+            return
+        }
+        
+        isLoadingQualities = true
+        HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
+            guard let self = self else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.isLoadingQualities = false
+                if !variants.isEmpty {
+                    self.availableQualities = variants
+                }
             }
         }
+    }
+    
+    func showQualityBottomSheet() {
+        // Build quality list from parsed variants
+        var listOfQuality = ["Auto"]
+        if !availableQualities.isEmpty {
+            listOfQuality.append(contentsOf: availableQualities.map { $0.displayName })
+        }
+        
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .overCurrentContext
         bottomSheetVC.items = listOfQuality

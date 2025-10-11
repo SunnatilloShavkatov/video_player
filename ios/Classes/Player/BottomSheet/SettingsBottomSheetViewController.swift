@@ -194,11 +194,9 @@ class SettingsBottomSheetViewController: UIViewController, UITableViewDelegate, 
     @objc func handlePanGesture(gesture: UIPanGestureRecognizer) {
         let translation = gesture.translation(in: view)
         // Drag to top will be minus value and vice versa
-        print("Pan gesture y offset: \(translation.y)")
         
         // Get drag direction
         let isDraggingDown = translation.y > 0
-        print("Dragging direction: \(isDraggingDown ? "going down" : "going up")")
         
         // New height is based on value of dragging plus current container height
         let newHeight = currentContainerHeight - translation.y

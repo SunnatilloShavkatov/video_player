@@ -39,10 +39,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -124,7 +127,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var volume: Double = 0.0
     private var maxVolume: Double = 0.0
     private var sWidth: Int = 0
-    private val tag = "TAG1"
     private var currentOrientation: Int = Configuration.ORIENTATION_PORTRAIT
     private var titleText = ""
     private lateinit var url: String
@@ -133,10 +135,20 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isNetworkReceiverRegistered = false
     private var wasInPictureInPicture: Boolean = false
+    private var availableQualities: List<QualityOption> = emptyList()
 
     enum class PlaybackState {
         PLAYING, PAUSED, BUFFERING, IDLE
     }
+
+    data class QualityOption(
+        val displayName: String,
+        val height: Int,
+        val width: Int,
+        val bitrate: Int,
+        val groupIndex: Int,
+        val trackIndex: Int
+    )
 
     @SuppressLint("AppCompatMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,16 +173,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
 
         val config = intent.getSerializableExtra(extraArgument) as? PlayerConfiguration
-        if (config == null) {
-            Log.e(tag, "PlayerConfiguration is null")
+        config ?: run {
             finish()
             return
         }
         playerConfiguration = config
-        currentQuality =
-            if (playerConfiguration.initialResolution.isNotEmpty()) playerConfiguration.initialResolution.keys.first() else ""
         titleText = playerConfiguration.title
-        url = playerConfiguration.initialResolution.values.first().ifEmpty { "" }
+        url = playerConfiguration.videoUrl
+        currentQuality = "Auto"
 
         initializeViews()
         mPlaybackState = PlaybackState.PLAYING
@@ -216,7 +226,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             registerReceiver(networkChangeReceiver, intentFilter)
             isNetworkReceiverRegistered = true
         } catch (e: Exception) {
-            Log.e(tag, "Failed to register network receiver", e)
+            // Failed to register network receiver
         }
     }
 
@@ -233,8 +243,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         if (::player.isInitialized) {
             player.prepare()
             player.play()
-        } else {
-            Log.w(tag, "Player not initialized, cannot replay video")
         }
     }
 
@@ -280,7 +288,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             brightness = currentBrightness.toDouble().coerceIn(0.0, BRIGHTNESS_MAX.toDouble())
             brightnessSeekbar.progress = brightness.toInt()
         } catch (e: Settings.SettingNotFoundException) {
-            Log.w(tag, "Could not retrieve system brightness setting", e)
             // Fallback to default brightness
             brightness = BRIGHTNESS_DEFAULT.toDouble()
             brightnessSeekbar.progress = BRIGHTNESS_DEFAULT
@@ -325,11 +332,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         player.prepare()
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                Log.d(tag, "onPlayerError: ${error.errorCode}")
+                // Handle error silently
             }
 
             override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-                Log.d(tag, "onMediaMetadataChanged: ${mediaMetadata.title}")
                 super.onMediaMetadataChanged(mediaMetadata)
             }
 
@@ -372,8 +378,44 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     }
                 }
             }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                super.onTracksChanged(tracks)
+                extractQualityOptionsFromTracks(tracks)
+            }
         })
         player.playWhenReady = true
+    }
+
+    private fun extractQualityOptionsFromTracks(tracks: Tracks) {
+        val videoTracks = mutableListOf<QualityOption>()
+        
+        tracks.groups.forEachIndexed { groupIndex, group ->
+            if (group.type == C.TRACK_TYPE_VIDEO) {
+                for (trackIndex in 0 until group.length) {
+                    val format = group.getTrackFormat(trackIndex)
+                    if (format.height > 0) {
+                        videoTracks.add(
+                            QualityOption(
+                                displayName = "${format.height}p",
+                                height = format.height,
+                                width = format.width,
+                                bitrate = format.bitrate,
+                                groupIndex = groupIndex,
+                                trackIndex = trackIndex
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Remove duplicates and sort
+        availableQualities = videoTracks
+            .distinctBy { it.height }
+            .sortedByDescending { it.height }
+            .toMutableList()
+            .apply { add(0, QualityOption("Auto", -1, -1, -1, -1, -1)) }
     }
 
     private var lastClicked1: Long = -1L
@@ -686,7 +728,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     bottomSheet.dismiss()
                 }
             } catch (e: Exception) {
-                Log.w(tag, "Error dismissing bottom sheet", e)
+                // Error dismissing bottom sheet
             }
         }
 
@@ -733,11 +775,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         qualityText?.text = currentQuality
         speedText?.text = currentSpeed
         quality?.setOnClickListener {
-            if (playerConfiguration.resolutions.isNotEmpty()) {
-                val resolutionsList = ArrayList(playerConfiguration.resolutions.keys)
-                showQualitySpeedSheet(
-                    currentQuality, resolutionsList, true
-                )
+            if (availableQualities.isNotEmpty()) {
+                val qualitiesList = ArrayList(availableQualities.map { it.displayName })
+                showQualitySpeedSheet(currentQuality, qualitiesList, true)
             }
         }
         speed?.setOnClickListener {
@@ -811,24 +851,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             (object : QualitySpeedAdapter.OnClickListener {
                 override fun onClick(position: Int) {
                     if (fromQuality) {
-                        currentQuality = l[position]
-                        qualityText?.text = currentQuality
-                        if (player.isPlaying) {
-                            player.pause()
-                        }
-                        val url = playerConfiguration.resolutions[currentQuality]
-                        val bitrate: Int? = url?.toIntOrNull()
-                        if (bitrate != null) {
-                            player.trackSelectionParameters =
-                                player.trackSelectionParameters.buildUpon()
-                                    .setMaxVideoBitrate(bitrate).build()
-                            player.playWhenReady = true
-                        } else {
-                            player.trackSelectionParameters =
-                                player.trackSelectionParameters.buildUpon()
-                                    .setMaxVideoBitrate(Integer.MAX_VALUE).build()
-                            player.playWhenReady = true
-                        }
+                        handleQualitySelection(position, l)
                     } else {
                         currentSpeed = l[position]
                         speedText?.text = currentSpeed
@@ -843,6 +866,27 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         bottomSheetDialog.setOnDismissListener {
             currentBottomSheet = BottomSheet.SETTINGS
             isQualitySpeedBottomSheetOpened = false
+        }
+    }
+
+    private fun handleQualitySelection(position: Int, qualityList: List<String>) {
+        val selectedQuality = availableQualities[position]
+        currentQuality = selectedQuality.displayName
+        qualityText?.text = currentQuality
+        
+        if (selectedQuality.displayName == "Auto") {
+            // Auto - clear overrides for adaptive streaming
+            player.trackSelectionParameters = player.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                .build()
+        } else {
+            // Manual quality - set max/min video size
+            player.trackSelectionParameters = player.trackSelectionParameters
+                .buildUpon()
+                .setMaxVideoSize(selectedQuality.width, selectedQuality.height)
+                .setMinVideoSize(selectedQuality.width, selectedQuality.height)
+                .build()
         }
     }
 
@@ -982,7 +1026,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             }
         } catch (e: IllegalArgumentException) {
             // Receiver was not registered, ignore
-            Log.d(tag, "NetworkChangeReceiver was not registered: ${e.message}")
         }
 
         // Dismiss all bottom sheets

@@ -1,20 +1,18 @@
-import 'dart:core';
-
 class PlayerConfiguration {
   const PlayerConfiguration({
+    required this.videoUrl,
     required this.title,
     required this.autoText,
     required this.assetPath,
     required this.speedText,
     required this.qualityText,
-    required this.resolutions,
     required this.lastPosition,
     required this.movieShareLink,
-    required this.initialResolution,
     required this.playVideoFromAsset,
   });
 
   final String title;
+  final String videoUrl;
   final String speedText;
   final int lastPosition;
   final String autoText;
@@ -22,11 +20,10 @@ class PlayerConfiguration {
   final String qualityText;
   final String movieShareLink;
   final bool playVideoFromAsset;
-  final Map<String, String> resolutions;
-  final Map<String, String> initialResolution;
 
   Map<String, dynamic> toMap() => {
     'title': title,
+    'videoUrl': videoUrl,
     'autoText': autoText,
     'assetPath': assetPath,
     'speedText': speedText,
@@ -34,15 +31,12 @@ class PlayerConfiguration {
     'lastPosition': lastPosition,
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
-    'resolutions': resolutions,
-    'initialResolution': initialResolution,
   };
 
   @override
   String toString() =>
       'PlayerConfiguration{'
-      'initialResolution: $initialResolution, '
-      'resolutions: $resolutions, '
+      'videoUrl: $videoUrl, '
       'qualityText: $qualityText, '
       'speedText: $speedText, '
       'lastPosition: $lastPosition, '

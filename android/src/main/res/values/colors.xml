@@ -12,8 +12,8 @@
     <color name="hint">#ADFFFFFF</color>
     <color name="transparent">#00FFFFFF</color>
     <color name="second_black">#111B33</color>
-    <color name="main">#181818</color>
-    <color name="main_dark">#181818</color>
+    <color name="main">#25272D</color>
+    <color name="main_dark">#25272D</color>
     <color name="red">#F40100</color>
     <color name="red300">#74F40100</color>
     <color name="blue">#51A3FE</color>

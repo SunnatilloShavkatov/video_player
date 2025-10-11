@@ -17,10 +17,8 @@ struct PlayerConfiguration{
     var qualityText: String
     var movieShareLink: String
     var playVideoFromAsset: Bool
-    var resolutions: [String:String]
-    var initialResolution: [String:String]
     
-    init(initialResolution: [String : String], resolutions: [String : String], qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String,) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String) {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -30,13 +28,10 @@ struct PlayerConfiguration{
         self.qualityText = qualityText
         self.movieShareLink = movieShareLink
         self.playVideoFromAsset = playVideoFromAsset
-        self.resolutions = resolutions
-        self.initialResolution = initialResolution
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
-        guard let initialResolution = map["initialResolution"] as? [String: String],
-              let resolutions = map["resolutions"] as? [String: String],
+        guard let videoUrl = map["videoUrl"] as? String,
               let qualityText = map["qualityText"] as? String,
               let speedText = map["speedText"] as? String,
               let lastPosition = map["lastPosition"] as? Int,
@@ -48,11 +43,8 @@ struct PlayerConfiguration{
         }
         
         let assetPath = map["assetPath"] as? String
-        let url = initialResolution.values.first ?? ""
         
         return PlayerConfiguration(
-            initialResolution: initialResolution,
-            resolutions: resolutions,
             qualityText: qualityText,
             speedText: speedText,
             lastPosition: lastPosition,
@@ -60,7 +52,7 @@ struct PlayerConfiguration{
             playVideoFromAsset: playVideoFromAsset,
             assetPath: assetPath,
             autoText: autoText,
-            url: url,
+            url: videoUrl,
             movieShareLink: movieShareLink
         )
     }

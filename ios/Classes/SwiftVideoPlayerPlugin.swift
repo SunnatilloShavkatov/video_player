@@ -29,7 +29,6 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         guard let rootViewController = UIApplication.shared.delegate?.window??.rootViewController as? FlutterViewController else {
-            print("Warning: Could not cast root view controller to FlutterViewController")
             return
         }
         viewController = rootViewController
@@ -141,14 +140,12 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                     flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid player configuration", details: nil))
                     return
                 }
-                let sortedResolutions = SortFunctions.sortWithKeys(playerConfiguration.resolutions)
                 guard URL(string: playerConfiguration.url) != nil else {
                     flutterResult?(FlutterError(code: "INVALID_URL", message: "Invalid video URL", details: nil))
                     return
                 }
                 let vc = VideoPlayerViewController()
                 vc.delegate = self
-                vc.resolutions = sortedResolutions
                 vc.modalPresentationStyle = .fullScreen
                 vc.playerConfiguration = playerConfiguration
                 vc.speedLabelText = playerConfiguration.speedText
@@ -283,7 +280,6 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         }
         
         if let error = error {
-            print("Download failed with error: \(error.localizedDescription)")
             getPercentComplete(download: MediaItemDownload(
                 url: mediaDownload.url,
                 percent: mediaDownload.percent,
@@ -291,7 +287,7 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
                 downloadedBytes: mediaDownload.downloadedBytes
             ))
         } else {
-            print("Download completed successfully for: \(mediaDownload.url)")
+            // Download completed successfully
         }
         
         // Clean up
@@ -325,7 +321,7 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
     ) {
         guard let mediaDownload = activeDownloadsMap[aggregateAssetDownloadTask] else { return }
         
-        print("Media selection completed for download: \(mediaDownload.url)")
+        // Media selection completed
         // Additional completion handling can be added here if needed
     }
     
@@ -346,7 +342,6 @@ extension SwiftVideoPlayerPlugin: AVAssetDownloadDelegate {
         // Convert to percentage and ensure it's between 0-100
         percentComplete = min(max(percentComplete * 100, 0), 100)
         
-        print("Download progress: \(Int(percentComplete))% for URL: \(aggregateAssetDownloadTask.urlAsset.url.absoluteString)")
         
         getPercentComplete(
             download: MediaItemDownload(

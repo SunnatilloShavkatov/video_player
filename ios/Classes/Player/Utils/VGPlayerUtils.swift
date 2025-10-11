@@ -129,7 +129,7 @@ func convertStringToDictionary(text: String) -> [String:Any]? {
            let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:AnyObject]
            return json
        } catch {
-           print("Something went wrong")
+           // Error occurred
        }
    }
    return nil

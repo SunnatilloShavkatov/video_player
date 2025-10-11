@@ -13,7 +13,6 @@ protocol SettingDelegate {
 
 class SettingVC: UIViewController, UIGestureRecognizerDelegate {
     
-    var resolutions: [String:String]?
     var movieController = VideoPlayerViewController()
     var delegate: QualityDelegate?
     var speedDelegate: SpeedDelegate?
