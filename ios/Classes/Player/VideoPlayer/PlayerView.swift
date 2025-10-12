@@ -717,8 +717,7 @@ class PlayerView: UIView {
         titleLabelPortrait.snp.makeConstraints { make in
             make.centerX.equalTo(overlayView)
             make.top.equalTo(topView.snp.bottom).offset(8)
-            make.leading.equalToSuperview().offset(16)
-            make.trailing.equalToSuperview().offset(16)
+            make.leading.trailing.equalToSuperview().inset(16)
         }
     }
 
