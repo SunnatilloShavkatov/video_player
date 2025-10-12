@@ -50,7 +50,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     var subtitleDelegate: SubtitleDelegate!
     var playerConfiguration: PlayerConfiguration!
     private var availableQualities: [QualityVariant] = []
-    private var isLoadingQualities: Bool = false
     private var isVolume = false
     private var volumeViewSlider: UISlider!
     private var playerRate: Float = 1.0
@@ -102,8 +101,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         title = playerConfiguration.title
         view.backgroundColor = .black
         
-        // Parse HLS master playlist to get quality variants
-        loadQualityVariants()
         playerView.delegate = self
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
@@ -116,10 +113,12 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             screenProtectorKit?.configurePreventionScreenshot()
             screenProtectorKit?.enabledPreventScreenshot()
         }
+        // Parse HLS master playlist to get quality variants
+        loadQualityVariants()
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        switchToLocalPlayback()
+        playerView.loadMedia(autoPlay: true, playPosition: TimeInterval(playerConfiguration.lastPosition), area: view.safeAreaLayoutGuide)
         setupPictureInPicture()
         super.viewWillAppear(animated)
     }
@@ -162,15 +161,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
         return [.bottom]
-    }
-    
-    func populateMediaInfo(_ autoPlay: Bool, playPosition: TimeInterval) {
-        playerView.loadMedia(autoPlay: autoPlay, playPosition: playPosition, area: view.safeAreaLayoutGuide)
-    }
-    
-    func switchToLocalPlayback() {
-        let playPosition: TimeInterval = TimeInterval(playerConfiguration.lastPosition)
-        populateMediaInfo(true, playPosition: playPosition)
     }
     
     private func addVideosLandscapeConstraints() {
@@ -337,16 +327,15 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     
     private func loadQualityVariants() {
         let videoUrl = playerConfiguration.url
-        guard !videoUrl.isEmpty else {
-            return
-        }
+        guard !videoUrl.isEmpty else { return }
         
-        isLoadingQualities = true
+        guard availableQualities.isEmpty else { return }
+        
+        // Background parsing - video playback ga ta'sir qilmaydi
         HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
             guard let self = self else { return }
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.isLoadingQualities = false
                 if !variants.isEmpty {
                     self.availableQualities = variants
                 }
