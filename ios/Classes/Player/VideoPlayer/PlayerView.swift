@@ -8,7 +8,6 @@
 import AVFoundation
 import AVKit
 import MediaPlayer
-import TinyConstraints
 
 protocol PlayerViewDelegate: NSObjectProtocol {
     func close(duration: [Int])
@@ -613,25 +612,32 @@ class PlayerView: UIView {
     }
 
     private func addControlButtonConstraints() {
-        brightnessSlider.centerY(to: overlayView)
-        brightnessSlider.width(120)
-        brightnessSlider.height(12)
-
         brightnessSlider.snp.makeConstraints { make in
+            make.centerY.equalTo(overlayView)
+            make.width.equalTo(120)
+            make.height.equalTo(12)
             make.left.equalToSuperview().offset(-42)
         }
-        ///
-        playButton.centerX(to: overlayView)
-        playButton.centerY(to: overlayView)
+        
+        playButton.snp.makeConstraints { make in
+            make.centerX.equalTo(overlayView)
+            make.centerY.equalTo(overlayView)
+        }
 
-        skipBackwardButton.rightToLeft(of: playButton, offset: -60)
-        skipBackwardButton.top(to: playButton)
+        skipBackwardButton.snp.makeConstraints { make in
+            make.right.equalTo(playButton.snp.left).offset(-60)
+            make.top.equalTo(playButton)
+        }
 
-        skipForwardButton.leftToRight(of: playButton, offset: 60)
-        skipForwardButton.top(to: playButton)
+        skipForwardButton.snp.makeConstraints { make in
+            make.left.equalTo(playButton.snp.right).offset(60)
+            make.top.equalTo(playButton)
+        }
 
-        activityIndicatorView.centerX(to: overlayView)
-        activityIndicatorView.centerY(to: overlayView)
+        activityIndicatorView.snp.makeConstraints { make in
+            make.centerX.equalTo(overlayView)
+            make.centerY.equalTo(overlayView)
+        }
         activityIndicatorView.layer.cornerRadius = 20
     }
 
@@ -640,61 +646,80 @@ class PlayerView: UIView {
             make.edges.equalToSuperview()
         }
 
-        bottomView.trailing(to: area, offset: 0)
-        bottomView.leading(to: area, offset: 0)
-        bottomView.bottom(to: area, offset: 0)
+        bottomView.snp.makeConstraints { make in
+            make.trailing.equalTo(area).offset(0)
+            make.leading.equalTo(area).offset(0)
+            make.bottom.equalTo(area).offset(0)
+            make.height.equalTo(82)
+        }
 
-        bottomView.height(82)
-
-        timeSlider.bottom(to: bottomView, offset: -8)
         timeSlider.snp.makeConstraints { make in
+            make.bottom.equalTo(bottomView).offset(-8)
             make.left.equalToSuperview().offset(8)
             make.right.equalToSuperview().offset(-8)
         }
 
-        rotateButton.bottomToTop(of: timeSlider, offset: 8)
         rotateButton.snp.makeConstraints { make in
+            make.bottom.equalTo(timeSlider.snp.top).offset(-8)
             make.right.equalTo(bottomView).offset(0)
         }
 
         currentTimeLabel.snp.makeConstraints { make in
             make.left.equalTo(bottomView).offset(8)
+            make.centerY.equalTo(rotateButton)
         }
-        currentTimeLabel.centerY(to: rotateButton)
 
-        separatorLabel.leftToRight(of: currentTimeLabel)
-        separatorLabel.centerY(to: currentTimeLabel)
+        separatorLabel.snp.makeConstraints { make in
+            make.left.equalTo(currentTimeLabel.snp.right)
+            make.centerY.equalTo(currentTimeLabel)
+        }
 
-        durationTimeLabel.leftToRight(of: separatorLabel)
-        durationTimeLabel.centerY(to: separatorLabel)
+        durationTimeLabel.snp.makeConstraints { make in
+            make.left.equalTo(separatorLabel.snp.right)
+            make.centerY.equalTo(separatorLabel)
+        }
     }
 
     private func addTopViewConstraints(area: UILayoutGuide) {
-        topView.leading(to: area, offset: 0)
-        topView.trailing(to: area, offset: 0)
-        topView.top(to: area, offset: 0)
-        topView.height(48)
+        topView.snp.makeConstraints { make in
+            make.leading.equalTo(area).offset(0)
+            make.trailing.equalTo(area).offset(0)
+            make.top.equalTo(area).offset(0)
+            make.height.equalTo(48)
+        }
 
-        exitButton.left(to: topView)
-        exitButton.centerY(to: topView)
-        //
-        settingsButton.right(to: topView)
-        settingsButton.centerY(to: topView)
+        exitButton.snp.makeConstraints { make in
+            make.left.equalTo(topView)
+            make.centerY.equalTo(topView)
+        }
+        
+        settingsButton.snp.makeConstraints { make in
+            make.right.equalTo(topView)
+            make.centerY.equalTo(topView)
+        }
 
-        shareButton.rightToLeft(of: settingsButton)
-        shareButton.centerY(to: topView)
+        shareButton.snp.makeConstraints { make in
+            make.right.equalTo(settingsButton.snp.left)
+            make.centerY.equalTo(topView)
+        }
 
-        pipButton.leftToRight(of: exitButton)
-        pipButton.centerY(to: topView)
+        pipButton.snp.makeConstraints { make in
+            make.left.equalTo(exitButton.snp.right)
+            make.centerY.equalTo(topView)
+        }
 
-        titleLabelLandscape.centerY(to: topView)
-        titleLabelLandscape.centerX(to: topView)
-        titleLabelLandscape.leftToRight(of: pipButton)
-        titleLabelLandscape.layoutMargins = .horizontal(8)
-        titleLabelPortrait.centerX(to: overlayView)
-        titleLabelPortrait.topToBottom(of: topView, offset: 8)
-        titleLabelPortrait.leadingToSuperview(offset: 16, usingSafeArea: true)
-        titleLabelPortrait.trailingToSuperview(offset: 16, usingSafeArea: true)
+        titleLabelLandscape.snp.makeConstraints { make in
+            make.centerY.equalTo(topView)
+            make.centerX.equalTo(topView)
+            make.left.equalTo(pipButton.snp.right).offset(8)
+        }
+        
+        titleLabelPortrait.snp.makeConstraints { make in
+            make.centerX.equalTo(overlayView)
+            make.top.equalTo(topView.snp.bottom).offset(8)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(16)
+        }
     }
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {

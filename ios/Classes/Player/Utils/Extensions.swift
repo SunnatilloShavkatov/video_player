@@ -177,7 +177,7 @@ extension Int {
     
     func secondsToTime() -> String {
         
-        let (h,m,s) = (self / 3600, (self % 3600) / 60, (self % 3600) % 60)
+        let (_,m,s) = (self / 3600, (self % 3600) / 60, (self % 3600) % 60)
         
         let m_string =  m < 10 ? "0\(m)" : "\(m)"
         let s_string =  s < 10 ? "0\(s)" : "\(s)"

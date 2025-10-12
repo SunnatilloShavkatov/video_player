@@ -17,10 +17,6 @@ class VideoViewModel(map: Map<*, *>) {
         return url
     }
 
-    fun setUrl(url: String) {
-        this.url = url
-    }
-
     @SuppressLint("UnsafeOptInUsageError")
     fun getResizeMode(): Int {
         return when (resizeMode) {
@@ -30,9 +26,4 @@ class VideoViewModel(map: Map<*, *>) {
             else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
         }
     }
-
-    fun setResizeMode(resizeMode: String) {
-        this.resizeMode = resizeMode
-    }
-
 }

@@ -16,10 +16,7 @@ downloading videos for offline playback, quality selection, and screen protectio
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'TinyConstraints'
-  s.dependency 'XLActionController'
   s.dependency 'SnapKit', '~> 4.0'
-  s.dependency 'SDWebImage', '~> 5.0'
   s.resources = 'Assets/*'
   s.static_framework = true
 

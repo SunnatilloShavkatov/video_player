@@ -9,9 +9,7 @@ import AVFoundation
 import AVKit
 import MediaPlayer
 import SnapKit
-import TinyConstraints
 import UIKit
-import XLActionController
 
 /* The player state. */
 enum PlaybackMode: Int {
@@ -61,9 +59,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         return PlayerView()
     }()
     
-    private var portraitConstraints = Constraints()
-    private var landscapeConstraints = Constraints()
-    
     init() {
         super.init(nibName: nil, bundle: nil)
     }
@@ -104,7 +99,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.delegate = self
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
-        playerView.edgesToSuperview()
+        playerView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
         if let window = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .flatMap({ $0.windows })
@@ -141,14 +138,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         playerView.changeConstraints()
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let orientation = windowScene.interfaceOrientation
-            if orientation == .landscapeLeft || orientation == .landscapeRight {
-                addVideosLandscapeConstraints()
-            } else {
-                addVideoPortraitConstraints()
-            }
-        }
+        // SnapKit remakeConstraints automatically handles constraint updates
     }
     
     override var prefersHomeIndicatorAutoHidden: Bool {
@@ -163,16 +153,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         return [.bottom]
     }
     
-    private func addVideosLandscapeConstraints() {
-        portraitConstraints.deActivate()
-        landscapeConstraints.append(contentsOf: playerView.edgesToSuperview())
-    }
-    
-    private func addVideoPortraitConstraints() {
-        landscapeConstraints.deActivate()
-        portraitConstraints.append(contentsOf: playerView.center(in: view))
-        portraitConstraints.append(contentsOf: playerView.edgesToSuperview())
-    }
     
     func close(duration: [Int]) {
         screenProtectorKit?.disablePreventScreenshot()

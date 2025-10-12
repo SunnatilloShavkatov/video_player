@@ -20,7 +20,10 @@ class BottomSheetCell : UITableViewCell{
         if let image = Svg.done {
             imageView.image = image
         }
-        imageView.size(CGSize(width: 32, height: 32))
+        imageView.snp.makeConstraints { make in
+            make.width.equalTo(32)
+            make.height.equalTo(32)
+        }
         imageView.contentMode = .scaleAspectFit
         imageView.tintColor = .white.withAlphaComponent(0.5)
         imageView.translatesAutoresizingMaskIntoConstraints = false

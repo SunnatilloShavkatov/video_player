@@ -59,7 +59,10 @@ class BottomSheetViewController: UIViewController, UITableViewDelegate, UITableV
         if let exitImage = Svg.exit {
             cancelBtn.setImage(exitImage, for: .normal)
         }
-        cancelBtn.size(CGSize(width: 48, height: 48))
+        cancelBtn.snp.makeConstraints { make in
+            make.width.equalTo(48)
+            make.height.equalTo(48)
+        }
         cancelBtn.imageEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         cancelBtn.imageView?.contentMode = .scaleAspectFit
         cancelBtn.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)

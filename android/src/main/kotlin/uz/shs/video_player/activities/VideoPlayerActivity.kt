@@ -1,6 +1,5 @@
 package uz.shs.video_player.activities
 
-import android.provider.Settings
 import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.Context
@@ -20,7 +19,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import android.provider.Settings
 import android.util.Rational
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -36,13 +35,14 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.updatePadding
 import androidx.media3.common.C
-import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
@@ -58,17 +58,14 @@ import androidx.media3.ui.PlayerView.SHOW_BUFFERING_ALWAYS
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_NEVER
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import uz.shs.video_player.extraArgument
-import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.R
 import uz.shs.video_player.adapters.QualitySpeedAdapter
+import uz.shs.video_player.extraArgument
 import uz.shs.video_player.models.BottomSheet
 import uz.shs.video_player.models.PlayerConfiguration
+import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.services.NetworkChangeReceiver
 import kotlin.math.abs
-import androidx.core.net.toUri
-import androidx.core.view.ViewCompat
-import androidx.core.view.updatePadding
 
 @Suppress("DEPRECATION", "UNNECESSARY_NOT_NULL_ASSERTION")
 @UnstableApi
@@ -225,7 +222,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         try {
             registerReceiver(networkChangeReceiver, intentFilter)
             isNetworkReceiverRegistered = true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Failed to register network receiver
         }
     }
@@ -287,7 +284,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             )
             brightness = currentBrightness.toDouble().coerceIn(0.0, BRIGHTNESS_MAX.toDouble())
             brightnessSeekbar.progress = brightness.toInt()
-        } catch (e: Settings.SettingNotFoundException) {
+        } catch (_: Settings.SettingNotFoundException) {
             // Fallback to default brightness
             brightness = BRIGHTNESS_DEFAULT.toDouble()
             brightnessSeekbar.progress = BRIGHTNESS_DEFAULT
@@ -333,10 +330,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 // Handle error silently
-            }
-
-            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-                super.onMediaMetadataChanged(mediaMetadata)
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -656,19 +649,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             title1.visibility = View.GONE
             zoom.visibility = View.VISIBLE
             when (currentBottomSheet) {
-                BottomSheet.EPISODES -> {
-                    backButtonEpisodeBottomSheet?.visibility = View.VISIBLE
-                }
-
                 BottomSheet.SETTINGS -> {
                     backButtonSettingsBottomSheet?.visibility = View.VISIBLE
                 }
 
-                BottomSheet.TV_PROGRAMS -> {}
                 BottomSheet.QUALITY_OR_SPEED -> backButtonQualitySpeedBottomSheet?.visibility =
                     View.VISIBLE
 
-                BottomSheet.CHANNELS -> {}
                 BottomSheet.NONE -> {}
             }
         } else {
@@ -680,19 +667,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             zoom.visibility = View.GONE
             playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             when (currentBottomSheet) {
-                BottomSheet.EPISODES -> {
-                    backButtonEpisodeBottomSheet?.visibility = View.GONE
-                }
 
                 BottomSheet.SETTINGS -> {
                     backButtonSettingsBottomSheet?.visibility = View.GONE
                 }
 
-                BottomSheet.TV_PROGRAMS -> {}
                 BottomSheet.QUALITY_OR_SPEED -> backButtonSettingsBottomSheet?.visibility =
                     View.GONE
 
-                BottomSheet.CHANNELS -> {}
                 BottomSheet.NONE -> {}
             }
         }
@@ -716,7 +698,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private var currentBottomSheet = BottomSheet.NONE
 
-    private var backButtonEpisodeBottomSheet: ImageView? = null
     private fun dismissAllBottomSheets() {
         // Create a copy of the list to avoid concurrent modification
         val bottomSheetsToClose = listOfAllOpenedBottomSheets.toList()
@@ -727,7 +708,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 if (bottomSheet.isShowing) {
                     bottomSheet.dismiss()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Error dismissing bottom sheet
             }
         }
@@ -851,7 +832,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             (object : QualitySpeedAdapter.OnClickListener {
                 override fun onClick(position: Int) {
                     if (fromQuality) {
-                        handleQualitySelection(position, l)
+                        handleQualitySelection(position)
                     } else {
                         currentSpeed = l[position]
                         speedText?.text = currentSpeed
@@ -869,7 +850,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
     }
 
-    private fun handleQualitySelection(position: Int, qualityList: List<String>) {
+    private fun handleQualitySelection(position: Int) {
         val selectedQuality = availableQualities[position]
         currentQuality = selectedQuality.displayName
         qualityText?.text = currentQuality
@@ -1024,7 +1005,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 unregisterReceiver(networkChangeReceiver)
                 isNetworkReceiverRegistered = false
             }
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             // Receiver was not registered, ignore
         }
 
