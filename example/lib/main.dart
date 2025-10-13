@@ -206,7 +206,7 @@ class _MainPageState extends State<MainPage> {
           qualityText: 'Quality',
           speedText: 'Speed',
           lastPosition: 0,
-          title: 'S1 E1   ',
+          title: "Harry Potter and the Philosopher's Stone Part 1",
           playVideoFromAsset: false,
           assetPath: '',
           autoText: 'Auto',

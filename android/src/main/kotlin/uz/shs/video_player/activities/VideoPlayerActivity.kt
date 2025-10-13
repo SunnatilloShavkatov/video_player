@@ -153,7 +153,6 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
         setContentView(R.layout.activity_player)
         actionBar?.hide()
-        val window = window
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
@@ -382,7 +381,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     private fun extractQualityOptionsFromTracks(tracks: Tracks) {
         val videoTracks = mutableListOf<QualityOption>()
-        
+
         tracks.groups.forEachIndexed { groupIndex, group ->
             if (group.type == C.TRACK_TYPE_VIDEO) {
                 for (trackIndex in 0 until group.length) {
@@ -402,13 +401,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 }
             }
         }
-        
+
         // Remove duplicates and sort
-        availableQualities = videoTracks
-            .distinctBy { it.height }
-            .sortedByDescending { it.height }
-            .toMutableList()
-            .apply { add(0, QualityOption("Auto", -1, -1, -1, -1, -1)) }
+        availableQualities =
+            videoTracks.distinctBy { it.height }.sortedByDescending { it.height }.toMutableList()
+                .apply { add(0, QualityOption("Auto", -1, -1, -1, -1, -1)) }
     }
 
     private var lastClicked1: Long = -1L
@@ -621,8 +618,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     }
                     val intent = Intent()
                     intent.putExtra(
-                        "position",
-                        if (::player.isInitialized) player.currentPosition / 1000 else 0
+                        "position", if (::player.isInitialized) player.currentPosition / 1000 else 0
                     )
                     intent.putExtra(
                         "duration", if (::player.isInitialized) player.duration / 1000 else 0
@@ -854,20 +850,17 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         val selectedQuality = availableQualities[position]
         currentQuality = selectedQuality.displayName
         qualityText?.text = currentQuality
-        
+
         if (selectedQuality.displayName == "Auto") {
             // Auto - clear overrides for adaptive streaming
-            player.trackSelectionParameters = player.trackSelectionParameters
-                .buildUpon()
-                .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                .build()
+            player.trackSelectionParameters =
+                player.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                    .build()
         } else {
             // Manual quality - set max/min video size
-            player.trackSelectionParameters = player.trackSelectionParameters
-                .buildUpon()
+            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
                 .setMaxVideoSize(selectedQuality.width, selectedQuality.height)
-                .setMinVideoSize(selectedQuality.width, selectedQuality.height)
-                .build()
+                .setMinVideoSize(selectedQuality.width, selectedQuality.height).build()
         }
     }
 
