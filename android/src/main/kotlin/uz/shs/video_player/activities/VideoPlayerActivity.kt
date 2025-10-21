@@ -504,13 +504,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 val params = PictureInPictureParams.Builder()
                     .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT))
                     .setAutoEnterEnabled(false).build()
-                enterPictureInPictureMode(params)
+                enterPipModeSafely(params)
             } else {
                 // For Android O (API 26) to R (API 30)
                 val params = PictureInPictureParams.Builder()
                     .setAspectRatio(Rational(PIP_ASPECT_RATIO_WIDTH, PIP_ASPECT_RATIO_HEIGHT))
                     .build()
-                enterPictureInPictureMode(params)
+                enterPipModeSafely(params)
             }
         }
         more.setOnClickListener {
@@ -565,6 +565,24 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
 
+    /**
+     * Safely enters Picture-in-Picture mode with error handling
+     * @param params PictureInPictureParams for PiP configuration
+     * @return true if PiP was entered successfully, false otherwise
+     */
+    private fun enterPipModeSafely(params: PictureInPictureParams): Boolean {
+        return try {
+            enterPictureInPictureMode(params)
+            true
+        } catch (e: IllegalStateException) {
+            // Device doesn't support PiP despite feature check
+            false
+        } catch (e: IllegalArgumentException) {
+            // Invalid PiP parameters
+            false
+        }
+    }
+
     override fun onUserLeaveHint() {
         val supportsPiP = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
         if (supportsPiP && !isInPictureInPictureMode) {
@@ -582,7 +600,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     )
                 ).build()
             }
-            enterPictureInPictureMode(params)
+            enterPipModeSafely(params)
         }
     }
 
