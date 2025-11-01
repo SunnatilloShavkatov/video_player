@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,12 +90,45 @@ class VideoPlayerViewController {
 
   Future<void> unmute() async => _channel.invokeMethod('unmute');
 
+  /// Gets the total duration of the video in seconds
+  Future<double> getDuration() async {
+    final result = await _channel.invokeMethod('getDuration');
+    return (result as double?) ?? 0.0;
+  }
+
+  StreamController<double>? _positionController;
+  Stream<double>? _positionStream;
+
+  /// Stream of current playback position in seconds
+  Stream<double> get positionStream {
+    if (_positionStream != null) {
+      return _positionStream!;
+    }
+    _positionController = StreamController<double>.broadcast();
+    _positionStream = _positionController!.stream;
+    
+    // Setup handler to receive position updates
+    _setupMethodHandler();
+    
+    return _positionStream!;
+  }
+
+  void Function(Object object)? _finishedCallback;
+
   /// Sets up a method call handler for video player events
   /// Returns the arguments when the video is finished
   void setEventListener(void Function(Object object)? onFinished) {
+    _finishedCallback = onFinished;
+    _setupMethodHandler();
+  }
+
+  void _setupMethodHandler() {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'finished' && onFinished != null) {
-        onFinished(call.arguments);
+      if (call.method == 'positionUpdate') {
+        final position = (call.arguments as double?) ?? 0.0;
+        _positionController?.add(position);
+      } else if (call.method == 'finished' && _finishedCallback != null) {
+        _finishedCallback!(call.arguments);
       }
     });
   }

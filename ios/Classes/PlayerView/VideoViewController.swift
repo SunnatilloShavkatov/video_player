@@ -27,6 +27,9 @@ class VideoViewController: UIViewController {
         return view
     }()
     
+    // Position observer for streaming current time
+    private var timeObserver: Any?
+    
     init(registrar: FlutterPluginRegistrar? = nil, methodChannel: FlutterMethodChannel, assets: String, url: String, gravity: AVLayerVideoGravity) {
         self.registrar = registrar
         self.methodChannel = methodChannel
@@ -100,15 +103,80 @@ class VideoViewController: UIViewController {
             playerLayer.removeFromSuperlayer()
         }
         
+        // Remove old item observers if any
+        player.currentItem?.removeObserver(self, forKeyPath: "duration")
+        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        
         player.automaticallyWaitsToMinimizeStalling = true
-        player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))
+        let playerItem = AVPlayerItem(asset: AVURLAsset(url: videoURL))
+        
+        // Add observer for duration to notify when available
+        playerItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
+        playerItem.addObserver(self, forKeyPath: "status", options: .new, context: nil)
+        
+        player.replaceCurrentItem(with: playerItem)
         
         // Create new playerLayer
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = videoView.bounds
         playerLayer.videoGravity = gravity
         self.videoView.layer.addSublayer(playerLayer)
+        
+        // Setup position observer for streaming
+        setupPositionObserver()
+        
         player.play()
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        // Duration observer is kept for future use if needed
+        // Duration can be obtained via getDuration() method when needed
+    }
+    
+    private func setupPositionObserver() {
+        // Remove existing observer if any
+        if let observer = timeObserver {
+            player.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        
+        // Add periodic time observer to stream position updates (1 second interval)
+        let interval = CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: DispatchQueue.main) { [weak self] time in
+            guard let self = self else { return }
+            let positionSeconds = time.seconds
+            // Send position update via method channel (in seconds)
+            self.methodChannel.invokeMethod("positionUpdate", arguments: positionSeconds)
+        }
+    }
+    
+    func getDuration() -> Double {
+        guard let currentItem = player.currentItem else {
+            return 0.0
+        }
+        let duration = currentItem.duration
+        
+        // Check if duration is valid and not indefinite
+        guard duration.isValid && !duration.isIndefinite else {
+            // Try to get duration from seekable time ranges as fallback
+            if let seekableRange = currentItem.seekableTimeRanges.last?.timeRangeValue {
+                let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
+                let seconds = CMTimeGetSeconds(endTime)
+                if seconds.isFinite && !seconds.isNaN && seconds > 0 {
+                    return seconds
+                }
+            }
+            return 0.0
+        }
+        
+        let durationSeconds = duration.seconds
+        
+        // Check if duration is finite and valid
+        guard durationSeconds.isFinite && !durationSeconds.isNaN && durationSeconds > 0 else {
+            return 0.0
+        }
+        
+        return durationSeconds // Return in seconds
     }
     
     func pause() {
@@ -132,6 +200,16 @@ class VideoViewController: UIViewController {
     }
     
     deinit {
+        // Remove time observer
+        if let observer = timeObserver {
+            player.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        
+        // Remove item observers
+        player.currentItem?.removeObserver(self, forKeyPath: "duration")
+        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        
         playerLayer.removeFromSuperlayer()
         player.pause()
     }
@@ -143,6 +221,16 @@ class VideoViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
+        // Remove time observer
+        if let observer = timeObserver {
+            player.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        
+        // Remove item observers
+        player.currentItem?.removeObserver(self, forKeyPath: "duration")
+        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        
         playerLayer.removeFromSuperlayer()
         player.pause()
         NotificationCenter.default.removeObserver(self)

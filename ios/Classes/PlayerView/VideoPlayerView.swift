@@ -65,6 +65,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             setMute(call: call, result: result)
         case "unmute":
             setUnMute(call: call, result: result)
+        case "getDuration":
+            getDuration(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -110,6 +112,11 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     func setUnMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.unMute()
         result(nil)
+    }
+    
+    func getDuration(result: FlutterResult) {
+        let duration = self.videoViewController.getDuration()
+        result(duration) // Duration in seconds
     }
 }
 
