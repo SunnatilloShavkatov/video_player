@@ -232,9 +232,8 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Video Player')),
-    body: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisAlignment: MainAxisAlignment.center,
+    body: ListView(
+      padding: const EdgeInsets.all(16),
       children: [
         ElevatedButton(onPressed: playVideo, child: const Text('Play Video')),
         ElevatedButton(onPressed: download1, child: const Text('Download1')),

@@ -27,7 +27,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     body: Stack(
       children: [
         Align(
-          alignment: Alignment.topCenter,
           child: AspectRatio(
             aspectRatio: 16 / 9,
             child: SizedBox(
@@ -36,7 +35,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               child: VideoPlayerView(
                 url:
                     'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
-                resizeMode: ResizeMode.fill,
                 onMapViewCreated: _onMapViewCreated,
               ),
             ),
@@ -64,7 +62,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 isPlay = !isPlay;
               });
             },
-            icon: isPlay ? const Icon(Icons.pause) : const Icon(Icons.play_arrow),
+            style: const ButtonStyle(backgroundColor: WidgetStatePropertyAll(Colors.white24)),
+            icon: isPlay
+                ? const Icon(Icons.pause_rounded, color: Colors.white)
+                : const Icon(Icons.play_arrow_rounded, color: Colors.white),
           ),
         ),
         Positioned(

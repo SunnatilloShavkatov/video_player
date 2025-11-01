@@ -24,7 +24,6 @@ class VideoPlayerView extends StatelessWidget {
     if (url.isEmpty) {
       return const Center(child: Text('Error: URL cannot be empty'));
     }
-
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(

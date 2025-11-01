@@ -43,11 +43,39 @@ class VideoViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(videoView)
+        
+        // Add Auto Layout constraints for videoView
+        videoView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            videoView.topAnchor.constraint(equalTo: view.topAnchor),
+            videoView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            videoView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            videoView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
         playVideo(gravity: gravity)
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
+        
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            // Update playerLayer frame when orientation changes
+            self?.updatePlayerLayerFrame()
+        }, completion: nil)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Update playerLayer frame when view size changes
+        updatePlayerLayerFrame()
+    }
+    
+    private func updatePlayerLayerFrame() {
+        // Update playerLayer frame to match current view bounds
+        if playerLayer.superlayer != nil {
+            playerLayer.frame = videoView.bounds
+        }
     }
     
     func playVideo(gravity: AVLayerVideoGravity) {
@@ -66,10 +94,18 @@ class VideoViewController: UIViewController {
             }
             videoURL = url
         }
+        
+        // Remove old playerLayer before creating new one to prevent memory leaks
+        if playerLayer.superlayer != nil {
+            playerLayer.removeFromSuperlayer()
+        }
+        
         player.automaticallyWaitsToMinimizeStalling = true
         player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))
+        
+        // Create new playerLayer
         playerLayer = AVPlayerLayer(player: player)
-        playerLayer.frame = self.view.bounds
+        playerLayer.frame = videoView.bounds
         playerLayer.videoGravity = gravity
         self.videoView.layer.addSublayer(playerLayer)
         player.play()

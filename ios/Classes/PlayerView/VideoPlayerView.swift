@@ -30,12 +30,23 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", gravity: gravity)
         self.videoViewController = viewController
         self.videoView.addSubview(videoViewController.view)
+        
+        // Add Auto Layout constraints to center and fill parent view
+        videoViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            videoViewController.view.topAnchor.constraint(equalTo: videoView.topAnchor),
+            videoViewController.view.leadingAnchor.constraint(equalTo: videoView.leadingAnchor),
+            videoViewController.view.trailingAnchor.constraint(equalTo: videoView.trailingAnchor),
+            videoViewController.view.bottomAnchor.constraint(equalTo: videoView.bottomAnchor)
+        ])
+        
         super.init()
         _methodChannel.setMethodCallHandler(onMethodCall)
     }
     
     deinit {
-        self.videoViewController.dismiss(animated: true)
+        // Properly cleanup video view controller and resources
+        self.videoViewController.view.removeFromSuperview()
         NotificationCenter.default.removeObserver(self)
         self._methodChannel.setMethodCallHandler(nil)
     }
@@ -83,18 +94,22 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     
     func setPause(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.pause()
+        result(nil)
     }
     
     func setPlay(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.play()
+        result(nil)
     }
     
     func setMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.mute()
+        result(nil)
     }
     
     func setUnMute(call: FlutterMethodCall, result: FlutterResult) {
         self.videoViewController.unMute()
+        result(nil)
     }
 }
 
