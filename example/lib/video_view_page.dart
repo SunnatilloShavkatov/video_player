@@ -38,9 +38,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       return '00:00';
     }
     final duration = Duration(seconds: seconds.toInt());
-    final minutes = duration.inMinutes;
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
     final secs = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
   }
 
   @override
@@ -147,8 +153,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Future<void> _onMapViewCreated(VideoPlayerViewController ctr) async {
     controller = ctr;
 
-    // Get duration with polling (will retry until duration is available)
-    _loadDuration(ctr);
+    // Listen to duration ready callback (native will call when duration is available)
+    ctr.onDurationReady((duration) {
+      if (mounted && duration > 0) {
+        setState(() {
+          _duration = duration;
+        });
+      }
+    });
 
     // Listen to position stream
     _positionSubscription?.cancel();
@@ -165,23 +177,5 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         print(event);
       }
     });
-  }
-
-  // Helper method to load duration with retry
-  Future<void> _loadDuration(VideoPlayerViewController ctr) async {
-    // Try to get duration, retry if not available yet
-    while (mounted && _duration == 0) {
-      final duration = await ctr.getDuration();
-      if (duration > 0) {
-        if (mounted) {
-          setState(() {
-            _duration = duration;
-          });
-        }
-        break;
-      }
-      // Wait 200ms before retrying
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
   }
 }

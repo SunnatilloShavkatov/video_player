@@ -122,15 +122,29 @@ class VideoPlayerViewController {
     _setupMethodHandler();
   }
 
+  void Function(double)? _durationReadyCallback;
+
   void _setupMethodHandler() {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'positionUpdate') {
         final position = (call.arguments as double?) ?? 0.0;
         _positionController?.add(position);
+      } else if (call.method == 'durationReady') {
+        final duration = (call.arguments as double?) ?? 0.0;
+        if (duration > 0 && _durationReadyCallback != null) {
+          _durationReadyCallback!(duration);
+        }
       } else if (call.method == 'finished' && _finishedCallback != null) {
         _finishedCallback!(call.arguments);
       }
     });
+  }
+
+  /// Sets callback for when duration becomes available after video loads
+  /// This will be called automatically when native side detects duration is ready
+  void onDurationReady(void Function(double duration) callback) {
+    _durationReadyCallback = callback;
+    _setupMethodHandler();
   }
 }
 

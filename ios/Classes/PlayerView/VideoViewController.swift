@@ -129,8 +129,22 @@ class VideoViewController: UIViewController {
     }
     
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        // Duration observer is kept for future use if needed
-        // Duration can be obtained via getDuration() method when needed
+        if keyPath == "duration" {
+            let duration = getDuration()
+            if duration > 0 {
+                // Send duration ready event when available
+                methodChannel.invokeMethod("durationReady", arguments: duration)
+            }
+        } else if keyPath == "status" {
+            if let playerItem = object as? AVPlayerItem,
+               playerItem.status == .readyToPlay {
+                // When item is ready, check and send duration
+                let duration = getDuration()
+                if duration > 0 {
+                    methodChannel.invokeMethod("durationReady", arguments: duration)
+                }
+            }
+        }
     }
     
     private func setupPositionObserver() {

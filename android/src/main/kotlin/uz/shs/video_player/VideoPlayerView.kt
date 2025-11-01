@@ -147,6 +147,7 @@ class VideoPlayerView internal constructor(
         player.setMediaSource(hlsMediaSource)
         player.prepare()
         player.playWhenReady = true
+        // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
         result.success(null)
     }
 
@@ -164,6 +165,7 @@ class VideoPlayerView internal constructor(
         player.setMediaSource(mediaSource)
         player.prepare()
         player.playWhenReady = true
+        // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
         result.success(null)
     }
 
@@ -215,7 +217,14 @@ class VideoPlayerView internal constructor(
             Player.STATE_READY -> {
                 // Start position updates when player is ready
                 startPositionUpdates()
-                // Duration can be obtained via getDuration() method when needed
+                // Send duration ready event when available
+                handler.post {
+                    val durationMs = player.duration
+                    if (durationMs != C.TIME_UNSET && durationMs > 0) {
+                        val durationSeconds = durationMs / 1000.0
+                        methodChannel.invokeMethod("durationReady", durationSeconds, null)
+                    }
+                }
             }
             Player.STATE_ENDED, Player.STATE_IDLE -> {
                 stopPositionUpdates()
