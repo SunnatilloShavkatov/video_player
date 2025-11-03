@@ -30,6 +30,9 @@ class VideoViewController: UIViewController {
     // Position observer for streaming current time
     private var timeObserver: Any?
     
+    // Track if observers are registered to prevent double removal
+    private var observersRegistered = false
+    
     init(registrar: FlutterPluginRegistrar? = nil, methodChannel: FlutterMethodChannel, assets: String, url: String, gravity: AVLayerVideoGravity) {
         self.registrar = registrar
         self.methodChannel = methodChannel
@@ -104,8 +107,11 @@ class VideoViewController: UIViewController {
         }
         
         // Remove old item observers if any
-        player.currentItem?.removeObserver(self, forKeyPath: "duration")
-        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        if observersRegistered, let currentItem = player.currentItem {
+            currentItem.removeObserver(self, forKeyPath: "duration", context: nil)
+            currentItem.removeObserver(self, forKeyPath: "status", context: nil)
+            observersRegistered = false
+        }
         
         player.automaticallyWaitsToMinimizeStalling = true
         let playerItem = AVPlayerItem(asset: AVURLAsset(url: videoURL))
@@ -113,6 +119,7 @@ class VideoViewController: UIViewController {
         // Add observer for duration to notify when available
         playerItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
         playerItem.addObserver(self, forKeyPath: "status", options: .new, context: nil)
+        observersRegistered = true
         
         player.replaceCurrentItem(with: playerItem)
         
@@ -225,9 +232,12 @@ class VideoViewController: UIViewController {
             timeObserver = nil
         }
         
-        // Remove item observers
-        player.currentItem?.removeObserver(self, forKeyPath: "duration")
-        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        // Remove item observers safely
+        if observersRegistered, let currentItem = player.currentItem {
+            currentItem.removeObserver(self, forKeyPath: "duration", context: nil)
+            currentItem.removeObserver(self, forKeyPath: "status", context: nil)
+            observersRegistered = false
+        }
         
         playerLayer.removeFromSuperlayer()
         player.pause()
@@ -246,9 +256,12 @@ class VideoViewController: UIViewController {
             timeObserver = nil
         }
         
-        // Remove item observers
-        player.currentItem?.removeObserver(self, forKeyPath: "duration")
-        player.currentItem?.removeObserver(self, forKeyPath: "status")
+        // Remove item observers safely
+        if observersRegistered, let currentItem = player.currentItem {
+            currentItem.removeObserver(self, forKeyPath: "duration", context: nil)
+            currentItem.removeObserver(self, forKeyPath: "status", context: nil)
+            observersRegistered = false
+        }
         
         playerLayer.removeFromSuperlayer()
         player.pause()

@@ -203,13 +203,19 @@ class VideoPlayerView internal constructor(
                     if (positionMs != C.TIME_UNSET && positionMs >= 0) {
                         // Convert milliseconds to seconds
                         val positionSeconds = positionMs / 1000.0
-                        // Ensure we're on main thread for method channel
-                        handler.post {
+                        // Send position update via method channel (already on main thread)
+                        try {
                             methodChannel.invokeMethod("positionUpdate", positionSeconds, null)
+                        } catch (e: Exception) {
+                            // Method channel might be disposed, stop updates
+                            stopPositionUpdates()
+                            return
                         }
                     }
                 } catch (e: Exception) {
-                    // Ignore errors, continue updates
+                    // Player error, stop updates
+                    stopPositionUpdates()
+                    return
                 }
                 // Schedule next update (1 second interval)
                 handler.postDelayed(this, 1000)
@@ -233,10 +239,14 @@ class VideoPlayerView internal constructor(
                 startPositionUpdates()
                 // Send duration ready event when available
                 handler.post {
-                    val durationMs = player.duration
-                    if (durationMs != C.TIME_UNSET && durationMs > 0) {
-                        val durationSeconds = durationMs / 1000.0
-                        methodChannel.invokeMethod("durationReady", durationSeconds, null)
+                    try {
+                        val durationMs = player.duration
+                        if (durationMs != C.TIME_UNSET && durationMs > 0) {
+                            val durationSeconds = durationMs / 1000.0
+                            methodChannel.invokeMethod("durationReady", durationSeconds, null)
+                        }
+                    } catch (e: Exception) {
+                        // Method channel might be disposed, ignore
                     }
                 }
             }
@@ -251,9 +261,14 @@ class VideoPlayerView internal constructor(
     }
 
     override fun dispose() {
-        stopPositionUpdates()
-        player.removeListener(this)
-        player.pause()
-        player.release()
+        try {
+            stopPositionUpdates()
+            player.removeListener(this)
+            player.pause()
+            player.release()
+            methodChannel.setMethodCallHandler(null)
+        } catch (e: Exception) {
+            // Ignore disposal errors
+        }
     }
 }
