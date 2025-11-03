@@ -213,6 +213,11 @@ class VideoViewController: UIViewController {
         player.isMuted = false
     }
     
+    func seekTo(seconds: Double) {
+        let time = CMTime(seconds: seconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
     deinit {
         // Remove time observer
         if let observer = timeObserver {

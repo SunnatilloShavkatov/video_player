@@ -67,6 +67,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             setUnMute(call: call, result: result)
         case "getDuration":
             getDuration(result: result)
+        case "seekTo":
+            seekTo(call: call, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -117,6 +119,16 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     func getDuration(result: FlutterResult) {
         let duration = self.videoViewController.getDuration()
         result(duration) // Duration in seconds
+    }
+    
+    func seekTo(call: FlutterMethodCall, result: FlutterResult) {
+        let arguments = call.arguments as? [String: Any]
+        if let args = arguments, let seconds = args["seconds"] as? Double {
+            self.videoViewController.seekTo(seconds: seconds)
+            result(nil)
+        } else {
+            result(FlutterError(code: "INVALID_ARGUMENT", message: "seconds parameter is required", details: nil))
+        }
     }
 }
 
