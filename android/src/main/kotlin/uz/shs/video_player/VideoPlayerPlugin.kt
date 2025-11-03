@@ -39,31 +39,77 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onMethodCall(call: MethodCall, result: Result) {
-        if (call.method == "playVideo") {
-            if (call.hasArgument("playerConfigJsonString")) {
-                val playerConfigJsonString = call.argument("playerConfigJsonString") as String?
-                if (playerConfigJsonString == null || playerConfigJsonString.isEmpty()) {
-                    result.error("INVALID_CONFIG", "playerConfigJsonString is null or empty", null)
-                    return
+        when (call.method) {
+            "playVideo" -> {
+                if (call.hasArgument("playerConfigJsonString")) {
+                    val playerConfigJsonString = call.argument("playerConfigJsonString") as String?
+                    if (playerConfigJsonString == null || playerConfigJsonString.isEmpty()) {
+                        result.error("INVALID_CONFIG", "playerConfigJsonString is null or empty", null)
+                        return
+                    }
+                    val gson = Gson()
+                    val playerConfiguration = try {
+                        gson.fromJson(playerConfigJsonString, PlayerConfiguration::class.java)
+                    } catch (e: JsonSyntaxException) {
+                        result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
+                        return
+                    }
+                    if (activity == null) {
+                        result.error("NO_ACTIVITY", "Activity is null", null)
+                        return
+                    }
+                    val intent = Intent(activity!!.applicationContext, VideoPlayerActivity::class.java)
+                    intent.putExtra(extraArgument, playerConfiguration)
+                    activity!!.startActivityForResult(intent, playerActivity)
+                    resultMethod = result
+                } else {
+                    result.error("MISSING_ARGUMENT", "Missing playerConfigJsonString argument", null)
                 }
-                val gson = Gson()
-                val playerConfiguration = try {
-                    gson.fromJson(playerConfigJsonString, PlayerConfiguration::class.java)
-                } catch (e: JsonSyntaxException) {
-                    result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
-                    return
-                }
-                if (activity == null) {
-                    result.error("NO_ACTIVITY", "Activity is null", null)
-                    return
-                }
-                val intent = Intent(activity!!.applicationContext, VideoPlayerActivity::class.java)
-                intent.putExtra(extraArgument, playerConfiguration)
-                activity!!.startActivityForResult(intent, playerActivity)
-                resultMethod = result
             }
-        } else {
-            result.notImplemented()
+            "downloadVideo" -> {
+                // Android does not currently support download functionality
+                // Return success to maintain API compatibility
+                result.success(true)
+            }
+            "pauseDownload" -> {
+                // Android does not currently support download functionality
+                result.success(true)
+            }
+            "resumeDownload" -> {
+                // Android does not currently support download functionality
+                result.success(true)
+            }
+            "isDownloadVideo" -> {
+                // Android does not currently support download functionality
+                result.success(false)
+            }
+            "getCurrentProgressDownload" -> {
+                // Android does not currently support download functionality
+                result.success(0)
+            }
+            "getStateDownload" -> {
+                // Android does not currently support download functionality
+                result.success(0)
+            }
+            "getPercentDownload" -> {
+                // Android does not currently support download functionality
+                result.success(0)
+            }
+            "getBytesDownloaded" -> {
+                // Android does not currently support download functionality
+                result.success(0)
+            }
+            "getContentBytesDownload" -> {
+                // Android does not currently support download functionality
+                result.success(0)
+            }
+            "removeDownload" -> {
+                // Android does not currently support download functionality
+                result.success(true)
+            }
+            else -> {
+                result.notImplemented()
+            }
         }
     }
 

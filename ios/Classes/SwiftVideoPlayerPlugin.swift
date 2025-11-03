@@ -104,7 +104,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                     flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                getStateDownload(for: download)
+                getBytesDownloaded(for: download)
                 return
             }
         case "getContentBytesDownload":
@@ -116,7 +116,7 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                     flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
                     return
                 }
-                getStateDownload(for: download)
+                getContentBytesDownload(for: download)
                 return
             }
         case "isDownloadVideo":
@@ -129,6 +129,42 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
                     return
                 }
                 isDownloadVideo(for: download)
+                return
+            }
+        case "getPercentDownload":
+            do {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
+                    return
+                }
+                getPercentDownload(for: download)
+                return
+            }
+        case "getCurrentProgressDownload":
+            do {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
+                    return
+                }
+                getCurrentProgressDownload(for: download)
+                return
+            }
+        case "removeDownload":
+            do {
+                guard let args = call.arguments as? [String: String],
+                      let downloadConfigJsonString = args["downloadConfigJsonString"],
+                      let json = convertStringToDictionary(text: downloadConfigJsonString),
+                      let download = DownloadConfiguration.fromMap(map: json) else {
+                    flutterResult?(FlutterError(code: "INVALID_ARGS", message: "Invalid download configuration", details: nil))
+                    return
+                }
+                removeDownload(for: download)
                 return
             }
         case "playVideo":
@@ -266,6 +302,88 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerDelegat
             break
         }
         task?.resume()
+    }
+    
+    /// Get bytes downloaded for a download configuration
+    private func getBytesDownloaded(for download: DownloadConfiguration) {
+        var task: AVAggregateAssetDownloadTask?
+        for (taskKey, assetVal) in activeDownloadsMap where download.url == assetVal.url {
+            task = taskKey
+            break
+        }
+        flutterResult?(task?.countOfBytesReceived ?? 0)
+    }
+    
+    /// Get content bytes (total size) for a download configuration
+    private func getContentBytesDownload(for download: DownloadConfiguration) {
+        var task: AVAggregateAssetDownloadTask?
+        for (taskKey, assetVal) in activeDownloadsMap where download.url == assetVal.url {
+            task = taskKey
+            break
+        }
+        flutterResult?(task?.countOfBytesExpectedToReceive ?? 0)
+    }
+    
+    /// Get percent downloaded for a download configuration
+    private func getPercentDownload(for download: DownloadConfiguration) {
+        var task: AVAggregateAssetDownloadTask?
+        var mediaDownload: MediaItemDownload?
+        for (taskKey, assetVal) in activeDownloadsMap where download.url == assetVal.url {
+            task = taskKey
+            mediaDownload = assetVal
+            break
+        }
+        
+        if let download = mediaDownload {
+            flutterResult?(download.percent)
+        } else {
+            // Check if already downloaded
+            guard UserDefaults.standard.value(forKey: download.url) is String else {
+                flutterResult?(0)
+                return
+            }
+            flutterResult?(100)
+        }
+    }
+    
+    /// Get current progress for a download configuration
+    private func getCurrentProgressDownload(for download: DownloadConfiguration) {
+        var mediaDownload: MediaItemDownload?
+        for (_, assetVal) in activeDownloadsMap where download.url == assetVal.url {
+            mediaDownload = assetVal
+            break
+        }
+        
+        if let download = mediaDownload {
+            flutterResult?(download.percent)
+        } else {
+            // Check if already downloaded
+            guard UserDefaults.standard.value(forKey: download.url) is String else {
+                flutterResult?(0)
+                return
+            }
+            flutterResult?(100)
+        }
+    }
+    
+    /// Remove a download
+    private func removeDownload(for download: DownloadConfiguration) {
+        var task: AVAggregateAssetDownloadTask?
+        for (taskKey, assetVal) in activeDownloadsMap where download.url == assetVal.url {
+            task = taskKey
+            break
+        }
+        
+        // Cancel and remove the task
+        if let task = task {
+            task.cancel()
+            activeDownloadsMap.removeValue(forKey: task)
+        }
+        
+        // Remove from UserDefaults
+        UserDefaults.standard.removeObject(forKey: download.url)
+        
+        flutterResult?(true)
     }
 }
 
