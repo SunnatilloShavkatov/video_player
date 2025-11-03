@@ -109,14 +109,50 @@ bool isDownloaded = await VideoPlayer.checkIsDownloadedVideo(downloadConfig);
 ```dart
 VideoPlayerView(
   url: 'https://example.com/video.mp4',
-  resizeMode: 'fit', // 'fit', 'fill', or 'zoom'
-  onCreated: (controller) {
-    // Video player created
-  },
-  onFinished: () {
-    // Video finished playing
+  resizeMode: ResizeMode.fit, // ResizeMode.fit, ResizeMode.fill, or ResizeMode.zoom
+  onMapViewCreated: (controller) {
+    // Video player created, save the controller for later use
+    this.controller = controller;
+    
+    // Listen to position updates
+    controller.positionStream.listen((position) {
+      print('Current position: $position seconds');
+    });
+    
+    // Get notified when duration is ready
+    controller.onDurationReady((duration) {
+      print('Video duration: $duration seconds');
+    });
   },
 )
+```
+
+### Playback Controls
+
+```dart
+// Play the video
+await controller.play();
+
+// Pause the video
+await controller.pause();
+
+// Mute audio
+await controller.mute();
+
+// Unmute audio
+await controller.unmute();
+
+// Get video duration
+double duration = await controller.getDuration();
+
+// Seek to a specific position (in seconds)
+await controller.seekTo(30.0); // Seek to 30 seconds
+
+// Change video URL
+await controller.setUrl(url: 'https://example.com/new-video.mp4');
+
+// Load video from assets
+await controller.setAssets(assets: 'assets/videos/my_video.mp4');
 ```
 
 ## iOS-Specific Features

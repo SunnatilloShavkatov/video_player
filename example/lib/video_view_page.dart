@@ -114,7 +114,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             ),
           ),
         ),
-        // Duration and Position display
+        // Duration and Position display with seek bar
         Positioned(
           bottom: 0,
           left: 0,
@@ -129,16 +129,36 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   colors: [Colors.transparent, Colors.black54],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    _formatTime(_position),
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    _formatTime(_duration),
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  // Seek slider
+                  if (_duration > 0)
+                    Slider(
+                      value: _position.clamp(0.0, _duration),
+                      min: 0.0,
+                      max: _duration,
+                      onChanged: (value) {
+                        setState(() {
+                          _position = value;
+                        });
+                      },
+                      onChangeEnd: (value) {
+                        controller?.seekTo(value);
+                      },
+                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatTime(_position),
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        _formatTime(_duration),
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 ],
               ),

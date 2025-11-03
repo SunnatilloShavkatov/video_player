@@ -106,6 +106,7 @@ class VideoPlayerView internal constructor(
             "mute" -> mute(result)
             "unmute" -> unmute(result)
             "getDuration" -> getDuration(result)
+            "seekTo" -> seekTo(methodCall, result)
             else -> result.notImplemented()
         }
     }
@@ -177,6 +178,19 @@ class VideoPlayerView internal constructor(
             result.success(durationSeconds)
         } else {
             result.success(0.0)
+        }
+    }
+
+    private fun seekTo(methodCall: MethodCall, result: MethodChannel.Result) {
+        val args = methodCall.arguments as? Map<*, *>
+        val seconds = args?.get("seconds") as? Double
+        if (seconds != null) {
+            // Convert seconds to milliseconds
+            val positionMs = (seconds * 1000).toLong()
+            player.seekTo(positionMs)
+            result.success(null)
+        } else {
+            result.error("INVALID_ARGUMENT", "seconds parameter is required", null)
         }
     }
 
