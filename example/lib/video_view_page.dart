@@ -136,7 +136,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   if (_duration > 0)
                     Slider(
                       value: _position.clamp(0.0, _duration),
-                      min: 0.0,
                       max: _duration,
                       onChanged: (value) {
                         setState(() {
@@ -144,7 +143,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                         });
                       },
                       onChangeEnd: (value) {
-                        controller?.seekTo(value);
+                        controller?.seekTo(seconds: value);
                       },
                     ),
                   Row(

@@ -98,7 +98,7 @@ class VideoPlayerViewController {
 
   /// Seeks to a specific position in the video
   /// [seconds] - the position to seek to in seconds
-  Future<void> seekTo(double seconds) async => _channel.invokeMethod('seekTo', {'seconds': seconds});
+  Future<void> seekTo({required double seconds}) async => _channel.invokeMethod('seekTo', {'seconds': seconds});
 
   StreamController<double>? _positionController;
   Stream<double>? _positionStream;
@@ -110,10 +110,10 @@ class VideoPlayerViewController {
     }
     _positionController = StreamController<double>.broadcast();
     _positionStream = _positionController!.stream;
-    
+
     // Setup handler to receive position updates
     _setupMethodHandler();
-    
+
     return _positionStream!;
   }
 
