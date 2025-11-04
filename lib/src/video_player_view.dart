@@ -102,6 +102,9 @@ class VideoPlayerViewController {
 
   StreamController<double>? _positionController;
   Stream<double>? _positionStream;
+  
+  /// Flag to track if method call handler is already set
+  bool _isHandlerSet = false;
 
   /// Stream of current playback position in seconds
   Stream<double> get positionStream {
@@ -129,19 +132,23 @@ class VideoPlayerViewController {
   void Function(double)? _durationReadyCallback;
 
   void _setupMethodHandler() {
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'positionUpdate') {
-        final position = (call.arguments as double?) ?? 0.0;
-        _positionController?.add(position);
-      } else if (call.method == 'durationReady') {
-        final duration = (call.arguments as double?) ?? 0.0;
-        if (duration > 0 && _durationReadyCallback != null) {
-          _durationReadyCallback!(duration);
+    // Only set handler once to prevent overwriting and performance issues
+    if (!_isHandlerSet) {
+      _channel.setMethodCallHandler((call) async {
+        if (call.method == 'positionUpdate') {
+          final position = (call.arguments as double?) ?? 0.0;
+          _positionController?.add(position);
+        } else if (call.method == 'durationReady') {
+          final duration = (call.arguments as double?) ?? 0.0;
+          if (duration > 0 && _durationReadyCallback != null) {
+            _durationReadyCallback!(duration);
+          }
+        } else if (call.method == 'finished' && _finishedCallback != null) {
+          _finishedCallback!(call.arguments);
         }
-      } else if (call.method == 'finished' && _finishedCallback != null) {
-        _finishedCallback!(call.arguments);
-      }
-    });
+      });
+      _isHandlerSet = true;
+    }
   }
 
   /// Sets callback for when duration becomes available after video loads
@@ -149,6 +156,17 @@ class VideoPlayerViewController {
   void onDurationReady(void Function(double duration) callback) {
     _durationReadyCallback = callback;
     _setupMethodHandler();
+  }
+  
+  /// Disposes the controller and cleans up resources
+  Future<void> dispose() async {
+    _isHandlerSet = false;
+    _channel.setMethodCallHandler(null);
+    await _positionController?.close();
+    _positionController = null;
+    _positionStream = null;
+    _finishedCallback = null;
+    _durationReadyCallback = null;
   }
 }
 
