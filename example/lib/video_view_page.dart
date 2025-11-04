@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_player_example/second_page.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   const VideoPlayerPage({super.key});
@@ -21,17 +22,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   double _duration = 0;
   double _position = 0;
   StreamSubscription<double>? _positionSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _positionSubscription?.cancel();
-    super.dispose();
-  }
 
   String _formatTime(double seconds) {
     if (seconds.isNaN || seconds.isInfinite || seconds < 0) {
@@ -185,6 +175,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _positionSubscription?.cancel();
     _positionSubscription = ctr.positionStream.listen((position) {
       if (mounted) {
+        if (position.toInt() == 10) {
+          controller!.pause();
+          Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SecondPage()));
+        }
         setState(() {
           _position = position;
         });
@@ -196,5 +190,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         print(event);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    _positionSubscription?.cancel();
+    super.dispose();
   }
 }
