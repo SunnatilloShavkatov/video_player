@@ -117,7 +117,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       ]);
                     }
                   },
-                  icon: const Icon(Icons.screen_rotation, color: Colors.white),
+                  icon: const Icon(Icons.screen_rotation_rounded, color: Colors.white),
                   tooltip: 'Rotate screen',
                 ),
                 IconButton(

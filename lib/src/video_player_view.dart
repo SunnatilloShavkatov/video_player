@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
@@ -40,6 +41,7 @@ class VideoPlayerView extends StatelessWidget {
         return AndroidView(
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
+          hitTestBehavior: PlatformViewHitTestBehavior.transparent,
           creationParams: <String, dynamic>{
             'resizeMode': resizeMode.name,
             if (isHttpUrl) 'url': url,
@@ -52,6 +54,7 @@ class VideoPlayerView extends StatelessWidget {
         return UiKitView(
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
+          hitTestBehavior: PlatformViewHitTestBehavior.transparent,
           creationParams: <String, dynamic>{
             'resizeMode': resizeMode.name,
             if (isHttpUrl) 'url': url,

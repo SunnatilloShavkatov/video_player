@@ -328,8 +328,8 @@ class VideoViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        // Don't cleanup here, let deinit handle it to prevent double cleanup
-        // Only notify that view is disappearing
+        // Ensure playback stops when the view is closed
+        cleanup()
         methodChannel.invokeMethod("finished", arguments: "finished")
     }
     
