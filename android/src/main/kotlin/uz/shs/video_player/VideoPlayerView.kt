@@ -40,6 +40,8 @@ class VideoPlayerView internal constructor(
     private var positionUpdateRunnable: Runnable? = null
     private var containerView: FrameLayout
     private var layoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var lastWidth: Int = 0
+    private var lastHeight: Int = 0
     
     override fun getView(): View {
         return containerView
@@ -83,9 +85,15 @@ class VideoPlayerView internal constructor(
     
     private fun setupLayoutListener() {
         layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-            // Force layout update when size changes (e.g., orientation change)
-            playerView.requestLayout()
-            playerView.invalidate()
+            // Only update if size actually changed to avoid unnecessary updates
+            val currentWidth = containerView.width
+            val currentHeight = containerView.height
+            if (currentWidth != lastWidth || currentHeight != lastHeight) {
+                lastWidth = currentWidth
+                lastHeight = currentHeight
+                // Force layout update when size changes (e.g., orientation change)
+                playerView.requestLayout()
+            }
         }
         containerView.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
     }
@@ -281,8 +289,16 @@ class VideoPlayerView internal constructor(
             layoutListener = null
         }
         
+        // Stop position updates
         stopPositionUpdates()
+        
+        // Remove player listener
         player.removeListener(this)
+        
+        // Clear method channel handler
+        methodChannel.setMethodCallHandler(null)
+        
+        // Pause and release player
         player.pause()
         player.release()
     }

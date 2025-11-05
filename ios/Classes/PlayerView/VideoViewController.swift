@@ -35,6 +35,7 @@ class VideoViewController: UIViewController {
     private var isObservingDuration = false
     private var isObservingStatus = false
     private var observedPlayerItem: AVPlayerItem?
+    private var lastKnownBounds: CGRect = .zero
     
     init(registrar: FlutterPluginRegistrar? = nil, methodChannel: FlutterMethodChannel, assets: String, url: String, gravity: AVLayerVideoGravity) {
         self.registrar = registrar
@@ -80,6 +81,11 @@ class VideoViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // Only update if bounds actually changed to avoid unnecessary updates
+        let currentBounds = videoView.bounds
+        guard currentBounds != lastKnownBounds else { return }
+        lastKnownBounds = currentBounds
+        
         // Update playerLayer frame when view size changes
         // Use CATransaction to ensure smooth updates
         CATransaction.begin()
@@ -245,6 +251,9 @@ class VideoViewController: UIViewController {
         
         // Safely remove item observers
         removePlayerItemObservers()
+        
+        // Remove NotificationCenter observers
+        NotificationCenter.default.removeObserver(self)
         
         playerLayer.removeFromSuperlayer()
         player.pause()
