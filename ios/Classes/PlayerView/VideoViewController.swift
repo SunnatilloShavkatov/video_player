@@ -34,6 +34,7 @@ class VideoViewController: UIViewController {
     // Track if observers are added to prevent duplicate removals
     private var isObservingDuration = false
     private var isObservingStatus = false
+    private var isObservingTimeControlStatus = false
     private var observedPlayerItem: AVPlayerItem?
     private var lastKnownBounds: CGRect = .zero
     
@@ -133,9 +134,13 @@ class VideoViewController: UIViewController {
         playerItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
         playerItem.addObserver(self, forKeyPath: "status", options: .new, context: nil)
         
+        // Add observer for timeControlStatus to track play/pause/buffering states
+        player.addObserver(self, forKeyPath: "timeControlStatus", options: [.new, .old], context: nil)
+        
         // Track that we're observing this item
         isObservingDuration = true
         isObservingStatus = true
+        isObservingTimeControlStatus = true
         observedPlayerItem = playerItem
         
         player.replaceCurrentItem(with: playerItem)
@@ -149,6 +154,14 @@ class VideoViewController: UIViewController {
         // Setup position observer for streaming
         setupPositionObserver()
         
+        // Add notification observer for video ended
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerDidFinishPlaying),
+            name: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem
+        )
+        
         player.play()
     }
     
@@ -160,15 +173,44 @@ class VideoViewController: UIViewController {
                 methodChannel.invokeMethod("durationReady", arguments: duration)
             }
         } else if keyPath == "status" {
-            if let playerItem = object as? AVPlayerItem,
-               playerItem.status == .readyToPlay {
-                // When item is ready, check and send duration
-                let duration = getDuration()
-                if duration > 0 {
-                    methodChannel.invokeMethod("durationReady", arguments: duration)
+            if let playerItem = object as? AVPlayerItem {
+                switch playerItem.status {
+                case .readyToPlay:
+                    // When item is ready, check and send duration (only once)
+                    let duration = getDuration()
+                    if duration > 0 {
+                        methodChannel.invokeMethod("durationReady", arguments: duration)
+                    }
+                    // Send ready status
+                    methodChannel.invokeMethod("playerStatus", arguments: "ready")
+                case .failed:
+                    // Send error status
+                    methodChannel.invokeMethod("playerStatus", arguments: "error")
+                case .unknown:
+                    // Send idle status
+                    methodChannel.invokeMethod("playerStatus", arguments: "idle")
+                @unknown default:
+                    break
                 }
             }
+        } else if keyPath == "timeControlStatus" {
+            // Handle play/pause/buffering states
+            switch player.timeControlStatus {
+            case .waitingToPlayAtSpecifiedRate:
+                methodChannel.invokeMethod("playerStatus", arguments: "buffering")
+            case .paused:
+                methodChannel.invokeMethod("playerStatus", arguments: "paused")
+            case .playing:
+                methodChannel.invokeMethod("playerStatus", arguments: "playing")
+            @unknown default:
+                break
+            }
         }
+    }
+    
+    @objc private func playerDidFinishPlaying() {
+        // Send ended status when video finishes
+        methodChannel.invokeMethod("playerStatus", arguments: "ended")
     }
     
     private func setupPositionObserver() {
@@ -242,7 +284,7 @@ class VideoViewController: UIViewController {
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
     }
     
-    deinit {
+    private func cleanup() {
         // Remove time observer
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
@@ -255,8 +297,14 @@ class VideoViewController: UIViewController {
         // Remove NotificationCenter observers
         NotificationCenter.default.removeObserver(self)
         
-        playerLayer.removeFromSuperlayer()
+        if playerLayer.superlayer != nil {
+            playerLayer.removeFromSuperlayer()
+        }
         player.pause()
+    }
+    
+    deinit {
+        cleanup()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -266,25 +314,18 @@ class VideoViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        // Remove time observer
-        if let observer = timeObserver {
-            player.removeTimeObserver(observer)
-            timeObserver = nil
-        }
-        
-        // Safely remove item observers
-        removePlayerItemObservers()
-        
-        if playerLayer.superlayer != nil {
-            playerLayer.removeFromSuperlayer()
-        }
-        player.pause()
-        NotificationCenter.default.removeObserver(self)
+        cleanup()
         methodChannel.invokeMethod("finished", arguments: "finished")
     }
     
     // Helper method to safely remove player item observers
     private func removePlayerItemObservers() {
+        // Remove player timeControlStatus observer
+        if isObservingTimeControlStatus {
+            player.removeObserver(self, forKeyPath: "timeControlStatus")
+            isObservingTimeControlStatus = false
+        }
+        
         // Only remove if we're actually observing and item exists
         guard (isObservingDuration || isObservingStatus), let item = observedPlayerItem else {
             return

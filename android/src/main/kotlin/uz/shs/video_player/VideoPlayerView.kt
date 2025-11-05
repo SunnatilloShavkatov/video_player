@@ -11,6 +11,7 @@ import android.widget.FrameLayout
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -166,6 +167,18 @@ class VideoPlayerView internal constructor(
         result.success(null)
     }
 
+    // Helper method to configure playerView and load media source
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun configurePlayerViewAndLoadMedia(mediaSource: MediaSource, resizeMode: Int) {
+        playerView.player = player
+        playerView.keepScreenOn = true
+        playerView.useController = false
+        playerView.resizeMode = resizeMode
+        player.setMediaSource(mediaSource)
+        player.prepare()
+        player.playWhenReady = true
+    }
+
     // set and load new Url
     @SuppressLint("UnsafeOptInUsageError")
     private fun setUrl(methodCall: MethodCall, result: MethodChannel.Result) {
@@ -173,13 +186,7 @@ class VideoPlayerView internal constructor(
         val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
         val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(args.getUrl()))
-        playerView.player = player
-        playerView.keepScreenOn = true
-        playerView.useController = false
-        playerView.resizeMode = args.getResizeMode()
-        player.setMediaSource(hlsMediaSource)
-        player.prepare()
-        player.playWhenReady = true
+        configurePlayerViewAndLoadMedia(hlsMediaSource, args.getResizeMode())
         // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
         result.success(null)
     }
@@ -191,13 +198,7 @@ class VideoPlayerView internal constructor(
         val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
-        playerView.player = player
-        playerView.keepScreenOn = true
-        playerView.useController = false
-        playerView.resizeMode = args.getResizeMode()
-        player.setMediaSource(mediaSource)
-        player.prepare()
-        player.playWhenReady = true
+        configurePlayerViewAndLoadMedia(mediaSource, args.getResizeMode())
         // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
         result.success(null)
     }
@@ -259,7 +260,12 @@ class VideoPlayerView internal constructor(
 
     // Player.Listener implementation
     override fun onPlaybackStateChanged(playbackState: Int) {
-        when (playbackState) {
+        val status = when (playbackState) {
+            Player.STATE_IDLE -> {
+                stopPositionUpdates()
+                "idle"
+            }
+            Player.STATE_BUFFERING -> "buffering"
             Player.STATE_READY -> {
                 // Start position updates when player is ready
                 startPositionUpdates()
@@ -271,15 +277,36 @@ class VideoPlayerView internal constructor(
                         methodChannel.invokeMethod("durationReady", durationSeconds, null)
                     }
                 }
+                "ready"
             }
-            Player.STATE_ENDED, Player.STATE_IDLE -> {
+            Player.STATE_ENDED -> {
                 stopPositionUpdates()
+                "ended"
+            }
+            else -> null
+        }
+        
+        // Send status update
+        status?.let {
+            handler.post {
+                methodChannel.invokeMethod("playerStatus", it, null)
             }
         }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        // No action needed for position updates
+        // Send play/pause status
+        val status = if (isPlaying) "playing" else "paused"
+        handler.post {
+            methodChannel.invokeMethod("playerStatus", status, null)
+        }
+    }
+    
+    override fun onPlayerError(error: PlaybackException) {
+        // Send error status
+        handler.post {
+            methodChannel.invokeMethod("playerStatus", "error", null)
+        }
     }
 
     override fun dispose() {

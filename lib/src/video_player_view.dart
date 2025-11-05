@@ -102,7 +102,10 @@ class VideoPlayerViewController {
 
   StreamController<double>? _positionController;
   Stream<double>? _positionStream;
-  
+
+  StreamController<PlayerStatus>? _statusController;
+  Stream<PlayerStatus>? _statusStream;
+
   /// Flag to track if method call handler is already set
   bool _isHandlerSet = false;
 
@@ -118,6 +121,20 @@ class VideoPlayerViewController {
     _setupMethodHandler();
 
     return _positionStream!;
+  }
+
+  /// Stream of player status updates
+  Stream<PlayerStatus> get statusStream {
+    if (_statusStream != null) {
+      return _statusStream!;
+    }
+    _statusController = StreamController<PlayerStatus>.broadcast();
+    _statusStream = _statusController!.stream;
+
+    // Setup handler to receive status updates
+    _setupMethodHandler();
+
+    return _statusStream!;
   }
 
   void Function(Object object)? _finishedCallback;
@@ -143,6 +160,15 @@ class VideoPlayerViewController {
           if (duration > 0 && _durationReadyCallback != null) {
             _durationReadyCallback!(duration);
           }
+        } else if (call.method == 'playerStatus') {
+          final statusString = call.arguments as String?;
+          if (statusString != null) {
+            final status = PlayerStatus.values.firstWhere(
+              (e) => e.name == statusString,
+              orElse: () => PlayerStatus.idle,
+            );
+            _statusController?.add(status);
+          }
         } else if (call.method == 'finished' && _finishedCallback != null) {
           _finishedCallback!(call.arguments);
         }
@@ -157,7 +183,7 @@ class VideoPlayerViewController {
     _durationReadyCallback = callback;
     _setupMethodHandler();
   }
-  
+
   /// Disposes the controller and cleans up resources
   Future<void> dispose() async {
     _isHandlerSet = false;
@@ -165,9 +191,14 @@ class VideoPlayerViewController {
     await _positionController?.close();
     _positionController = null;
     _positionStream = null;
+    await _statusController?.close();
+    _statusController = null;
+    _statusStream = null;
     _finishedCallback = null;
     _durationReadyCallback = null;
   }
 }
 
 enum ResizeMode { fit, fill, zoom }
+
+enum PlayerStatus { idle, buffering, ready, ended, playing, paused, error }

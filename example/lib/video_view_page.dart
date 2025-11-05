@@ -43,6 +43,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.black,
     body: Stack(
       children: [
         Align(
@@ -58,7 +59,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
             ),
           ),
         ),
@@ -104,7 +105,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       ]);
                     }
                   },
-                  icon: const Icon(Icons.screen_rotation),
+                  icon: const Icon(Icons.screen_rotation, color: Colors.white),
                   tooltip: 'Rotate screen',
                 ),
                 IconButton(
@@ -118,7 +119,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       isMute = !isMute;
                     });
                   },
-                  icon: isMute ? const Icon(Icons.volume_off) : const Icon(Icons.volume_up),
+                  icon: isMute
+                      ? const Icon(Icons.volume_off_rounded, color: Colors.white)
+                      : const Icon(Icons.volume_up_rounded, color: Colors.white),
                 ),
               ],
             ),
@@ -208,13 +211,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   void dispose() {
-    // Reset orientation to allow all orientations
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     controller?.dispose();
     _positionSubscription?.cancel();
     super.dispose();
