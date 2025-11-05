@@ -109,16 +109,22 @@ class VideoPlayerView internal constructor(
             playerView.resizeMode = resizeMode
             
             // Determine if it's HTTP URL or asset
-            val uri = if (url.contains("http")) {
+            val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
                 url.toUri()
             } else {
                 "asset:///flutter_assets/$url".toUri()
             }
             
             val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
-            val mediaSource: MediaSource = if (url.contains("http")) {
-                HlsMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(uri))
+            // Determine if it's HLS stream or regular progressive media
+            val mediaSource: MediaSource = if (url.startsWith("http://") || url.startsWith("https://")) {
+                if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
+                    HlsMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri))
+                } else {
+                    ProgressiveMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri))
+                }
             } else {
                 ProgressiveMediaSource.Factory(dataSourceFactory)
                     .createMediaSource(MediaItem.fromUri(uri))
@@ -146,25 +152,41 @@ class VideoPlayerView internal constructor(
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun pause(result: MethodChannel.Result) {
-        player.pause()
-        result.success(null)
+        try {
+            player.pause()
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("PAUSE_ERROR", "Failed to pause: ${e.message}", null)
+        }
     }
 
     private fun play(result: MethodChannel.Result) {
-        player.play()
-        result.success(null)
+        try {
+            player.play()
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("PLAY_ERROR", "Failed to play: ${e.message}", null)
+        }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun mute(result: MethodChannel.Result) {
-        player.volume = 0f
-        result.success(null)
+        try {
+            player.volume = 0f
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("MUTE_ERROR", "Failed to mute: ${e.message}", null)
+        }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun unmute(result: MethodChannel.Result) {
-        player.volume = 1f
-        result.success(null)
+        try {
+            player.volume = 1f
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("UNMUTE_ERROR", "Failed to unmute: ${e.message}", null)
+        }
     }
 
     // Helper method to configure playerView and load media source
@@ -182,48 +204,87 @@ class VideoPlayerView internal constructor(
     // set and load new Url
     @SuppressLint("UnsafeOptInUsageError")
     private fun setUrl(methodCall: MethodCall, result: MethodChannel.Result) {
-        val args = VideoViewModel(methodCall.arguments as Map<*, *>)
-        val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
-        val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(args.getUrl()))
-        configurePlayerViewAndLoadMedia(hlsMediaSource, args.getResizeMode())
-        // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
-        result.success(null)
+        try {
+            val args = VideoViewModel(methodCall.arguments as Map<*, *>)
+            val url = args.getUrl()
+            
+            if (url.isEmpty()) {
+                result.error("INVALID_URL", "URL cannot be empty", null)
+                return
+            }
+            
+            val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
+            val uri = url.toUri()
+            
+            // Determine if it's HLS stream or regular progressive media
+            val mediaSource: MediaSource = if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(MediaItem.fromUri(uri))
+            } else {
+                ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(MediaItem.fromUri(uri))
+            }
+            
+            configurePlayerViewAndLoadMedia(mediaSource, args.getResizeMode())
+            // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("SET_URL_ERROR", "Failed to set URL: ${e.message}", null)
+        }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun setAssets(methodCall: MethodCall, result: MethodChannel.Result) {
-        val args = VideoViewModel(methodCall.arguments as Map<*, *>)
-        val uri = "asset:///flutter_assets/${args.getUrl()}".toUri()
-        val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
-        val mediaSource: MediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(uri))
-        configurePlayerViewAndLoadMedia(mediaSource, args.getResizeMode())
-        // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
-        result.success(null)
+        try {
+            val args = VideoViewModel(methodCall.arguments as Map<*, *>)
+            val assetPath = args.getUrl()
+            
+            if (assetPath.isEmpty()) {
+                result.error("INVALID_ASSET", "Asset path cannot be empty", null)
+                return
+            }
+            
+            val uri = "asset:///flutter_assets/$assetPath".toUri()
+            val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(playerView.context)
+            val mediaSource: MediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(uri))
+            configurePlayerViewAndLoadMedia(mediaSource, args.getResizeMode())
+            // Duration will be sent automatically when player becomes ready (via onPlaybackStateChanged)
+            result.success(null)
+        } catch (e: Exception) {
+            result.error("SET_ASSETS_ERROR", "Failed to set asset: ${e.message}", null)
+        }
     }
 
     private fun getDuration(result: MethodChannel.Result) {
-        val durationMs = player.duration
-        if (durationMs != C.TIME_UNSET && durationMs > 0) {
-            // Convert milliseconds to seconds
-            val durationSeconds = durationMs / 1000.0
-            result.success(durationSeconds)
-        } else {
-            result.success(0.0)
+        try {
+            val durationMs = player.duration
+            if (durationMs != C.TIME_UNSET && durationMs > 0) {
+                // Convert milliseconds to seconds
+                val durationSeconds = durationMs / 1000.0
+                result.success(durationSeconds)
+            } else {
+                result.success(0.0)
+            }
+        } catch (e: Exception) {
+            result.error("GET_DURATION_ERROR", "Failed to get duration: ${e.message}", null)
         }
     }
 
     private fun seekTo(methodCall: MethodCall, result: MethodChannel.Result) {
-        val args = methodCall.arguments as? Map<*, *>
-        val seconds = args?.get("seconds") as? Double
-        if (seconds != null) {
-            // Convert seconds to milliseconds
-            val positionMs = (seconds * 1000).toLong()
-            player.seekTo(positionMs)
-            result.success(null)
-        } else {
-            result.error("INVALID_ARGUMENT", "seconds parameter is required", null)
+        try {
+            val args = methodCall.arguments as? Map<*, *>
+            val seconds = args?.get("seconds") as? Double
+            if (seconds != null && seconds >= 0) {
+                // Convert seconds to milliseconds
+                val positionMs = (seconds * 1000).toLong()
+                player.seekTo(positionMs)
+                result.success(null)
+            } else {
+                result.error("INVALID_ARGUMENT", "seconds parameter is required and must be >= 0", null)
+            }
+        } catch (e: Exception) {
+            result.error("SEEK_ERROR", "Failed to seek: ${e.message}", null)
         }
     }
 

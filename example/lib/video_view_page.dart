@@ -44,13 +44,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,
+    extendBodyBehindAppBar: true,
+    appBar: AppBar(
+      toolbarHeight: 0,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    ),
     body: Stack(
       children: [
         Align(
           child: VideoPlayerView(
             url:
                 'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
-            onMapViewCreated: _onMapViewCreated,
+            onVideoViewCreated: _onVideoViewCreated,
           ),
         ),
         Positioned(
@@ -176,7 +188,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   );
 
   // load default assets
-  Future<void> _onMapViewCreated(VideoPlayerViewController ctr) async {
+  Future<void> _onVideoViewCreated(VideoPlayerViewController ctr) async {
     controller = ctr;
 
     // Listen to duration ready callback (native will call when duration is available)

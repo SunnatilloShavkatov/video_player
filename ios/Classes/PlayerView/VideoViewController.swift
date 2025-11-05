@@ -103,20 +103,27 @@ class VideoViewController: UIViewController {
     }
     
     func playVideo(gravity: AVLayerVideoGravity) {
-        var videoURL: URL
+        var videoURL: URL?
         if url.isEmpty {
             let key = self.registrar?.lookupKey(forAsset: assets)
             guard let path = Bundle.main.path(forResource: key, ofType: nil) else {
-                debugPrint("video not found")
+                debugPrint("video not found for asset: \(assets)")
+                methodChannel.invokeMethod("playerStatus", arguments: "error")
                 return
             }
             videoURL = URL(fileURLWithPath: path)
         } else {
-            guard let url = URL(string: url) else {
-                debugPrint("Invalid video URL")
+            guard let parsedUrl = URL(string: url) else {
+                debugPrint("Invalid video URL: \(url)")
+                methodChannel.invokeMethod("playerStatus", arguments: "error")
                 return
             }
-            videoURL = url
+            videoURL = parsedUrl
+        }
+        
+        guard let videoURL = videoURL else {
+            methodChannel.invokeMethod("playerStatus", arguments: "error")
+            return
         }
         
         // Remove old playerLayer before creating new one to prevent memory leaks
@@ -284,7 +291,14 @@ class VideoViewController: UIViewController {
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
     }
     
+    // Track if cleanup has been performed to prevent double cleanup
+    private var isCleanedUp = false
+    
     private func cleanup() {
+        // Prevent double cleanup
+        guard !isCleanedUp else { return }
+        isCleanedUp = true
+        
         // Remove time observer
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
@@ -314,7 +328,8 @@ class VideoViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        cleanup()
+        // Don't cleanup here, let deinit handle it to prevent double cleanup
+        // Only notify that view is disappearing
         methodChannel.invokeMethod("finished", arguments: "finished")
     }
     

@@ -79,20 +79,33 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         if let args = arguments {
             let videoPath: String? = args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
-            self.videoViewController.url = videoPath ?? ""
-            self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
-            result(nil)
+            if let path = videoPath, !path.isEmpty {
+                self.videoViewController.url = path
+                self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_URL", message: "URL cannot be empty", details: nil))
+            }
+        } else {
+            result(FlutterError(code: "INVALID_ARGUMENT", message: "Arguments are required", details: nil))
         }
     }
     
     func setAssets(call: FlutterMethodCall, result: FlutterResult) {
         let arguments = call.arguments as? [String: Any]
         if let args = arguments {
-            let videoPath: String? = args["url"] as? String
+            // Check for 'assets' key first, fallback to 'url' for backward compatibility
+            let videoPath: String? = args["assets"] as? String ?? args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
-            self.videoViewController.assets = videoPath ?? ""
-            self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
-            result(nil)
+            if let path = videoPath, !path.isEmpty {
+                self.videoViewController.assets = path
+                self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ASSET", message: "Asset path cannot be empty", details: nil))
+            }
+        } else {
+            result(FlutterError(code: "INVALID_ARGUMENT", message: "Arguments are required", details: nil))
         }
     }
     

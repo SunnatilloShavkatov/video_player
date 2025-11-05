@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-typedef FlutterVideoPayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
+typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
   const VideoPlayerView({
     super.key,
-    required this.onMapViewCreated,
+    required this.onVideoViewCreated,
     required this.url,
     this.resizeMode = ResizeMode.fit,
   });
@@ -19,13 +19,22 @@ class VideoPlayerView extends StatelessWidget {
 
   final String url;
   final ResizeMode resizeMode;
-  final FlutterVideoPayerViewCreatedCallback onMapViewCreated;
+  final FlutterVideoPlayerViewCreatedCallback onVideoViewCreated;
 
   @override
   Widget build(BuildContext context) {
-    if (url.isEmpty) {
+    if (url.isEmpty || url.trim().isEmpty) {
       return const Center(child: Text('Error: URL cannot be empty'));
     }
+    
+    // Helper methods for URL detection
+    final isHttpUrl = url.startsWith('http://') || url.startsWith('https://');
+    final isAssetUrl = url.startsWith('assets/') || url.startsWith('/assets/');
+    
+    if (!isHttpUrl && !isAssetUrl) {
+      return const Center(child: Text('Error: Invalid URL format. Must be HTTP/HTTPS URL or asset path'));
+    }
+    
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(
@@ -33,8 +42,8 @@ class VideoPlayerView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           creationParams: <String, dynamic>{
             'resizeMode': resizeMode.name,
-            if (url.contains('http')) 'url': url,
-            if (url.contains('assets')) 'assets': url,
+            if (isHttpUrl) 'url': url,
+            if (isAssetUrl) 'assets': url,
           },
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
@@ -45,8 +54,8 @@ class VideoPlayerView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           creationParams: <String, dynamic>{
             'resizeMode': resizeMode.name,
-            if (url.contains('http')) 'url': url,
-            if (url.contains('assets')) 'assets': url,
+            if (isHttpUrl) 'url': url,
+            if (isAssetUrl) 'assets': url,
           },
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
@@ -63,7 +72,7 @@ class VideoPlayerView extends StatelessWidget {
   }
 
   // Callback method when platform view is created
-  void _onPlatformViewCreated(int id) => onMapViewCreated(VideoPlayerViewController._(id));
+  void _onPlatformViewCreated(int id) => onVideoViewCreated(VideoPlayerViewController._(id));
 }
 
 // VideoPlayerView Controller class to set url etc
@@ -79,7 +88,7 @@ class VideoPlayerViewController {
       _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
 
   Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
-    await _channel.invokeMethod('setAssets', {'url': assets, 'resizeMode': resizeMode.name});
+    await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.name});
   }
 
   Future<void> pause() async => _channel.invokeMethod('pause');

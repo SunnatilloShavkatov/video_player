@@ -9,8 +9,9 @@ class VideoViewModel(map: Map<*, *>) {
     private var resizeMode: String = ""
 
     init {
-        this.url = map["url"] as String
-        this.resizeMode = map["resizeMode"] as String
+        // Support both 'url' and 'assets' keys for backward compatibility
+        this.url = (map["url"] as? String) ?: (map["assets"] as? String) ?: ""
+        this.resizeMode = (map["resizeMode"] as? String) ?: ""
     }
 
     fun getUrl(): String {
