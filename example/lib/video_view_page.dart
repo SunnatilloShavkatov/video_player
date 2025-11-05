@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_example/second_page.dart';
 
@@ -19,6 +20,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   bool isPlay = true;
   bool isMute = false;
+  bool isLandscape = false;
   double _duration = 0;
   double _position = 0;
   StreamSubscription<double>? _positionSubscription;
@@ -44,17 +46,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     body: Stack(
       children: [
         Align(
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: SizedBox(
-              width: MediaQuery.sizeOf(context).width,
-              height: MediaQuery.sizeOf(context).width * 9 / 16,
-              child: VideoPlayerView(
-                url:
-                    'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
-                onMapViewCreated: _onMapViewCreated,
-              ),
-            ),
+          child: VideoPlayerView(
+            url:
+                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
+            onMapViewCreated: _onMapViewCreated,
           ),
         ),
         Positioned(
@@ -89,18 +84,43 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           top: 0,
           right: 0,
           child: SafeArea(
-            child: IconButton(
-              onPressed: () {
-                if (isMute) {
-                  controller?.unmute();
-                } else {
-                  controller?.mute();
-                }
-                setState(() {
-                  isMute = !isMute;
-                });
-              },
-              icon: isMute ? const Icon(Icons.volume_off) : const Icon(Icons.volume_up),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      isLandscape = !isLandscape;
+                    });
+                    if (isLandscape) {
+                      SystemChrome.setPreferredOrientations([
+                        DeviceOrientation.landscapeLeft,
+                        DeviceOrientation.landscapeRight,
+                      ]);
+                    } else {
+                      SystemChrome.setPreferredOrientations([
+                        DeviceOrientation.portraitUp,
+                        DeviceOrientation.portraitDown,
+                      ]);
+                    }
+                  },
+                  icon: const Icon(Icons.screen_rotation),
+                  tooltip: 'Rotate screen',
+                ),
+                IconButton(
+                  onPressed: () {
+                    if (isMute) {
+                      controller?.unmute();
+                    } else {
+                      controller?.mute();
+                    }
+                    setState(() {
+                      isMute = !isMute;
+                    });
+                  },
+                  icon: isMute ? const Icon(Icons.volume_off) : const Icon(Icons.volume_up),
+                ),
+              ],
             ),
           ),
         ),
@@ -110,16 +130,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           left: 0,
           right: 0,
           child: SafeArea(
-            child: Container(
+            child: Padding(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black54],
-                ),
-              ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Seek slider
@@ -175,7 +189,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _positionSubscription?.cancel();
     _positionSubscription = ctr.positionStream.listen((position) {
       if (mounted) {
-        if (position.toInt() == 10) {
+        if (position.toInt() == 100) {
           controller!.pause();
           Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SecondPage()));
         }
@@ -194,6 +208,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   void dispose() {
+    // Reset orientation to allow all orientations
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     controller?.dispose();
     _positionSubscription?.cancel();
     super.dispose();

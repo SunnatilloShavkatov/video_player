@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Foundation
+import UIKit
 
 class VideoViewController: UIViewController {
     
@@ -69,14 +70,22 @@ class VideoViewController: UIViewController {
         
         coordinator.animate(alongsideTransition: { [weak self] _ in
             // Update playerLayer frame when orientation changes
+            // Use CATransaction to prevent frame glitches during rotation
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
             self?.updatePlayerLayerFrame()
+            CATransaction.commit()
         }, completion: nil)
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         // Update playerLayer frame when view size changes
+        // Use CATransaction to ensure smooth updates
+        CATransaction.begin()
+        CATransaction.setDisableActions(false)
         updatePlayerLayerFrame()
+        CATransaction.commit()
     }
     
     private func updatePlayerLayerFrame() {

@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -37,9 +38,11 @@ class VideoPlayerView internal constructor(
     private val methodChannel: MethodChannel
     private val handler = Handler(Looper.getMainLooper())
     private var positionUpdateRunnable: Runnable? = null
+    private var containerView: FrameLayout
+    private var layoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     
     override fun getView(): View {
-        return playerView
+        return containerView
     }
 
     init {
@@ -56,6 +59,18 @@ class VideoPlayerView internal constructor(
         playerView.player = player
         playerView.useController = false
         playerView.keepScreenOn = true
+        
+        // Wrap PlayerView in container to handle size changes
+        containerView = FrameLayout(context)
+        containerView.layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        containerView.addView(playerView)
+        
+        // Add layout listener to handle orientation changes
+        setupLayoutListener()
+        
         methodChannel = MethodChannel(messenger, "plugins.video/video_player_view_$id")
         // Init methodCall Listener
         methodChannel.setMethodCallHandler(this)
@@ -64,6 +79,15 @@ class VideoPlayerView internal constructor(
         if (creationParams is Map<*, *>) {
             loadFromCreationParams(creationParams)
         }
+    }
+    
+    private fun setupLayoutListener() {
+        layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+            // Force layout update when size changes (e.g., orientation change)
+            playerView.requestLayout()
+            playerView.invalidate()
+        }
+        containerView.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
     }
     
     @SuppressLint("UnsafeOptInUsageError")
@@ -251,6 +275,12 @@ class VideoPlayerView internal constructor(
     }
 
     override fun dispose() {
+        // Remove layout listener
+        layoutListener?.let {
+            containerView.viewTreeObserver.removeOnGlobalLayoutListener(it)
+            layoutListener = null
+        }
+        
         stopPositionUpdates()
         player.removeListener(this)
         player.pause()
