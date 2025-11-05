@@ -9,6 +9,7 @@ import 'package:video_player_example/second_page.dart';
 import 'package:video_player_example/video_view_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
