@@ -25,17 +25,19 @@ class VideoPlayerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty || url.trim().isEmpty) {
-      return const Center(child: Text('Error: URL cannot be empty'));
+      return const Center(
+        child: Text('Error: URL cannot be empty', style: TextStyle(color: Colors.white)),
+      );
     }
-    
+
     // Helper methods for URL detection
     final isHttpUrl = url.startsWith('http://') || url.startsWith('https://');
     final isAssetUrl = url.startsWith('assets/') || url.startsWith('/assets/');
-    
+
     if (!isHttpUrl && !isAssetUrl) {
       return const Center(child: Text('Error: Invalid URL format. Must be HTTP/HTTPS URL or asset path'));
     }
-    
+
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(
@@ -118,9 +120,6 @@ class VideoPlayerViewController {
   StreamController<PlayerStatus>? _statusController;
   Stream<PlayerStatus>? _statusStream;
 
-  /// Flag to track if method call handler is already set
-  bool _isHandlerSet = false;
-
   /// Stream of current playback position in seconds
   Stream<double> get positionStream {
     if (_positionStream != null) {
@@ -161,32 +160,25 @@ class VideoPlayerViewController {
   void Function(double)? _durationReadyCallback;
 
   void _setupMethodHandler() {
-    // Only set handler once to prevent overwriting and performance issues
-    if (!_isHandlerSet) {
-      _channel.setMethodCallHandler((call) async {
-        if (call.method == 'positionUpdate') {
-          final position = (call.arguments as double?) ?? 0.0;
-          _positionController?.add(position);
-        } else if (call.method == 'durationReady') {
-          final duration = (call.arguments as double?) ?? 0.0;
-          if (duration > 0 && _durationReadyCallback != null) {
-            _durationReadyCallback!(duration);
-          }
-        } else if (call.method == 'playerStatus') {
-          final statusString = call.arguments as String?;
-          if (statusString != null) {
-            final status = PlayerStatus.values.firstWhere(
-              (e) => e.name == statusString,
-              orElse: () => PlayerStatus.idle,
-            );
-            _statusController?.add(status);
-          }
-        } else if (call.method == 'finished' && _finishedCallback != null) {
-          _finishedCallback!(call.arguments);
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'positionUpdate') {
+        final position = (call.arguments as double?) ?? 0.0;
+        _positionController?.add(position);
+      } else if (call.method == 'durationReady') {
+        final duration = (call.arguments as double?) ?? 0.0;
+        if (duration > 0 && _durationReadyCallback != null) {
+          _durationReadyCallback!(duration);
         }
-      });
-      _isHandlerSet = true;
-    }
+      } else if (call.method == 'playerStatus') {
+        final statusString = call.arguments as String?;
+        if (statusString != null) {
+          final status = PlayerStatus.values.firstWhere((e) => e.name == statusString, orElse: () => PlayerStatus.idle);
+          _statusController?.add(status);
+        }
+      } else if (call.method == 'finished' && _finishedCallback != null) {
+        _finishedCallback!(call.arguments);
+      }
+    });
   }
 
   /// Sets callback for when duration becomes available after video loads
@@ -198,7 +190,6 @@ class VideoPlayerViewController {
 
   /// Disposes the controller and cleans up resources
   Future<void> dispose() async {
-    _isHandlerSet = false;
     _channel.setMethodCallHandler(null);
     await _positionController?.close();
     _positionController = null;

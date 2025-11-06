@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Plugin example',
+    title: 'Video Player',
     themeMode: ThemeMode.light,
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
@@ -37,7 +37,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
     ),
-
     home: const MainPage(),
   );
 }

@@ -25,6 +25,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   double _position = 0;
   StreamSubscription<double>? _positionSubscription;
 
+  @override
+  void reassemble() {
+    super.reassemble();
+    _disposeController();
+  }
+
   String _formatTime(double seconds) {
     if (seconds.isNaN || seconds.isInfinite || seconds < 0) {
       return '00:00';
@@ -189,6 +195,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   // load default assets
   Future<void> _onVideoViewCreated(VideoPlayerViewController ctr) async {
+    if (controller != null && controller != ctr) {
+      _disposeController();
+    }
     controller = ctr;
 
     // Listen to duration ready callback (native will call when duration is available)
@@ -221,11 +230,17 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     });
   }
 
+  void _disposeController() {
+    controller?.dispose();
+    _positionSubscription?.cancel();
+    controller = null;
+    _positionSubscription = null;
+  }
+
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-    controller?.dispose();
-    _positionSubscription?.cancel();
+    _disposeController();
     super.dispose();
   }
 }

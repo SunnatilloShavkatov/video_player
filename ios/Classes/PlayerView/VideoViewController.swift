@@ -290,15 +290,8 @@ class VideoViewController: UIViewController {
         let time = CMTime(seconds: seconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
     }
-    
-    // Track if cleanup has been performed to prevent double cleanup
-    private var isCleanedUp = false
-    
+   
     private func cleanup() {
-        // Prevent double cleanup
-        guard !isCleanedUp else { return }
-        isCleanedUp = true
-        
         // Remove time observer
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
@@ -315,6 +308,7 @@ class VideoViewController: UIViewController {
             playerLayer.removeFromSuperlayer()
         }
         player.pause()
+        player.replaceCurrentItem(with: nil)
     }
     
     deinit {
@@ -322,15 +316,14 @@ class VideoViewController: UIViewController {
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(true)
+        super.viewDidAppear(animated)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         // Ensure playback stops when the view is closed
-        cleanup()
-        methodChannel.invokeMethod("finished", arguments: "finished")
+        player.pause()
     }
     
     // Helper method to safely remove player item observers

@@ -41,14 +41,21 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         ])
         
         super.init()
-        _methodChannel.setMethodCallHandler(onMethodCall)
+        // Use weak self to prevent retain cycle
+        _methodChannel.setMethodCallHandler { [weak self] (call, result) in
+            guard let self = self else {
+                result(FlutterError(code: "DISPOSED", message: "VideoPlayerView has been disposed", details: nil))
+                return
+            }
+            self.onMethodCall(call: call, result: result)
+        }
     }
     
     deinit {
         // Properly cleanup video view controller and resources
+        self._methodChannel.setMethodCallHandler(nil)
         self.videoViewController.view.removeFromSuperview()
         NotificationCenter.default.removeObserver(self)
-        self._methodChannel.setMethodCallHandler(nil)
     }
     
     func onMethodCall(call: FlutterMethodCall, result: FlutterResult) {
