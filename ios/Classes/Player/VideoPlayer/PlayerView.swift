@@ -576,13 +576,9 @@ class PlayerView: UIView {
         overlayView.addSubview(topView)
         overlayView.addSubview(playButton)
         overlayView.addSubview(skipForwardButton)
-        overlayView.addSubview(skipForwardButton)
-        overlayView.addSubview(skipBackwardButton)
         overlayView.addSubview(skipBackwardButton)
         overlayView.addSubview(activityIndicatorView)
         overlayView.addSubview(bottomView)
-        overlayView.addSubview(rotateButton)
-        overlayView.addSubview(topView)
         overlayView.addSubview(titleLabelPortrait)
         addTopViewSubviews()
         addBottomViewSubviews()
@@ -650,7 +646,6 @@ class PlayerView: UIView {
             make.trailing.equalTo(area).offset(0)
             make.leading.equalTo(area).offset(0)
             make.bottom.equalTo(area).offset(0)
-            make.height.equalTo(82)
         }
 
         timeSlider.snp.makeConstraints { make in
@@ -660,8 +655,9 @@ class PlayerView: UIView {
         }
 
         rotateButton.snp.makeConstraints { make in
-            make.bottom.equalTo(timeSlider.snp.top).offset(-8)
             make.right.equalTo(bottomView).offset(0)
+            make.bottom.equalTo(timeSlider.snp.top).offset(0)
+            make.top.greaterThanOrEqualTo(bottomView).offset(8)
         }
 
         currentTimeLabel.snp.makeConstraints { make in
@@ -723,9 +719,11 @@ class PlayerView: UIView {
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "duration" {
-            if let duration = player.currentItem?.duration.seconds,
-               duration.isFinite && !duration.isNaN && duration > 0.0 {
-                self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: player.currentItem!.duration)
+            if let currentItem = player.currentItem,
+               currentItem.duration.seconds.isFinite &&
+               !currentItem.duration.seconds.isNaN &&
+               currentItem.duration.seconds > 0.0 {
+                self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.duration)
             } else {
                 if let item = player.currentItem,
                    let seekableRange = item.seekableTimeRanges.last?.timeRangeValue {
@@ -905,7 +903,6 @@ class PlayerView: UIView {
         case UIGestureRecognizer.State.changed:
             switch panDirection {
             case SwipeDirection.horizontal:
-                //                horizontalMoved(velocityPoint.x)
                 break
             case SwipeDirection.vertical:
                 verticalMoved(velocityPoint.y)
@@ -935,17 +932,6 @@ class PlayerView: UIView {
             brightnessSlider.value -= Float(value / 10000)
             UIScreen.main.brightness -= value / 10000
         }
-    }
-
-    private func showBlockControls() {
-        let options: UIView.AnimationOptions = [.curveEaseIn]
-        UIView.animate(
-            withDuration: 0.3, delay: 0.2, options: options,
-            animations: { [self] in
-                let alpha = 1.0
-                topView.alpha = alpha
-                resetTimer()
-            }, completion: nil)
     }
 
     private func toggleViews() {
@@ -1062,11 +1048,9 @@ class PlayerView: UIView {
     @objc func playerDidFinishPlaying() {
         purgeMediaPlayer()
         removeMediaPlayerObservers()
-        delegate?.close(duration: [
-            Int(player.currentTime().seconds),
-            Int(player.currentItem!.duration.seconds),
-        ]
-        )
+        let currentSeconds = Int(player.currentTime().seconds)
+        let durationSeconds = Int(player.currentItem?.duration.seconds ?? 0)
+        delegate?.close(duration: [currentSeconds, durationSeconds])
     }
 
     /// MARK: - Time logic

@@ -11,45 +11,23 @@ import MediaPlayer
 import SnapKit
 import UIKit
 
-/* The player state. */
-enum PlaybackMode: Int {
-    case none = 0
-    case local
-    case remote
-}
-
-enum CastSessionStatus {
-    case started
-    case resumed
-    case ended
-    case failedToStart
-    case alreadyConnected
-}
-
 class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
     
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
-    
     private var pipController: AVPictureInPictureController!
     private var pipPossibleObservation: NSKeyValueObservation?
     
-    /// chrome cast
-    private var localPlaybackImplicitlyPaused: Bool = false
     ///
     weak var delegate: VideoPlayerDelegate?
     private var url: String?
     private var screenProtectorKit: ScreenProtectorKit?
     var qualityLabelText = ""
     var speedLabelText = ""
-    var subtitleLabelText = "Субтитле"
-    var isRegular: Bool = false
     var qualityDelegate: QualityDelegate!
     var speedDelegate: SpeedDelegate!
     var subtitleDelegate: SubtitleDelegate!
     var playerConfiguration: PlayerConfiguration!
     private var availableQualities: [QualityVariant] = []
-    private var isVolume = false
-    private var volumeViewSlider: UISlider!
     private var playerRate: Float = 1.0
     private var selectedSpeedText = "1.0x"
     var selectedQualityText = "Auto"
@@ -126,19 +104,18 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(true)
+        super.viewDidAppear(animated)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(true)
+        super.viewWillDisappear(animated)
         NotificationCenter.default.removeObserver(self)
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         playerView.changeConstraints()
-        // SnapKit remakeConstraints automatically handles constraint updates
     }
     
     override var prefersHomeIndicatorAutoHidden: Bool {
@@ -276,7 +253,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             break
         case .speed:
             self.playerRate = Float(speedList[index])!
-            self.selectedSpeedText = isRegular ? "\(self.playerRate)x(Обычный)" : "\(self.playerRate)x"
+            self.selectedSpeedText = "\(self.playerRate)x"
             self.playerView.changeSpeed(rate: self.playerRate)
             break
         case .subtitle:
@@ -296,7 +273,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .overCurrentContext
         bottomSheetVC.items = subtitles
-        bottomSheetVC.labelText = "Субтитле"
+        bottomSheetVC.labelText = "Subtitle"
         bottomSheetVC.bottomSheetType = .subtitle
         bottomSheetVC.selectedIndex = subtitles.firstIndex(of: selectedSubtitle) ?? 0
         bottomSheetVC.cellDelegate = self
@@ -311,7 +288,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         
         guard availableQualities.isEmpty else { return }
         
-        // Background parsing - video playback ga ta'sir qilmaydi
+        // Background parsing - video playback
         HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
             guard let self = self else { return }
             DispatchQueue.main.async { [weak self] in
