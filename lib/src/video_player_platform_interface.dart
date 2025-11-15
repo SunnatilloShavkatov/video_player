@@ -1,5 +1,4 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:video_player/src/models/media_item_download.dart';
 
 import 'package:video_player/src/video_player_method_channel.dart';
 
@@ -26,27 +25,5 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   Future<List<int>?> playVideo({required String playerConfigJsonString});
 
-  Future<bool> downloadVideo({required String downloadConfigJsonString});
-
-  Future<bool> pauseDownload({required String downloadConfigJsonString});
-
-  Future<bool> resumeDownload({required String downloadConfigJsonString});
-
-  Future<bool> isDownloadVideo({required String downloadConfigJsonString});
-
-  Future<int?> getCurrentProgressDownload({required String downloadConfigJsonString});
-
-  Stream<MediaItemDownload> currentProgressDownloadAsStream();
-
-  Future<int?> getStateDownload({required String downloadConfigJsonString});
-
-  Future<int?> getPercentDownload({required String downloadConfigJsonString});
-
-  Future<int?> getBytesDownloaded({required String downloadConfigJsonString});
-
-  Future<int?> getContentBytesDownload({required String downloadConfigJsonString});
-
-  Future<bool> removeDownload({required String downloadConfigJsonString});
-
-  Future<void> dispose();
+  Future<void> close();
 }

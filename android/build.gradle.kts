@@ -12,7 +12,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.13.0")
+        classpath("com.android.tools.build:gradle:8.13.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
     }
 }
@@ -69,12 +69,7 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
     implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
 
-    // Cronet
-    implementation("org.checkerframework:checker-qual:3.51.0")
-    implementation("com.google.android.gms:play-services-cronet:18.1.0")
-
     // UI
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("com.github.bumptech.glide:glide:5.0.5")
     implementation("com.google.android.material:material:1.13.0")
 }

@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_player_example/second_page.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   const VideoPlayerPage({super.key});
@@ -215,7 +214,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       if (mounted) {
         if (position.toInt() == 100) {
           controller!.pause();
-          Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SecondPage()));
+          Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const Scaffold()));
         }
         setState(() {
           _position = position;
