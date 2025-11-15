@@ -288,7 +288,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         
         guard availableQualities.isEmpty else { return }
         
-        // Background parsing - video playback
+        // Background parsing doesn't affect video playback
         HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
             guard let self = self else { return }
             DispatchQueue.main.async { [weak self] in

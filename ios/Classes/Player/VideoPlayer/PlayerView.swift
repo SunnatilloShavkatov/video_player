@@ -348,8 +348,7 @@ class PlayerView: UIView {
     }
 
     func changeQuality(url: String?) {
-        if url == nil { return }
-        guard let bitrate = Double(url!) else {
+        guard let urlString = url, let bitrate = Double(urlString) else {
             self.player.currentItem?.preferredPeakBitRate = 0
             return
         }
@@ -433,12 +432,16 @@ class PlayerView: UIView {
     @objc func playButtonPressed(_ sender: UIButton) {
         if !player.isPlaying {
             player.play()
-            playButton.setImage(Svg.pause!, for: .normal)
+            if let pauseIcon = Svg.pause {
+                playButton.setImage(pauseIcon, for: .normal)
+            }
             self.player.preroll(atRate: Float(self.playerRate), completionHandler: nil)
             self.player.rate = Float(self.playerRate)
             resetTimer()
         } else {
-            playButton.setImage(Svg.play!, for: .normal)
+            if let playIcon = Svg.play {
+                playButton.setImage(playIcon, for: .normal)
+            }
             player.pause()
             timer?.invalidate()
             showControls()
@@ -863,9 +866,13 @@ class PlayerView: UIView {
 
     func setPlayButton(isPlay: Bool) {
         if isPlay {
-            playButton.setImage(Svg.pause!, for: .normal)
+            if let pauseIcon = Svg.pause {
+                playButton.setImage(pauseIcon, for: .normal)
+            }
         } else {
-            playButton.setImage(Svg.play!, for: .normal)
+            if let playIcon = Svg.play {
+                playButton.setImage(playIcon, for: .normal)
+            }
         }
     }
 
@@ -877,7 +884,9 @@ class PlayerView: UIView {
     @objc func playerEndedPlaying(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
             self?.player.seek(to: CMTime.zero)
-            self?.playButton.setImage(Svg.play!, for: .normal)
+            if let playIcon = Svg.play {
+                self?.playButton.setImage(playIcon, for: .normal)
+            }
         }
     }
 
