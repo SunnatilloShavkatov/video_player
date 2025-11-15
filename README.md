@@ -10,12 +10,6 @@ A comprehensive Flutter video player plugin with advanced features including vid
 - **Playback controls**: Play, pause, seek, and speed control
 - **Fullscreen support**: Native fullscreen video playback experience
 
-### Download & Offline Playback
-- **Video downloading**: Download videos for offline playback using iOS AVAssetDownloadTask
-- **Download management**: Pause, resume, and monitor download progress
-- **Storage optimization**: Efficient local storage management
-- **Download state tracking**: Real-time download progress and status updates
-
 ### Screen Protection (iOS)
 - **Screenshot prevention**: Prevent screenshots during video playback
 - **Screen recording detection**: Detect and handle screen recording attempts
@@ -209,17 +203,6 @@ class AppDelegate: FlutterAppDelegate {
 }
 ```
 
-### Download States
-
-The iOS implementation uses the following download states:
-- `STATE_QUEUED` (0): Download is queued
-- `STATE_STOPPED` (1): Download is stopped
-- `STATE_DOWNLOADING` (2): Download in progress
-- `STATE_COMPLETED` (3): Download completed
-- `STATE_FAILED` (4): Download failed
-- `STATE_REMOVING` (5): Download being removed
-- `STATE_RESTARTING` (7): Download restarting
-
 ### Advanced Configuration
 
 #### Video Quality Selection
@@ -246,16 +229,6 @@ iOS implementation uses `AVAssetDownloadURLSession` for reliable background down
 - `assetPath`: Asset file path (if playing from assets)
 - `lastPosition`: Resume position in seconds
 - `movieShareLink`: Share URL for the video
-
-### DownloadConfiguration
-- `url`: Video URL to download
-- `title`: Download title/identifier
-
-### MediaItemDownload
-- `url`: Download URL
-- `percent`: Download progress percentage (0-100)
-- `state`: Download state (see states above)
-- `downloadedBytes`: Number of bytes downloaded
 
 ## Requirements
 
