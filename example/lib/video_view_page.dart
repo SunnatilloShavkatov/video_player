@@ -212,10 +212,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _positionSubscription?.cancel();
     _positionSubscription = ctr.positionStream.listen((position) {
       if (mounted) {
-        if (position.toInt() == 100) {
-          controller!.pause();
-          Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const Scaffold()));
-        }
+        // if (position.toInt() == 100) {
+        //   controller!.pause();
+        //   Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+        // }
         setState(() {
           _position = position;
         });

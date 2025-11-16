@@ -5,13 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+enum ResizeMode { fit, fill, zoom }
+
+enum PlayerStatus { idle, buffering, ready, ended, playing, paused, error }
+
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
   const VideoPlayerView({
     super.key,
-    required this.onVideoViewCreated,
     required this.url,
+    required this.onVideoViewCreated,
     this.resizeMode = ResizeMode.fit,
   });
 
@@ -45,9 +49,9 @@ class VideoPlayerView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
           creationParams: <String, dynamic>{
-            'resizeMode': resizeMode.name,
             if (isHttpUrl) 'url': url,
             if (isAssetUrl) 'assets': url,
+            'resizeMode': resizeMode.name,
           },
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
@@ -58,9 +62,9 @@ class VideoPlayerView extends StatelessWidget {
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
           creationParams: <String, dynamic>{
-            'resizeMode': resizeMode.name,
             if (isHttpUrl) 'url': url,
             if (isAssetUrl) 'assets': url,
+            'resizeMode': resizeMode.name,
           },
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
@@ -81,7 +85,7 @@ class VideoPlayerView extends StatelessWidget {
 }
 
 // VideoPlayerView Controller class to set url etc
-class VideoPlayerViewController {
+final class VideoPlayerViewController {
   VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
 
   /// Method channel name prefix for video player view controllers
@@ -115,37 +119,32 @@ class VideoPlayerViewController {
   Future<void> seekTo({required double seconds}) async => _channel.invokeMethod('seekTo', {'seconds': seconds});
 
   StreamController<double>? _positionController;
-  Stream<double>? _positionStream;
-
   StreamController<PlayerStatus>? _statusController;
-  Stream<PlayerStatus>? _statusStream;
 
   /// Stream of current playback position in seconds
   Stream<double> get positionStream {
-    if (_positionStream != null) {
-      return _positionStream!;
+    if (_positionController != null) {
+      return _positionController!.stream;
     }
     _positionController = StreamController<double>.broadcast();
-    _positionStream = _positionController!.stream;
 
     // Setup handler to receive position updates
     _setupMethodHandler();
 
-    return _positionStream!;
+    return _positionController!.stream;
   }
 
   /// Stream of player status updates
   Stream<PlayerStatus> get statusStream {
-    if (_statusStream != null) {
-      return _statusStream!;
+    if (_statusController != null) {
+      return _statusController!.stream;
     }
     _statusController = StreamController<PlayerStatus>.broadcast();
-    _statusStream = _statusController!.stream;
 
     // Setup handler to receive status updates
     _setupMethodHandler();
 
-    return _statusStream!;
+    return _statusController!.stream;
   }
 
   void Function(Object object)? _finishedCallback;
@@ -193,15 +192,9 @@ class VideoPlayerViewController {
     _channel.setMethodCallHandler(null);
     await _positionController?.close();
     _positionController = null;
-    _positionStream = null;
     await _statusController?.close();
     _statusController = null;
-    _statusStream = null;
     _finishedCallback = null;
     _durationReadyCallback = null;
   }
 }
-
-enum ResizeMode { fit, fill, zoom }
-
-enum PlayerStatus { idle, buffering, ready, ended, playing, paused, error }
