@@ -14,7 +14,7 @@ import UIKit
 class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
     
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
-    private var pipController: AVPictureInPictureController!
+    private var pipController: AVPictureInPictureController?
     private var pipPossibleObservation: NSKeyValueObservation?
     
     ///
@@ -47,9 +47,13 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     
     func setupPictureInPicture() {
         if AVPictureInPictureController.isPictureInPictureSupported() {
-            pipController = AVPictureInPictureController(playerLayer: playerView.playerLayer)
-            pipController.delegate = self
-            pipPossibleObservation = pipController.observe(
+            guard let controller = AVPictureInPictureController(playerLayer: playerView.playerLayer) else {
+                playerView.setIsPipEnabled(v: false)
+                return
+            }
+            pipController = controller
+            controller.delegate = self
+            pipPossibleObservation = controller.observe(
                 \AVPictureInPictureController.isPictureInPicturePossible,
                  options: [.initial, .new]
             ) { [weak self] _, change in
@@ -190,6 +194,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
     
     func togglePictureInPictureMode() {
+        guard let pipController else { return }
         if pipController.isPictureInPictureActive {
             pipController.stopPictureInPicture()
         } else {
@@ -198,11 +203,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
     
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "pip" {
-            if self.pipController.isPictureInPictureActive {
-                self.playerView.isHiddenPiP(isPiP: true)
+        if keyPath == "pip", let pipController {
+            if pipController.isPictureInPictureActive {
+                playerView.isHiddenPiP(isPiP: true)
             } else {
-                self.playerView.isHiddenPiP(isPiP: false)
+                playerView.isHiddenPiP(isPiP: false)
             }
         }
     }
