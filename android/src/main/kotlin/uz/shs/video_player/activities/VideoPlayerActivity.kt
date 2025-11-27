@@ -574,11 +574,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         return try {
             enterPictureInPictureMode(params)
             true
-        } catch (e: IllegalStateException) {
-            // Device doesn't support PiP despite feature check
-            false
-        } catch (e: IllegalArgumentException) {
-            // Invalid PiP parameters
+        } catch (e: Exception) {
+            // Catch all exceptions including system bugs (NPE, RemoteException, etc.)
+            e.printStackTrace()
             false
         }
     }
