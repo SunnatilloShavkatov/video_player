@@ -386,8 +386,10 @@ class VideoPlayerView internal constructor(
         // Clear method channel handler
         methodChannel.setMethodCallHandler(null)
         
-        // Pause and release player
-        player.pause()
+        // Safely release player to avoid EGLSurfaceTexture crash
+        player.stop()
+        player.clearVideoSurface()
+        playerView.player = null
         player.release()
     }
 }

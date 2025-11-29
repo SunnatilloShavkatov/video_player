@@ -999,6 +999,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
         // Clean up player resources
         if (::player.isInitialized) {
+            player.stop()
+            player.clearVideoSurface()
+            playerView.player = null
             player.release()
         }
 
