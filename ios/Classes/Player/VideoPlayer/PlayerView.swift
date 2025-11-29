@@ -739,6 +739,9 @@ class PlayerView: UIView {
     }
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        // Early return if we're no longer observing - prevents crashes during cleanup
+        guard observingMediaPlayer else { return }
+        
         // DURATION - Check if this is from currentItem.duration observer
         if keyPath == "duration" {
             // Verify the observer is from the observed item
@@ -805,6 +808,8 @@ class PlayerView: UIView {
 
     private func handleMediaPlayerReady() {
         if let duration = player.currentItem?.duration, CMTIME_IS_INDEFINITE(duration) {
+            // Clean up observers before purging and reloading
+            removeMediaPlayerObservers()
             purgeMediaPlayer()
             playOfflineAsset()
             return
@@ -1158,7 +1163,15 @@ class PlayerView: UIView {
     }
 
     private func removeMediaPlayerObservers() {
-        // Remove time observer
+        // Ensure we're on the main thread for observer removal
+        guard Thread.isMainThread else {
+            DispatchQueue.main.sync {
+                removeMediaPlayerObservers()
+            }
+            return
+        }
+        
+        // Remove time observer first
         if let timeObserver = mediaTimeObserver {
             player.removeTimeObserver(timeObserver)
             mediaTimeObserver = nil
@@ -1166,25 +1179,40 @@ class PlayerView: UIView {
         
         // Remove KVO observers - use stored reference to avoid issues
         if observingMediaPlayer {
+            // CRITICAL: Pause player first to stop all notifications and prevent crashes
+            // This ensures AVPlayerItem won't send notifications while we're removing observers
+            // Only pause if we're actually observing (to avoid unnecessary pauses)
+            let wasPlaying = player.rate > 0
+            if wasPlaying {
+                player.pause()
+                player.rate = 0.0
+            }
+            
+            // Store strong reference to observedItem to prevent deallocation during removal
+            let observedItem = observedPlayerItem
+            
+            // CRITICAL: Clear flag BEFORE removing observers to prevent any callbacks from executing
+            // This ensures that if observeValue is called during removal, it will return early
+            observingMediaPlayer = false
+            observedPlayerItem = nil
+            
             // Remove observers from the stored item reference
-            if let observedItem = observedPlayerItem {
-                // Check if we're still observing this item by checking if it's the current item
-                // or if it's different (meaning it was replaced)
-                observedItem.removeObserver(self, forKeyPath: "duration", context: nil)
-                observedItem.removeObserver(self, forKeyPath: "status", context: nil)
-                
-                // Remove notification observer for this specific item
+            if let item = observedItem {
+                // Remove notification observer first to prevent any notifications
                 NotificationCenter.default.removeObserver(
                     self,
                     name: .AVPlayerItemDidPlayToEndTime,
-                    object: observedItem)
+                    object: item)
+                
+                // Then remove KVO observers - must be done synchronously
+                // and before the item is deallocated
+                // Note: Flag is already false, so any callbacks will be ignored
+                item.removeObserver(self, forKeyPath: "duration", context: nil)
+                item.removeObserver(self, forKeyPath: "status", context: nil)
             }
             
             // Always remove player observer if we were observing
             player.removeObserver(self, forKeyPath: "timeControlStatus", context: nil)
-            
-            observingMediaPlayer = false
-            observedPlayerItem = nil
         }
     }
     
