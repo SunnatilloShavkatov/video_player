@@ -30,6 +30,7 @@ class PlayerView: UIView {
     var playerLayer = AVPlayerLayer()
     private var mediaTimeObserver: Any?
     private var observingMediaPlayer: Bool = false
+    private var observedPlayerItem: AVPlayerItem?  // Track the item we're observing
     var playerConfiguration: PlayerConfiguration!
     weak var delegate: PlayerViewDelegate?
 
@@ -42,7 +43,6 @@ class PlayerView: UIView {
     private var panDirection = SwipeDirection.vertical
     private var isVolume = false
     private var volumeViewSlider: UISlider!
-    private var brightnessViewSlider: UISlider!
     ///
     private(set) var streamPosition: TimeInterval?
     private(set) var streamDuration: TimeInterval?
@@ -212,7 +212,8 @@ class PlayerView: UIView {
         for view in volumeView.subviews {
             if let slider = view as? UISlider {
                 self.volumeViewSlider = slider
-                self.brightnessViewSlider = slider
+                // Note: brightness is handled by UIScreen.main.brightness directly
+                break // Only need one slider reference
             }
         }
     }
@@ -300,8 +301,17 @@ class PlayerView: UIView {
     }
 
     private func loadMediaPlayer(asset: AVURLAsset) {
+        // Remove observers from previous item before replacing
+        removeMediaPlayerObservers()
+        
+        // Remove old player layer if it exists
+        if playerLayer.superlayer != nil {
+            playerLayer.removeFromSuperlayer()
+        }
+        
         player.automaticallyWaitsToMinimizeStalling = true
-        player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
+        let newItem = AVPlayerItem(asset: asset)
+        player.replaceCurrentItem(with: newItem)
         player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = bounds
@@ -321,10 +331,9 @@ class PlayerView: UIView {
         }
 
         playerLayer.videoGravity = .resizeAspect
-        videoView.layer.addSublayer(playerLayer)
-        layer.insertSublayer(playerLayer, above: videoView.layer)
+        // Add layer only once - insert into videoView's layer
+        videoView.layer.insertSublayer(playerLayer, at: 0)
 
-        NotificationCenter.default.addObserver(self, selector: #selector(playerEndedPlaying), name: Notification.Name("AVPlayerItemDidPlayToEndTimeNotification"), object: nil)
         addTimeObserver()
     }
 
@@ -339,12 +348,18 @@ class PlayerView: UIView {
         guard let videoURL = URL(string: url ?? "") else {
             return
         }
+        // Remove observers from old player item BEFORE replacing
+        removeMediaPlayerObservers()
+        
         self.setTitle(title: title)
-        self.player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: videoURL)))
+        let newItem = AVPlayerItem(asset: AVURLAsset(url: videoURL))
+        self.player.replaceCurrentItem(with: newItem)
         self.player.seek(to: CMTime.zero)
         self.player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
         self.player.automaticallyWaitsToMinimizeStalling = true
-        self.player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
+        
+        // Re-add observers for new player item
+        addTimeObserver()
     }
 
     func changeQuality(url: String?) {
@@ -532,7 +547,10 @@ class PlayerView: UIView {
         super.layoutSubviews()
         videoView.frame = fullFrame()
         overlayView.frame = fullFrame()
-        playerLayer.frame = fullFrame()
+        // Only update playerLayer frame if it has been added to the layer hierarchy
+        if playerLayer.superlayer != nil {
+            playerLayer.frame = fullFrame()
+        }
     }
 
     private func fullFrame() -> CGRect {
@@ -721,56 +739,64 @@ class PlayerView: UIView {
     }
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        // DURATION - Check if this is from currentItem.duration observer
         if keyPath == "duration" {
-            if let currentItem = player.currentItem,
-               currentItem.duration.seconds.isFinite &&
-               !currentItem.duration.seconds.isNaN &&
-               currentItem.duration.seconds > 0.0 {
-                self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: currentItem.duration)
-            } else {
-                if let item = player.currentItem,
-                   let seekableRange = item.seekableTimeRanges.last?.timeRangeValue {
-                    let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
-                    let seconds = CMTimeGetSeconds(endTime)
-                    if seconds.isFinite && !seconds.isNaN && seconds > 0 {
-                        self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: endTime)
+            // Verify the observer is from the observed item
+            if let item = object as? AVPlayerItem, item == observedPlayerItem {
+                if item.duration.seconds.isFinite &&
+                   !item.duration.seconds.isNaN &&
+                   item.duration.seconds > 0.0 {
+                    self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: item.duration)
+                } else {
+                    if let seekableRange = item.seekableTimeRanges.last?.timeRangeValue {
+                        let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
+                        let seconds = CMTimeGetSeconds(endTime)
+                        if seconds.isFinite && !seconds.isNaN && seconds > 0 {
+                            self.durationTimeLabel.text = VGPlayerUtils.getTimeString(from: endTime)
+                        }
                     }
                 }
             }
         }
 
-        // STATUS
+        // STATUS - Check if this is from currentItem.status observer
         if keyPath == "status" {
-            if player.status == .readyToPlay {
-                handleMediaPlayerReady()
-            } else if player.status == .failed {
-                // Player failed
+            // Verify the observer is from currentItem (not player)
+            if let item = object as? AVPlayerItem, item == observedPlayerItem {
+                if item.status == .readyToPlay {
+                    handleMediaPlayerReady()
+                } else if item.status == .failed {
+                    // Player item failed to load
+                }
             }
         }
 
-        // TIME CONTROL STATUS
-        if keyPath == "timeControlStatus", let change = change,
-           let newValue = change[NSKeyValueChangeKey.newKey] as? Int,
-           let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int {
+        // TIME CONTROL STATUS - Check if this is from player.timeControlStatus observer
+        if keyPath == "timeControlStatus" {
+            // Verify the observer is from player (not currentItem)
+            if object as? AVPlayer === player, let change = change,
+               let newValue = change[NSKeyValueChangeKey.newKey] as? Int,
+               let oldValue = change[NSKeyValueChangeKey.oldKey] as? Int {
 
-            if newValue != oldValue {
-                DispatchQueue.main.async { [weak self] in
-                    if newValue == 2 {
-                        self?.playButton.setImage(Svg.pause!, for: .normal)
-                        self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                        self?.activityIndicatorView.stopAnimating()
-                        self?.enableGesture = true
-                    } else if newValue == 0 {
-                        self?.playButton.setImage(Svg.play!, for: .normal)
-                        self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                        self?.activityIndicatorView.stopAnimating()
-                        self?.enableGesture = true
-                        self?.timer?.invalidate()
-                        self?.showControls()
-                    } else {
-                        self?.playButton.alpha = 0.0
-                        self?.activityIndicatorView.startAnimating()
-                        self?.enableGesture = false
+                if newValue != oldValue {
+                    DispatchQueue.main.async { [weak self] in
+                        if newValue == 2 {
+                            self?.playButton.setImage(Svg.pause!, for: .normal)
+                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
+                            self?.activityIndicatorView.stopAnimating()
+                            self?.enableGesture = true
+                        } else if newValue == 0 {
+                            self?.playButton.setImage(Svg.play!, for: .normal)
+                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
+                            self?.activityIndicatorView.stopAnimating()
+                            self?.enableGesture = true
+                            self?.timer?.invalidate()
+                            self?.showControls()
+                        } else {
+                            self?.playButton.alpha = 0.0
+                            self?.activityIndicatorView.startAnimating()
+                            self?.enableGesture = false
+                        }
                     }
                 }
             }
@@ -881,14 +907,16 @@ class PlayerView: UIView {
         currentTimeLabel.text = VGPlayerUtils.getTimeString(from: CMTimeMake(value: Int64(position), timescale: 1))
     }
 
-    @objc func playerEndedPlaying(_ notification: Notification) {
-        DispatchQueue.main.async { [weak self] in
-            self?.player.seek(to: CMTime.zero)
-            if let playIcon = Svg.play {
-                self?.playButton.setImage(playIcon, for: .normal)
-            }
-        }
-    }
+    // Note: This method is unused - playerDidFinishPlaying is used instead
+    // Keeping for potential future use or removal
+    // @objc func playerEndedPlaying(_ notification: Notification) {
+    //     DispatchQueue.main.async { [weak self] in
+    //         self?.player.seek(to: CMTime.zero)
+    //         if let playIcon = Svg.play {
+    //             self?.playButton.setImage(playIcon, for: .normal)
+    //         }
+    //     }
+    // }
 
     @objc func swipePan() {
         let locationPoint = swipeGesture.location(in: overlayView)
@@ -1055,23 +1083,38 @@ class PlayerView: UIView {
     }
 
     @objc func playerDidFinishPlaying() {
+        // Get values before cleanup
+        let currentSeconds = safeIntFromSeconds(player.currentTime().seconds)
+        let durationSeconds = safeIntFromSeconds(player.currentItem?.duration.seconds ?? 0)
+        
+        // Clean up after getting values
         purgeMediaPlayer()
         removeMediaPlayerObservers()
-        let currentSeconds = Int(player.currentTime().seconds)
-        let durationSeconds = Int(player.currentItem?.duration.seconds ?? 0)
+        
         delegate?.close(duration: [currentSeconds, durationSeconds])
     }
 
     /// MARK: - Time logic
     private func addTimeObserver() {
+        // Prevent duplicate observers
+        guard !observingMediaPlayer, let currentItem = player.currentItem else { return }
+        
+        // Store reference to the item we're observing
+        observedPlayerItem = currentItem
+        
+        // Add NotificationCenter observer for item end notification
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(playerDidFinishPlaying),
             name: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem)
-        player.currentItem?.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
-        player.currentItem?.addObserver(self, forKeyPath: "status", options: .new, context: nil)
+            object: currentItem)
+        
+        // Add KVO observers
+        currentItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
+        currentItem.addObserver(self, forKeyPath: "status", options: .new, context: nil)
         player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
+        
+        // Add time observer - must succeed before marking as observing
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         let mainQueue = DispatchQueue.main
 
@@ -1109,32 +1152,69 @@ class PlayerView: UIView {
                 self.currentTimeLabel.text = VGPlayerUtils.getTimeString(from: currentTime)
                 self.streamPosition = currentSeconds
             })
+        
+        // Mark that we're now observing - only after all observers are successfully added
+        observingMediaPlayer = true
     }
 
     private func removeMediaPlayerObservers() {
+        // Remove time observer
         if let timeObserver = mediaTimeObserver {
             player.removeTimeObserver(timeObserver)
             mediaTimeObserver = nil
         }
+        
+        // Remove KVO observers - use stored reference to avoid issues
         if observingMediaPlayer {
-            if let currentItem = player.currentItem {
-                currentItem.removeObserver(self, forKeyPath: "duration", context: nil)
-                currentItem.removeObserver(self, forKeyPath: "status", context: nil)
+            // Remove observers from the stored item reference
+            if let observedItem = observedPlayerItem {
+                // Check if we're still observing this item by checking if it's the current item
+                // or if it's different (meaning it was replaced)
+                observedItem.removeObserver(self, forKeyPath: "duration", context: nil)
+                observedItem.removeObserver(self, forKeyPath: "status", context: nil)
+                
+                // Remove notification observer for this specific item
+                NotificationCenter.default.removeObserver(
+                    self,
+                    name: .AVPlayerItemDidPlayToEndTime,
+                    object: observedItem)
             }
+            
+            // Always remove player observer if we were observing
             player.removeObserver(self, forKeyPath: "timeControlStatus", context: nil)
+            
             observingMediaPlayer = false
+            observedPlayerItem = nil
         }
-        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: player.currentItem)
+    }
+    
+    deinit {
+        // Critical: Clean up all observers when view is deallocated
+        removeMediaPlayerObservers()
+        // Remove any remaining notification observers
+        NotificationCenter.default.removeObserver(self)
+        // Invalidate timers
+        timer?.invalidate()
+        seekForwardTimer?.invalidate()
+        seekBackwardTimer?.invalidate()
+        backwardGestureTimer?.invalidate()
+        forwardGestureTimer?.invalidate()
     }
 
     func stop() {
         playerState = .stopped
         player.pause()
+        // Note: Observers are NOT removed here - caller should handle cleanup
+        // This allows stopping and resuming playback without re-initializing
     }
 
     func purgeMediaPlayer() {
         playerState = .stopped
-        playerLayer.removeFromSuperlayer()
+        if playerLayer.superlayer != nil {
+            playerLayer.removeFromSuperlayer()
+        }
         player.pause()
+        // Note: Observers should be removed separately via removeMediaPlayerObservers()
+        // This allows for clean separation of concerns
     }
 }
