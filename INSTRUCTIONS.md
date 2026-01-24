@@ -1,4 +1,4 @@
-# Video Player Plugin - Instructions
+~~# Video Player Plugin - Instructions
 
 ## Project Overview
 
@@ -100,52 +100,7 @@ VideoPlayerView(
 )
 ```
 
-### 2. Download Functionality
-
-#### Start Download
-```dart
-final result = await VideoPlayer.downloadVideo(DownloadVideoRequest(
-  title: 'My Video',
-  videoUrl: 'https://example.com/video.m3u8',
-  quality: VideoQuality.hd720,
-));
-
-if (result.success) {
-  print('Download ID: ${result.downloadId}');
-}
-```
-
-#### Monitor Progress
-```dart
-VideoPlayer.onDownloadProgress.listen((progress) {
-  print('${progress.title}: ${progress.percent}%');
-  print('Speed: ${progress.downloadSpeed}');
-  print('Status: ${progress.status}');
-});
-```
-
-#### Get Downloaded Videos
-```dart
-final videos = await VideoPlayer.getDownloadedVideos();
-for (var video in videos) {
-  print('${video.title}: ${video.filePath}');
-}
-```
-
-#### Play Downloaded Video
-```dart
-await VideoPlayer.playDownloadedVideo(
-  title: 'My Video',
-  filePath: '/path/to/video.mp4',
-);
-```
-
-#### Delete Download
-```dart
-await VideoPlayer.deleteDownloadedVideo('My Video');
-```
-
-### 3. Screen Protection (iOS)
+### 2. Screen Protection (iOS)
 
 #### Enable Protection
 ```dart
@@ -344,4 +299,4 @@ See `example/lib/main.dart` for complete implementation:
 ---
 
 **License:** MIT  
-**Platform Support:** iOS 15+, Android API 26+
+**Platform Support:** iOS 15+, Android API 26+~~

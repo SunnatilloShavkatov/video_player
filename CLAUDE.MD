@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A comprehensive Flutter video player plugin with native iOS and Android implementations. This plugin provides advanced video playback capabilities, download management, and iOS screen protection features.
+A comprehensive Flutter video player plugin with native iOS and Android implementations. This plugin provides advanced video playback capabilities and iOS screen protection features.
 
 **Package:** uz.shs.video_player
 **Version:** 2.0.0
@@ -222,7 +222,6 @@ flutter pub publish            # Actual publish
 When working on this project:
 - Always test changes on both iOS and Android platforms
 - Screen protection features are iOS-only
-- Downloads use native background sessions (iOS) and ExoPlayer (Android)
 - M3U8 parsing happens in `HlsParser.swift` for quality detection
 - The main branch is `master`
 - This is a Flutter plugin, not a standalone app

@@ -8,13 +8,10 @@ import 'package:video_player/src/video_player_platform_interface.dart';
 
 export 'package:video_player/src/models/player_configuration.dart';
 
-/// Main video player class that provides video playback and download functionality.
+/// Main video player class that provides video playback functionality.
 ///
 /// This class follows the singleton pattern and provides methods for:
 /// - Playing videos with custom configurations
-/// - Downloading videos for offline playback
-/// - Managing download states (pause, resume, remove)
-/// - Tracking download progress
 final class VideoPlayer {
   const VideoPlayer._();
 

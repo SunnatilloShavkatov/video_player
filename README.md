@@ -208,13 +208,9 @@ class AppDelegate: FlutterAppDelegate {
 #### Video Quality Selection
 The plugin automatically sorts video resolutions and provides quality selection UI during playback.
 
-#### Background Downloads
-iOS implementation uses `AVAssetDownloadURLSession` for reliable background downloads that continue even when the app is backgrounded.
-
 #### Content Protection
 - HLS (HTTP Live Streaming) support with content protection
 - DRM-protected content playback (when supported by source)
-- Secure storage of downloaded content
 
 ## API Reference
 
@@ -237,7 +233,7 @@ iOS implementation uses `AVAssetDownloadURLSession` for reliable background down
 - **Flutter**: 3.32.0+
 - **Dart**: 3.8.0+
 
-## Dependencies
+## Dependencies. 
 
 ### iOS
 
