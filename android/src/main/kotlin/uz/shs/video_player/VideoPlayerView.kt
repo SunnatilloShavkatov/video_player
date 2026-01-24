@@ -357,11 +357,12 @@ class VideoPlayerView internal constructor(
         val ch = methodChannel ?: return
 
         // ✅ FIXED: Use weak references
-        positionUpdateRunnable = PositionUpdateRunnable(
+        val runnable = PositionUpdateRunnable(
             WeakReference(p),
             WeakReference(ch)
         )
-        handler.post(positionUpdateRunnable!!)
+        positionUpdateRunnable = runnable
+        handler.post(runnable)
     }
 
     private fun stopPositionUpdates() {

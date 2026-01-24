@@ -67,7 +67,6 @@ import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.services.NetworkChangeReceiver
 import kotlin.math.abs
 
-@Suppress("DEPRECATION", "UNNECESSARY_NOT_NULL_ASSERTION")
 @UnstableApi
 class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListener,
     ScaleGestureDetector.OnScaleGestureListener, AudioManager.OnAudioFocusChangeListener {
@@ -464,7 +463,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     System.currentTimeMillis()
                 } else {
                     if (isDoubleClicked(lastClicked1)) {
-                        if (motionEvent!!.x < sWidth / 2) {
+                        if (motionEvent.x < sWidth / 2) {
                             player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
                         } else {
                             player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
@@ -980,12 +979,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun setAudioFocus() {
-        audioFocusRequest =
-            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
-                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
-            ).setAcceptsDelayedFocusGain(true).setOnAudioFocusChangeListener(this).build()
-        audioManager.requestAudioFocus(audioFocusRequest!!)
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
+        ).setAcceptsDelayedFocusGain(true).setOnAudioFocusChangeListener(this).build()
+        audioFocusRequest = request
+        audioManager.requestAudioFocus(request)
     }
 
     private fun abandonAudioFocus() {

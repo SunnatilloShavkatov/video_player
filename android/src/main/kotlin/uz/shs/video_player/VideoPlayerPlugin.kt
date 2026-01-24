@@ -53,13 +53,14 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                     result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
                     return
                 }
-                if (activity == null) {
+                val currentActivity = activity
+                if (currentActivity == null) {
                     result.error("NO_ACTIVITY", "Activity is null", null)
                     return
                 }
-                val intent = Intent(activity!!.applicationContext, VideoPlayerActivity::class.java)
+                val intent = Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
                 intent.putExtra(extraArgument, playerConfiguration)
-                activity!!.startActivityForResult(intent, playerActivity)
+                currentActivity.startActivityForResult(intent, playerActivity)
                 resultMethod = result
             }
         } else {
@@ -69,9 +70,7 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-        if (runnable != null) {
-            handler.removeCallbacks(runnable!!)
-        }
+        runnable?.let { handler.removeCallbacks(it) }
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
