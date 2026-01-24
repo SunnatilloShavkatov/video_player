@@ -129,6 +129,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var mPlaybackState: PlaybackState? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // ✅ FIXED: Store all Runnables for explicit removal
+    private var hideControllerRunnable: Runnable? = null
+    private var showControllerRunnable: Runnable? = null
+    private var orientationRestoreRunnable: Runnable? = null
+    private var pipDismissCheckRunnable: Runnable? = null
+
     private var isNetworkReceiverRegistered = false
     private var wasInPictureInPicture: Boolean = false
     private var availableQualities: List<QualityOption> = emptyList()
@@ -257,6 +264,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onPause() {
         super.onPause()
+
+        // ✅ FIXED: Remove pending callbacks when pausing (except PiP mode)
+        if (!isInPictureInPictureMode) {
+            cancelAllPendingRunnables()
+        }
+
         if (::player.isInitialized) {
             val isPlaying = player.isPlaying
             player.playWhenReady = false
@@ -473,12 +486,15 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     }
                     -1L
                 }
-                mainHandler.postDelayed({
+
+                // ✅ FIXED: Store runnable for explicit removal
+                hideControllerRunnable?.let { mainHandler.removeCallbacks(it) }
+                hideControllerRunnable = Runnable {
                     if (lastClicked1 != -1L) {
                         playerView.hideController()
                         lastClicked1 = -1L
                     }
-                }, DOUBLE_CLICK_TIMEOUT_MS)
+                }.also { mainHandler.postDelayed(it, DOUBLE_CLICK_TIMEOUT_MS) }
             }
             return@setOnTouchListener true
         }
@@ -557,9 +573,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 } else {
                     ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
-            it.postDelayed({
+
+            // ✅ FIXED: Store runnable for explicit removal
+            orientationRestoreRunnable?.let { mainHandler.removeCallbacks(it) }
+            orientationRestoreRunnable = Runnable {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            }, ORIENTATION_CHANGE_DELAY_MS)
+            }.also { mainHandler.postDelayed(it, ORIENTATION_CHANGE_DELAY_MS) }
         }
     }
 
@@ -622,7 +641,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         } else {
             // Exiting PiP mode - determine if user dismissed PiP or returned to app
             // Wait a bit for lifecycle to settle (orientation/fullscreen changes, etc.)
-            mainHandler.postDelayed({
+
+            // ✅ FIXED: Store runnable for explicit removal
+            pipDismissCheckRunnable?.let { mainHandler.removeCallbacks(it) }
+            pipDismissCheckRunnable = Runnable {
                 val isVisible =
                     lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
                 val isConfigChange = isChangingConfigurations
@@ -645,7 +667,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     playerView.showController()
                 }
                 wasInPictureInPicture = false
-            }, 300)
+            }.also { mainHandler.postDelayed(it, 300) }
         }
     }
 
@@ -899,12 +921,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             }
             -1L
         }
-        mainHandler.postDelayed({
+
+        // ✅ FIXED: Store runnable for explicit removal
+        showControllerRunnable?.let { mainHandler.removeCallbacks(it) }
+        showControllerRunnable = Runnable {
             if (lastClicked != -1L) {
                 playerView.showController()
                 lastClicked = -1L
             }
-        }, DOUBLE_CLICK_TIMEOUT_MS)
+        }.also { mainHandler.postDelayed(it, DOUBLE_CLICK_TIMEOUT_MS) }
+
         return false
     }
 
@@ -993,8 +1019,24 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
     }
 
+    // ✅ FIXED: Helper to cancel all pending runnables
+    private fun cancelAllPendingRunnables() {
+        hideControllerRunnable?.let { mainHandler.removeCallbacks(it) }
+        showControllerRunnable?.let { mainHandler.removeCallbacks(it) }
+        orientationRestoreRunnable?.let { mainHandler.removeCallbacks(it) }
+        pipDismissCheckRunnable?.let { mainHandler.removeCallbacks(it) }
+
+        hideControllerRunnable = null
+        showControllerRunnable = null
+        orientationRestoreRunnable = null
+        pipDismissCheckRunnable = null
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+
+        // ✅ FIXED: Cancel all pending runnables explicitly
+        cancelAllPendingRunnables()
 
         // Clean up player resources
         if (::player.isInitialized) {
@@ -1004,7 +1046,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             player.release()
         }
 
-        // Remove handler callbacks to prevent memory leaks
+        // Remove any remaining handler callbacks to prevent memory leaks
         mainHandler.removeCallbacksAndMessages(null)
 
         // Abandon audio focus

@@ -25,8 +25,9 @@ const val playerActivityFinish = 222
 class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     PluginRegistry.NewIntentListener, PluginRegistry.ActivityResultListener {
     private lateinit var channel: MethodChannel
-    private var activity: Activity? = null
     private var resultMethod: Result? = null
+    private var activity: Activity? = null
+    private var activityBinding: ActivityPluginBinding? = null
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -75,19 +76,30 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+        activityBinding = binding
         binding.addOnNewIntentListener(this)
         binding.addActivityResultListener(this)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        activity = null
+        cleanupActivityBinding()
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         activity = binding.activity
+        activityBinding = binding
+        binding.addOnNewIntentListener(this)
+        binding.addActivityResultListener(this)
     }
 
     override fun onDetachedFromActivity() {
+        cleanupActivityBinding()
+    }
+
+    private fun cleanupActivityBinding() {
+        activityBinding?.removeOnNewIntentListener(this)
+        activityBinding?.removeActivityResultListener(this)
+        activityBinding = null
         activity = null
     }
 
