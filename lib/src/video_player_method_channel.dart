@@ -18,14 +18,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   @override
   Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
     try {
-      final res = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
+      final result = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
         'playerConfigJsonString': playerConfigJsonString,
       });
-      if (res == null) {
+      if (result == null) {
         return null;
       }
-      final List<int> list = res.map((e) => (e ?? 1) as int).toList();
-      return list;
+      return result.map((e) => (e ?? 1) as int).toList();
     } catch (error, stackTrace) {
       logMessage('playVideo failed', error: error, stackTrace: stackTrace);
       return null;
