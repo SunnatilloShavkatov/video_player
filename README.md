@@ -26,13 +26,20 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  video_player: ^2.0.0
+  video_player:
+    git:
+      url: https://github.com/SunnatilloShavkatov/video_player.git
+      ref: master
 ```
 
 ### iOS Setup
 
-Add the following to your `ios/Runner/Info.plist`:
+1. Set minimum iOS version to 15.0 in `ios/Podfile`:
+```ruby
+platform :ios, '15.0'
+```
 
+2. Add network security configuration to `ios/Runner/Info.plist`:
 ```xml
 <key>NSAppTransportSecurity</key>
 <dict>
@@ -41,109 +48,109 @@ Add the following to your `ios/Runner/Info.plist`:
 </dict>
 ```
 
-For background downloads, ensure your app supports background modes in `Info.plist`:
+**Note**: For production apps, restrict allowed domains instead of allowing arbitrary loads.
 
-```xml
-<key>UIBackgroundModes</key>
-<array>
-    <string>background-processing</string>
-    <string>background-fetch</string>
-</array>
-```
+### Android Setup
+
+No additional setup required. The plugin automatically configures ExoPlayer.
 
 ## Usage
 
-### Basic Video Playback
+### Full-Screen Player
+
+Opens a native full-screen video player with built-in controls:
 
 ```dart
 import 'package:video_player/video_player.dart';
 
-// Play a video from URL
-VideoPlayer.playVideo(PlayerConfiguration(
-  title: 'Sample Video',
-  videoUrl: 'https://example.com/video.mp4',
-  qualityText: 'Quality',
-  speedText: 'Speed',
-  autoText: 'Auto',
-  playVideoFromAsset: false,
-  assetPath: '',
-  lastPosition: 0,
-  movieShareLink: 'https://example.com/share',
-));
+final result = await VideoPlayer.instance.playVideo(
+  playerConfig: PlayerConfiguration(
+    videoUrl: 'https://example.com/video.m3u8',
+    title: 'Sample Video',
+    qualityText: 'Quality',
+    speedText: 'Speed',
+    autoText: 'Auto',
+    lastPosition: 0,              // Resume position in seconds
+    playVideoFromAsset: false,
+    assetPath: '',
+    movieShareLink: 'https://example.com/share',
+  ),
+);
+
+// Handle result when user closes player
+if (result != null) {
+  final position = result[0];  // Last position in seconds
+  final duration = result[1];  // Total duration in seconds
+  print('Stopped at $position of $duration seconds');
+}
 ```
 
-### Video Downloads
+### Embedded Player
+
+Inline video playback within your Flutter UI:
 
 ```dart
-// Start download
-VideoPlayer.downloadVideo(DownloadConfiguration(
-  url: 'https://example.com/video.m3u8',
-  title: 'My Video',
-));
+class VideoWidget extends StatefulWidget {
+  @override
+  State<VideoWidget> createState() => _VideoWidgetState();
+}
 
-// Monitor download progress
-VideoPlayer.onDownloadProgress.listen((progress) {
-  print('Download progress: ${progress.percent}%');
-  print('Downloaded bytes: ${progress.downloadedBytes}');
-  print('Download state: ${progress.state}');
-});
+class _VideoWidgetState extends State<VideoWidget> {
+  late VideoPlayerViewController _controller;
 
-// Pause download
-VideoPlayer.pauseDownload(downloadConfig);
+  @override
+  Widget build(BuildContext context) {
+    return VideoPlayerView(
+      url: 'https://example.com/video.m3u8',
+      resizeMode: ResizeMode.fit,
+      onVideoViewCreated: (controller) {
+        _controller = controller;
+        
+        // Start playback
+        controller.play();
+        
+        // Monitor position
+        controller.positionStream.listen((position) {
+          print('Position: $position seconds');
+        });
+        
+        // Monitor status
+        controller.statusStream.listen((status) {
+          if (status == PlayerStatus.ended) {
+            print('Video finished');
+          }
+        });
+      },
+    );
+  }
 
-// Resume download
-VideoPlayer.resumeDownload(downloadConfig);
-
-// Check if video is downloaded
-bool isDownloaded = await VideoPlayer.checkIsDownloadedVideo(downloadConfig);
+  @override
+  void dispose() {
+    _controller.dispose(); // Always dispose!
+    super.dispose();
+  }
+}
 ```
 
-### Embedded Video Player
+### Playback Control API
 
 ```dart
-VideoPlayerView(
-  url: 'https://example.com/video.mp4',
-  resizeMode: ResizeMode.fit, // ResizeMode.fit, ResizeMode.fill, or ResizeMode.zoom
-  onMapViewCreated: (controller) {
-    // Video player created, save the controller for later use
-    this.controller = controller;
-    
-    // Listen to position updates
-    controller.positionStream.listen((position) {
-      print('Current position: $position seconds');
-    });
-    
-    // Get notified when duration is ready
-    controller.onDurationReady((duration) {
-      print('Video duration: $duration seconds');
-    });
-  },
-)
-```
-
-### Playback Controls
-
-```dart
-// Play the video
+// Playback control
 await controller.play();
-
-// Pause the video
 await controller.pause();
 
-// Mute audio
+// Audio control
 await controller.mute();
-
-// Unmute audio
 await controller.unmute();
 
-// Get video duration
-double duration = await controller.getDuration();
+// Seeking
+await controller.seekTo(seconds: 30.0);
 
-// Seek to a specific position (in seconds)
-await controller.seekTo(30.0); // Seek to 30 seconds
+// Get duration
+final duration = await controller.getDuration();
 
-// Change video URL
-await controller.setUrl(url: 'https://example.com/new-video.mp4');
+// Change video
+await controller.setUrl(url: 'https://example.com/other.m3u8');
 
 // Load video from assets
 await controller.setAssets(assets: 'assets/videos/my_video.mp4');

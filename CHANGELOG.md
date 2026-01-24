@@ -1,6 +1,10 @@
 ## 2.0.0
 
-* TODO: Describe initial release.
+* Comprehensive dartdoc documentation added for all public APIs
+* README updated with accurate usage examples and platform requirements
+* Removed references to discontinued download features
+* Added clear error documentation and platform-specific behavior notes
+* Improved developer experience with detailed API documentation
 
 ## 1.0.4
 

@@ -43,10 +43,10 @@ video_player/
 ### Key Components
 
 #### Flutter Layer
-- **VideoPlayer**: Main API class for video playback and downloads
+- **VideoPlayer**: Main API class for streaming video playback
 - **VideoPlayerView**: Embedded video player widget for Flutter UI
 - **PlayerConfiguration**: Configuration model for video playback
-- **DownloadConfiguration**: Configuration model for video downloads
+- **VideoPlayerViewController**: Controller for embedded player with playback control and event streams
 
 #### iOS Layer
 - **VideoPlayerViewController**: Full-screen native player with controls

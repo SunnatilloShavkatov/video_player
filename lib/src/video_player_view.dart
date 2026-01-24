@@ -69,7 +69,42 @@ class VideoPlayerView extends StatelessWidget {
   void _onPlatformViewCreated(int id) => onVideoViewCreated(VideoPlayerViewController._(id));
 }
 
-// VideoPlayerView Controller class to set url etc
+/// Controller for the embedded video player view.
+///
+/// This controller provides methods to control video playback, retrieve
+/// playback information, and listen to player events.
+///
+/// **Lifecycle:**
+/// 1. Controller is created when [VideoPlayerView] is initialized
+/// 2. Use controller methods to control playback
+/// 3. Listen to streams for position and status updates
+/// 4. Call [dispose] when done to clean up resources
+///
+/// **Example:**
+/// ```dart
+/// late VideoPlayerViewController _controller;
+///
+/// VideoPlayerView(
+///   url: 'https://example.com/video.m3u8',
+///   onVideoViewCreated: (controller) {
+///     _controller = controller;
+///
+///     // Start playback
+///     controller.play();
+///
+///     // Monitor position
+///     controller.positionStream.listen((seconds) {
+///       print('Position: $seconds');
+///     });
+///   },
+/// )
+///
+/// @override
+/// void dispose() {
+///   _controller.dispose();
+///   super.dispose();
+/// }
+/// ```
 final class VideoPlayerViewController {
   VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
 
@@ -78,35 +113,153 @@ final class VideoPlayerViewController {
 
   final MethodChannel _channel;
 
+  /// Changes the video URL and starts playing the new video.
+  ///
+  /// **Parameters:**
+  /// - [url]: New HTTPS URL to play (required)
+  /// - [resizeMode]: How the new video should fit in the view (default: [ResizeMode.fit])
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.setUrl(
+  ///   url: 'https://example.com/another-video.m3u8',
+  ///   resizeMode: ResizeMode.fill,
+  /// );
+  /// ```
+  ///
+  /// **Note:** This replaces the current video and resets playback position to 0.
   Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async =>
       _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
 
+  /// Loads and plays a video from Flutter assets.
+  ///
+  /// **Parameters:**
+  /// - [assets]: Asset path relative to `assets/` directory (required)
+  /// - [resizeMode]: How the video should fit in the view (default: [ResizeMode.fit])
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.setAssets(
+  ///   assets: 'videos/intro.mp4',
+  ///   resizeMode: ResizeMode.fit,
+  /// );
+  /// ```
+  ///
+  /// **Note:** Make sure the asset is declared in `pubspec.yaml`:
+  /// ```yaml
+  /// flutter:
+  ///   assets:
+  ///     - assets/videos/intro.mp4
+  /// ```
   Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
     await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.name});
   }
 
+  /// Pauses video playback.
+  ///
+  /// Playback position is preserved. Use [play] to resume.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.pause();
+  /// ```
   Future<void> pause() async => _channel.invokeMethod('pause');
 
+  /// Starts or resumes video playback.
+  ///
+  /// If video is paused, playback resumes from current position.
+  /// If video hasn't started yet, playback begins from the start.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.play();
+  /// ```
   Future<void> play() async => _channel.invokeMethod('play');
 
+  /// Mutes the video audio.
+  ///
+  /// Video continues playing but without sound.
+  /// Use [unmute] to restore audio.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.mute();
+  /// ```
   Future<void> mute() async => _channel.invokeMethod('mute');
 
+  /// Unmutes the video audio.
+  ///
+  /// Restores audio if previously muted with [mute].
+  ///
+  /// **Example:**
+  /// ```dart
+  /// await controller.unmute();
+  /// ```
   Future<void> unmute() async => _channel.invokeMethod('unmute');
 
-  /// Gets the total duration of the video in seconds
+  /// Gets the total duration of the currently loaded video.
+  ///
+  /// **Returns:**
+  /// - Video duration in seconds as a [double]
+  /// - `0.0` if video is not yet loaded or duration is unavailable
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final duration = await controller.getDuration();
+  /// print('Video is ${duration.toInt()} seconds long');
+  /// ```
+  ///
+  /// **Note:** Duration becomes available after the video loads,
+  /// typically when player status changes to [PlayerStatus.ready].
+  /// Use [onDurationReady] callback for automatic notification.
   Future<double> getDuration() async {
     final result = await _channel.invokeMethod('getDuration');
     return (result as double?) ?? 0.0;
   }
 
-  /// Seeks to a specific position in the video
-  /// [seconds] - the position to seek to in seconds
+  /// Seeks to a specific position in the video.
+  ///
+  /// **Parameters:**
+  /// - [seconds]: Target position in seconds (required). Must be >= 0 and <= video duration.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// // Seek to 2 minutes 30 seconds
+  /// await controller.seekTo(seconds: 150.0);
+  ///
+  /// // Seek to beginning
+  /// await controller.seekTo(seconds: 0.0);
+  ///
+  /// // Seek to 75% through the video
+  /// final duration = await controller.getDuration();
+  /// await controller.seekTo(seconds: duration * 0.75);
+  /// ```
+  ///
+  /// **Note:** Seeking may trigger buffering. Monitor [statusStream]
+  /// for [PlayerStatus.buffering] and [PlayerStatus.ready] states.
   Future<void> seekTo({required double seconds}) async => _channel.invokeMethod('seekTo', {'seconds': seconds});
 
   StreamController<double>? _positionController;
   StreamController<PlayerStatus>? _statusController;
 
-  /// Stream of current playback position in seconds
+  /// Stream of current playback position in seconds.
+  ///
+  /// Emits position updates approximately every 1 second during playback.
+  /// Position is reported in seconds as a [double] value.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// controller.positionStream.listen((position) {
+  ///   print('Current position: ${position.toStringAsFixed(1)}s');
+  ///
+  ///   // Update UI progress bar
+  ///   final progress = position / totalDuration;
+  ///   setState(() => _progress = progress);
+  /// });
+  /// ```
+  ///
+  /// **Note:** This stream is broadcast and can have multiple listeners.
+  /// Remember to cancel subscriptions or call [dispose] to prevent memory leaks.
   Stream<double> get positionStream {
     if (_positionController != null) {
       return _positionController!.stream;
@@ -119,7 +272,34 @@ final class VideoPlayerViewController {
     return _positionController!.stream;
   }
 
-  /// Stream of player status updates
+  /// Stream of player status changes.
+  ///
+  /// Emits [PlayerStatus] values whenever the player state changes
+  /// (e.g., from buffering to ready, ready to playing, playing to paused).
+  ///
+  /// **Example:**
+  /// ```dart
+  /// controller.statusStream.listen((status) {
+  ///   switch (status) {
+  ///     case PlayerStatus.buffering:
+  ///       showLoadingIndicator();
+  ///       break;
+  ///     case PlayerStatus.ready:
+  ///       hideLoadingIndicator();
+  ///       break;
+  ///     case PlayerStatus.ended:
+  ///       onVideoComplete();
+  ///       break;
+  ///     case PlayerStatus.error:
+  ///       showError('Playback failed');
+  ///       break;
+  ///     default:
+  ///       break;
+  ///   }
+  /// });
+  /// ```
+  ///
+  /// **Note:** This stream is broadcast and can have multiple listeners.
   Stream<PlayerStatus> get statusStream {
     if (_statusController != null) {
       return _statusController!.stream;
@@ -134,8 +314,20 @@ final class VideoPlayerViewController {
 
   void Function(Object object)? _finishedCallback;
 
-  /// Sets up a method call handler for video player events
-  /// Returns the arguments when the video is finished
+  /// Sets a callback to be invoked when video playback finishes.
+  ///
+  /// **Parameters:**
+  /// - [onFinished]: Callback function receiving playback data when video ends
+  ///
+  /// **Example:**
+  /// ```dart
+  /// controller.setEventListener((data) {
+  ///   print('Video finished with data: $data');
+  /// });
+  /// ```
+  ///
+  /// **Deprecated:** Consider using [statusStream] instead and listening
+  /// for [PlayerStatus.ended] events for a more reactive approach.
   void setEventListener(void Function(Object object)? onFinished) {
     _finishedCallback = onFinished;
     _setupMethodHandler();
@@ -165,14 +357,57 @@ final class VideoPlayerViewController {
     });
   }
 
-  /// Sets callback for when duration becomes available after video loads
-  /// This will be called automatically when native side detects duration is ready
+  /// Sets a callback to be invoked when the video duration becomes available.
+  ///
+  /// The duration becomes available shortly after the video loads successfully,
+  /// typically when the player transitions to [PlayerStatus.ready] state.
+  ///
+  /// **Parameters:**
+  /// - [callback]: Function receiving duration in seconds as a [double]
+  ///
+  /// **Example:**
+  /// ```dart
+  /// controller.onDurationReady((duration) {
+  ///   print('Video duration: ${duration.toInt()} seconds');
+  ///   setState(() => _totalDuration = duration);
+  /// });
+  /// ```
+  ///
+  /// **Alternative:** You can also use [getDuration] after receiving
+  /// [PlayerStatus.ready] from [statusStream].
   void onDurationReady(void Function(double duration) callback) {
     _durationReadyCallback = callback;
     _setupMethodHandler();
   }
 
-  /// Disposes the controller and cleans up resources
+  /// Disposes the controller and cleans up all resources.
+  ///
+  /// **IMPORTANT:** Always call this method when the controller is no longer needed
+  /// to prevent memory leaks. Typically called in the widget's `dispose()` method.
+  ///
+  /// This method:
+  /// - Closes all stream controllers
+  /// - Removes method call handlers
+  /// - Clears all callbacks
+  ///
+  /// **Example:**
+  /// ```dart
+  /// class MyVideoWidget extends StatefulWidget {
+  ///   // ...
+  /// }
+  ///
+  /// class _MyVideoWidgetState extends State<MyVideoWidget> {
+  ///   late VideoPlayerViewController _controller;
+  ///
+  ///   @override
+  ///   void dispose() {
+  ///     _controller.dispose(); // Clean up resources
+  ///     super.dispose();
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// **Note:** After calling dispose, the controller should not be used anymore.
   Future<void> dispose() async {
     _channel.setMethodCallHandler(null);
     await _positionController?.close();
