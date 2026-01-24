@@ -233,6 +233,7 @@ iOS implementation uses `AVAssetDownloadURLSession` for reliable background down
 ## Requirements
 
 - **iOS**: 15.0+
+- **Android**: 26+
 - **Flutter**: 3.32.0+
 - **Dart**: 3.8.0+
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/src/utils/log_message.dart';
 
 import 'package:video_player/src/video_player_platform_interface.dart';
 
@@ -16,18 +17,27 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
 
   @override
   Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
-    final res = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
-      'playerConfigJsonString': playerConfigJsonString,
-    });
-    if (res == null) {
+    try {
+      final res = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
+        'playerConfigJsonString': playerConfigJsonString,
+      });
+      if (res == null) {
+        return null;
+      }
+      final List<int> list = res.map((e) => (e ?? 1) as int).toList();
+      return list;
+    } catch (error, stackTrace) {
+      logMessage('playVideo failed', error: error, stackTrace: stackTrace);
       return null;
     }
-    final List<int> list = res.map((e) => (e ?? 1) as int).toList();
-    return list;
   }
 
   @override
   Future<void> close() async {
-    await methodChannel.invokeMethod<void>('close');
+    try {
+      await methodChannel.invokeMethod<void>('close');
+    } catch (error, stackTrace) {
+      logMessage('playVideo failed', error: error, stackTrace: stackTrace);
+    }
   }
 }
