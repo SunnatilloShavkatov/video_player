@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/src/utils/url_validator.dart';
 
 enum ResizeMode { fit, fill, zoom }
 
@@ -28,18 +29,10 @@ class VideoPlayerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url.isEmpty || url.trim().isEmpty) {
+    if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
       return const Center(
-        child: Text('Error: URL cannot be empty', style: TextStyle(color: Colors.white)),
+        child: Text('Error: Invalid URL format. Must be HTTPS URL', style: TextStyle(color: Colors.white)),
       );
-    }
-
-    // Helper methods for URL detection
-    final isHttpUrl = url.startsWith('http://') || url.startsWith('https://');
-    final isAssetUrl = url.startsWith('assets/') || url.startsWith('/assets/');
-
-    if (!isHttpUrl && !isAssetUrl) {
-      return const Center(child: Text('Error: Invalid URL format. Must be HTTP/HTTPS URL or asset path'));
     }
 
     switch (defaultTargetPlatform) {
@@ -48,11 +41,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{
-            if (isHttpUrl) 'url': url,
-            if (isAssetUrl) 'assets': url,
-            'resizeMode': resizeMode.name,
-          },
+          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.name},
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -61,11 +50,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{
-            if (isHttpUrl) 'url': url,
-            if (isAssetUrl) 'assets': url,
-            'resizeMode': resizeMode.name,
-          },
+          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.name},
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );

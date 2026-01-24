@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:video_player/src/models/player_configuration.dart';
+import 'package:video_player/src/utils/url_validator.dart';
 
 import 'package:video_player/src/video_player_platform_interface.dart';
 
@@ -30,8 +31,12 @@ final class VideoPlayer {
   /// Returns a list of integers representing playback time information,
   /// or null if playback fails.
   Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
-    final String jsonStringConfig = _encodeConfig(playerConfig.toMap());
-    return VideoPlayerPlatform.instance.playVideo(playerConfigJsonString: jsonStringConfig);
+    if (UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
+      throw Exception('Invalid URL format. Must be HTTPS URL');
+    } else {
+      final String jsonStringConfig = _encodeConfig(playerConfig.toMap());
+      return VideoPlayerPlatform.instance.playVideo(playerConfigJsonString: jsonStringConfig);
+    }
   }
 
   Future<void> close() => VideoPlayerPlatform.instance.close();
