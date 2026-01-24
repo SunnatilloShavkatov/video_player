@@ -69,7 +69,7 @@ Add to `android/app/src/main/AndroidManifest.xml`:
 ### 1. Video Playback
 
 #### Basic Playback
-```dart
+```
 import 'package:video_player/video_player.dart';
 
 await VideoPlayer.playVideo(PlayerConfiguration(
@@ -80,7 +80,7 @@ await VideoPlayer.playVideo(PlayerConfiguration(
 ```
 
 #### With Subtitle
-```dart
+```
 await VideoPlayer.playVideo(PlayerConfiguration(
   title: 'Video with Subtitle',
   videoUrl: 'https://example.com/video.mp4',
@@ -90,7 +90,7 @@ await VideoPlayer.playVideo(PlayerConfiguration(
 ```
 
 #### Platform View (Inline)
-```dart
+```
 VideoPlayerView(
   url: 'https://example.com/video.mp4',
   resizeMode: ResizeMode.fit,
@@ -103,7 +103,7 @@ VideoPlayerView(
 ### 2. Screen Protection (iOS)
 
 #### Enable Protection
-```dart
+```
 await VideoPlayer.playVideo(PlayerConfiguration(
   title: 'Protected Content',
   videoUrl: 'https://example.com/video.mp4',
@@ -112,7 +112,7 @@ await VideoPlayer.playVideo(PlayerConfiguration(
 ```
 
 #### Detect Screenshot Attempt
-```dart
+```
 VideoPlayer.onScreenshotDetected.listen((_) {
   print('Screenshot attempt detected!');
   // Show warning, pause video, etc.
@@ -120,7 +120,7 @@ VideoPlayer.onScreenshotDetected.listen((_) {
 ```
 
 #### Detect Screen Recording
-```dart
+```
 VideoPlayer.onScreenRecordingChanged.listen((isRecording) {
   if (isRecording) {
     print('Screen recording started');
@@ -132,7 +132,7 @@ VideoPlayer.onScreenRecordingChanged.listen((isRecording) {
 ## Configuration Options
 
 ### PlayerConfiguration
-```dart
+```
 PlayerConfiguration({
   required String title,
   required String videoUrl,
@@ -146,7 +146,7 @@ PlayerConfiguration({
 ```
 
 ### DownloadVideoRequest
-```dart
+```
 DownloadVideoRequest({
   required String title,
   required String videoUrl,
@@ -171,7 +171,7 @@ DownloadVideoRequest({
 
 ### Methods
 
-```dart
+```
 // Playback
 static Future<void> playVideo(PlayerConfiguration config)
 static Future<void> playDownloadedVideo(String title, String filePath)
@@ -189,7 +189,7 @@ static Future<void> removeScreenProtection()
 
 ### Streams
 
-```dart
+```
 // Download progress
 static Stream<DownloadProgress> get onDownloadProgress
 
@@ -201,7 +201,7 @@ static Stream<bool> get onScreenRecordingChanged
 ### Models
 
 **DownloadProgress**
-```dart
+```
 {
   String title,
   double percent,
@@ -211,7 +211,7 @@ static Stream<bool> get onScreenRecordingChanged
 ```
 
 **DownloadedVideo**
-```dart
+```
 {
   String title,
   String filePath,
@@ -230,7 +230,7 @@ static Stream<bool> get onScreenRecordingChanged
 ## Common Patterns
 
 ### Error Handling
-```dart
+```
 try {
   await VideoPlayer.playVideo(config);
 } on PlatformException catch (e) {
@@ -258,7 +258,7 @@ class _MyWidgetState extends State<MyWidget> {
 ```
 
 ### Download with UI
-```dart
+```
 VideoPlayer.onDownloadProgress.listen((progress) {
   setState(() {
     _downloadProgress[progress.title] = progress.percent;

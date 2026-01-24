@@ -15,7 +15,7 @@ This document identifies critical API contract issues in the Flutter video_playe
 **Location**: `VideoPlayer.playVideo()` and `VideoPlayerPlatform.playVideo()`
 
 **Current Signature**:
-```dart
+```
 Future<List<int>?> playVideo({required PlayerConfiguration playerConfig})
 ```
 
@@ -26,7 +26,7 @@ Future<List<int>?> playVideo({required PlayerConfiguration playerConfig})
 - No documentation on the contract
 
 **From Native Code Analysis** (VideoPlayerPlugin.kt:114):
-```kotlin
+```
 resultMethod?.success(listOf(position.toInt(), duration.toInt()))
 ```
 
@@ -40,7 +40,7 @@ resultMethod?.success(listOf(position.toInt(), duration.toInt()))
 ### 2. **Exception vs Error Code Inconsistency**
 
 **Current Behavior**:
-```dart
+```
 Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
   if (UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
     throw Exception('Invalid URL format. Must be HTTPS URL');  // ❌ Throws
@@ -62,7 +62,7 @@ Future<List<int>?> playVideo({required PlayerConfiguration playerConfig}) {
 ### 3. **Missing Documentation on PlayerConfiguration Requirements**
 
 **Current**:
-```dart
+```
 class PlayerConfiguration {
   const PlayerConfiguration({
     required this.videoUrl,
@@ -112,7 +112,7 @@ final class VideoPlayerViewController {
 ### 5. **Enum Serialization Fragility**
 
 **Current**:
-```dart
+```
 enum ResizeMode { fit, fill, zoom }
 
 // Usage:
@@ -129,7 +129,7 @@ enum ResizeMode { fit, fill, zoom }
 ### 6. **Stream Management Memory Leaks**
 
 **Current**:
-```dart
+```
 Stream<double> get positionStream {
   if (_positionController != null) {
     return _positionController!.stream;
@@ -153,7 +153,7 @@ Stream<double> get positionStream {
 
 **Create new sealed class** (lib/src/models/playback_result.dart):
 
-```dart
+```
 /// Result of a video playback session.
 ///
 /// This represents the outcome when the full-screen video player is dismissed.
@@ -205,7 +205,7 @@ final class PlaybackFailed extends PlaybackResult {
 
 **Update VideoPlayer.playVideo()**:
 
-```dart
+```
 /// Plays a video in full-screen native player.
 ///
 /// Opens a native full-screen video player with the provided [playerConfig].
@@ -282,7 +282,7 @@ Future<PlaybackResult> playVideo({
 
 **Update PlayerConfiguration with comprehensive docs**:
 
-```dart
+```
 /// Configuration for full-screen native video player.
 ///
 /// This class configures the appearance and behavior of the native video player.
@@ -636,7 +636,7 @@ final class VideoPlayerViewController {
 
 ### Fix 4: Make Enum Serialization Explicit
 
-```dart
+```
 /// Video resize modes for embedded player.
 ///
 /// Controls how video content is scaled within the player view.
@@ -679,7 +679,7 @@ await _channel.invokeMethod('setUrl', {
 
 Same pattern for PlayerStatus:
 
-```dart
+```
 /// Player state values.
 enum PlayerStatus {
   idle('idle'),
@@ -792,7 +792,7 @@ extension PlayerConfigurationFactories on PlayerConfiguration {
 ### For Library Users
 
 **Before**:
-```dart
+```
 final result = await VideoPlayer.instance.playVideo(
   playerConfig: PlayerConfiguration(
     videoUrl: 'https://example.com/video.mp4',
@@ -817,7 +817,7 @@ if (result != null) {
 ```
 
 **After**:
-```dart
+```
 final result = await VideoPlayer.instance.playVideo(
   playerConfig: PlayerConfiguration.remote(
     url: 'https://example.com/video.mp4',

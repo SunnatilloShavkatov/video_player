@@ -72,7 +72,7 @@
 - ✅ **Result:** Fixed crash from commit 3be5ef9
 
 ### 6. **Correct Cleanup Order**
-```kotlin
+```
 1. stopPositionUpdates()
 2. handler.removeCallbacksAndMessages(null)
 3. player.removeListener()
@@ -89,13 +89,13 @@
 
 ## 📊 IMPACT METRICS
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **iOS Memory Leak** | ~180KB/video | 0 | 100% fixed |
-| **Android Memory Leak** | ~2-5MB/view | 0 | 100% fixed |
-| **KVO Crash Rate** | High | 0 | Eliminated |
-| **EGLSurface Crash** | Frequent | 0 | Eliminated |
-| **Disposal Crashes** | Occasional | 0 | Eliminated |
+| Metric                  | Before       | After | Improvement |
+|-------------------------|--------------|-------|-------------|
+| **iOS Memory Leak**     | ~180KB/video | 0     | 100% fixed  |
+| **Android Memory Leak** | ~2-5MB/view  | 0     | 100% fixed  |
+| **KVO Crash Rate**      | High         | 0     | Eliminated  |
+| **EGLSurface Crash**    | Frequent     | 0     | Eliminated  |
+| **Disposal Crashes**    | Occasional   | 0     | Eliminated  |
 
 ---
 
