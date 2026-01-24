@@ -130,13 +130,10 @@ class VideoViewController: UIViewController {
     func playVideo(gravity: AVLayerVideoGravity) {
         guard !isDisposed else { return }
 
-        // ✅ CRITICAL: Remove observers BEFORE changing item
-        removeAllObservers()
+        stopObservingPlayerIfNeeded()
 
-        // ✅ Pause before changing
         player.pause()
 
-        // Prepare URL
         var videoURL: URL?
         if url.isEmpty {
             let key = self.registrar?.lookupKey(forAsset: assets)
@@ -158,7 +155,6 @@ class VideoViewController: UIViewController {
             return
         }
 
-        // ✅ FIXED: Reuse or create player layer
         if playerLayer == nil {
             let layer = AVPlayerLayer(player: player)
             layer.frame = videoView.bounds
@@ -169,36 +165,37 @@ class VideoViewController: UIViewController {
             playerLayer?.videoGravity = gravity
         }
 
-        // Create new item
         let asset = AVURLAsset(url: videoURL)
         let playerItem = AVPlayerItem(asset: asset)
 
-        // ✅ Add observers BEFORE replacing item
-        addObservers(to: playerItem)
-
-        // Replace item
         player.replaceCurrentItem(with: playerItem)
 
-        // Setup position observer
         setupPositionObserver()
-
-        // Add notification
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(playerDidFinishPlaying),
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: playerItem
-        )
+        startObservingPlayerIfNeeded()
 
         player.play()
     }
 
-    // MARK: - Observer Management
+    // MARK: - Observer Management (Centralized)
 
-    private func addObservers(to item: AVPlayerItem) {
+    private func startObservingPlayerIfNeeded() {
+        assert(Thread.isMainThread, "Observer setup must be on main thread")
+
         guard !isDisposed else { return }
+        guard let item = player.currentItem else { return }
 
-        // ✅ CRITICAL: Use STATIC context to prevent Swift exclusivity violations
+        if isObservingTimeControl {
+            return
+        }
+
+        player.addObserver(
+            self,
+            forKeyPath: #keyPath(AVPlayer.timeControlStatus),
+            options: [.new, .old],
+            context: &VideoViewController.playerContext
+        )
+        isObservingTimeControl = true
+
         item.addObserver(
             self,
             forKeyPath: #keyPath(AVPlayerItem.duration),
@@ -215,36 +212,34 @@ class VideoViewController: UIViewController {
         )
         isObservingStatus = true
 
-        player.addObserver(
-            self,
-            forKeyPath: #keyPath(AVPlayer.timeControlStatus),
-            options: [.new, .old],
-            context: &VideoViewController.playerContext
-        )
-        isObservingTimeControl = true
-
-        // ✅ FIXED: Weak reference
         currentPlayerItem = item
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerDidFinishPlaying),
+            name: .AVPlayerItemDidPlayToEndTime,
+            object: item
+        )
     }
 
-    private func removeAllObservers() {
-        // Remove time observer (independent)
+    private func stopObservingPlayerIfNeeded() {
+        assert(Thread.isMainThread, "Observer teardown must be on main thread")
+
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
             timeObserver = nil
         }
 
-        // ✅ CRITICAL: Use STATIC context when removing observers
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+
         if isObservingTimeControl {
             do {
                 player.removeObserver(self, forKeyPath: #keyPath(AVPlayer.timeControlStatus), context: &VideoViewController.playerContext)
-                isObservingTimeControl = false
             } catch {
-                isObservingTimeControl = false
             }
+            isObservingTimeControl = false
         }
 
-        // ✅ FIXED: Safe item observer removal with weak reference
         guard let item = currentPlayerItem else {
             isObservingDuration = false
             isObservingStatus = false
@@ -254,19 +249,17 @@ class VideoViewController: UIViewController {
         if isObservingDuration {
             do {
                 item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.duration), context: &VideoViewController.playerItemContext)
-                isObservingDuration = false
             } catch {
-                isObservingDuration = false
             }
+            isObservingDuration = false
         }
 
         if isObservingStatus {
             do {
                 item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &VideoViewController.playerItemContext)
-                isObservingStatus = false
             } catch {
-                isObservingStatus = false
             }
+            isObservingStatus = false
         }
 
         currentPlayerItem = nil
@@ -292,10 +285,8 @@ class VideoViewController: UIViewController {
         object: Any?,
         change: [NSKeyValueChangeKey : Any]?
     ) {
-        // ✅ Guard against callbacks after disposal
-        guard !isDisposed else { return }
+        guard !isDisposed, isObservingDuration || isObservingStatus else { return }
 
-        // ✅ Ensure on main thread
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in
                 self?.handlePlayerItemObservation(keyPath: keyPath, object: object, change: change)
@@ -335,7 +326,7 @@ class VideoViewController: UIViewController {
         keyPath: String?,
         change: [NSKeyValueChangeKey : Any]?
     ) {
-        guard !isDisposed else { return }
+        guard !isDisposed, isObservingTimeControl else { return }
 
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in
@@ -447,44 +438,36 @@ class VideoViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         player.pause()
+        stopObservingPlayerIfNeeded()
     }
 
     deinit {
         cleanup()
     }
 
-    // ✅ PRODUCTION-SAFE CLEANUP
     private func cleanup() {
         disposalQueue.sync {
             guard !isDisposed else { return }
             isDisposed = true
 
-            // CRITICAL ORDER:
-            // 1. Pause playback
             player.pause()
 
-            // 2. Remove time observer
-            if let observer = timeObserver {
-                player.removeTimeObserver(observer)
-                timeObserver = nil
+            // ✅ FIX: Avoid deadlock - if already on main, call directly; otherwise async
+            if Thread.isMainThread {
+                self.stopObservingPlayerIfNeeded()
+            } else {
+                DispatchQueue.main.async {
+                    self.stopObservingPlayerIfNeeded()
+                }
             }
 
-            // 3. Remove NotificationCenter
-            NotificationCenter.default.removeObserver(self)
-
-            // 4. Remove KVO observers
-            removeAllObservers()
-
-            // 5. Clear player item
             player.replaceCurrentItem(with: nil)
 
-            // 6. Remove layer
             if let layer = playerLayer, layer.superlayer != nil {
                 layer.removeFromSuperlayer()
             }
             playerLayer = nil
 
-            // 7. Weak reference auto-cleared
             currentPlayerItem = nil
         }
     }
