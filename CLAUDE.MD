@@ -5,8 +5,8 @@
 A comprehensive Flutter video player plugin with native iOS and Android implementations. This plugin provides advanced video playback capabilities and iOS screen protection features.
 
 **Package:** uz.shs.video_player
-**Version:** 2.0.0
-**Repository:** https://github.com/SunnatilloShavkatov/video_player.git
+**Version:** 3.0.0
+**Repository:** https://github.com/SunnatilloShavkatov/video_player
 
 ## Architecture
 
@@ -53,7 +53,7 @@ video_player/
 - **VideoPlayerView**: Embedded UIView for Flutter integration
 - **ScreenProtectorKit**: Screenshot and screen recording protection
 - **HlsParser**: M3U8 playlist parser for quality detection
-- **AVAssetDownloadURLSession**: Background download manager
+- **Note**: Download functionality has been removed as of v2.1.0
 
 #### Android Layer
 - **VideoPlayerActivity**: Full-screen player activity
@@ -129,11 +129,11 @@ video_player/
 
 **Manual Testing:**
 - Test on physical iOS device (iOS 15.0+)
-- Test on physical Android device
-- Test video playback from URL, assets, and downloaded files
+- Test on physical Android device (API 26+)
+- Test video playback from HTTPS URLs
 - Test quality selection, speed control, seek functionality
-- Test download/pause/resume functionality
 - Test screen protection (iOS only)
+- Test lifecycle (open/close 50+ times)
 
 **Example App:**
 - Use `example/` directory for testing

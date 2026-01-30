@@ -54,7 +54,16 @@ platform :ios, '15.0'
 
 ### Android Setup
 
-No additional setup required. The plugin automatically configures ExoPlayer.
+Update minimum SDK version to 26 in `android/app/build.gradle`:
+```gradle
+android {
+    defaultConfig {
+        minSdkVersion 26  // Required by video_player
+    }
+}
+```
+
+The plugin automatically configures ExoPlayer - no other setup required.
 
 ## Usage
 
@@ -70,20 +79,19 @@ final result = await VideoPlayer.instance.playVideo(
   playerConfig: PlayerConfiguration.remote(
     videoUrl: 'https://example.com/video.m3u8',
     title: 'Sample Video',
-    lastPositionMillis: 30000,  // Resume at 30 seconds (optional)
+    startPositionSeconds: 30,  // Resume at 30 seconds (optional)
     movieShareLink: 'https://example.com/share',  // Optional
   ),
 );
 
 // Handle the result
 switch (result) {
-  case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
+  case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
     // User watched the video and closed the player
-    final seconds = lastPositionMillis ~/ 1000;
-    print('User stopped at $seconds seconds');
+    print('User stopped at $lastPositionSeconds seconds');
 
     // Save progress for next time
-    await saveWatchProgress(videoId, lastPositionMillis);
+    await saveWatchProgress(videoId, lastPositionSeconds);
 
   case PlaybackCancelled():
     // User cancelled before video loaded
@@ -107,7 +115,7 @@ final result = await VideoPlayer.instance.playVideo(
     qualityText: 'Quality',
     speedText: 'Speed',
     autoText: 'Auto',
-    lastPositionMillis: 30000,    // Resume position in milliseconds
+    lastPosition: 30,    // Resume position in seconds
     playVideoFromAsset: false,
     assetPath: '',
     movieShareLink: 'https://example.com/share',
@@ -199,6 +207,12 @@ The iOS implementation uses native iOS components for optimal performance:
 
 The iOS implementation includes `ScreenProtectorKit` for content protection:
 
+> **⚠️ Important Limitations:**
+> - Screen protection is **iOS only** - Android always protects video content via FLAG_SECURE
+> - Enabling screen protection may introduce 10-50ms startup jank on iOS 17+
+> - Layer manipulation used for protection may be fragile on newer iOS versions
+> - Only enable if content protection is critical for your use case
+
 ```swift
 // In your AppDelegate.swift
 import video_player
@@ -260,7 +274,7 @@ The plugin automatically sorts video resolutions and provides quality selection 
 PlayerConfiguration.remote({
   required String videoUrl,           // HTTPS URL
   required String title,              // Video title
-  int lastPositionMillis = 0,         // Resume position (milliseconds)
+  int startPositionSeconds = 0,       // Resume position (seconds)
   String movieShareLink = '',         // Share URL (optional)
   bool enableScreenProtection = false,// iOS screenshot prevention
   String qualityText = 'Quality',     // UI label (optional)
@@ -274,7 +288,7 @@ PlayerConfiguration.remote({
 PlayerConfiguration.asset({
   required String assetPath,          // Asset path (e.g., 'videos/intro.mp4')
   required String title,              // Video title
-  int lastPositionMillis = 0,         // Resume position (milliseconds)
+  int startPositionSeconds = 0,       // Resume position (seconds)
   bool enableScreenProtection = false,// iOS screenshot prevention
   String qualityText = 'Quality',     // UI label (optional)
   String speedText = 'Speed',         // UI label (optional)
@@ -285,7 +299,7 @@ PlayerConfiguration.asset({
 #### Properties
 - `videoUrl`: HTTPS URL of the video to play
 - `title`: Video title displayed in player UI
-- `lastPositionMillis`: Resume position in milliseconds (>= 0)
+- `lastPosition`: Resume position in seconds (>= 0)
 - `movieShareLink`: Share URL for the video (empty to disable sharing)
 - `enableScreenProtection`: Enable screenshot prevention (iOS only)
 - `qualityText`: Label for quality selection button
@@ -300,9 +314,9 @@ Sealed class representing the outcome of video playback:
 
 **`PlaybackCompleted`** - User watched and closed the video
 ```dart
-case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
-  // lastPositionMillis: Position when closed (milliseconds)
-  // durationMillis: Total video duration (milliseconds)
+case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+  // lastPositionSeconds: Position when closed (seconds)
+  // durationSeconds: Total video duration (seconds)
 ```
 
 **`PlaybackCancelled`** - User cancelled before video loaded
@@ -380,8 +394,8 @@ if (result != null) {
 final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 
 switch (result) {
-  case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
-    await saveProgress(lastPositionMillis);  // Clear: milliseconds
+  case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+    await saveProgress(lastPositionSeconds);  // Clear: seconds
 
   case PlaybackCancelled():
     // Handle cancellation
@@ -414,32 +428,25 @@ PlayerConfiguration(
 PlayerConfiguration.remote(
   videoUrl: 'https://example.com/video.m3u8',
   title: 'My Video',
-  lastPositionMillis: 120000,  // Milliseconds (clear)
+  startPositionSeconds: 120,  // Seconds (clear)
 )
 ```
 
-### 3. Update Time Units
+### 3. Time Units Are Consistent
 
-All time values are now in **milliseconds** instead of seconds:
+All time values remain in **seconds (int)** for consistency:
 
 **Before (v2.x):**
 ```dart
-lastPosition: 120,  // 2 minutes in seconds
+lastPosition: 120,  // 2 minutes in seconds (unclear)
 ```
 
 **After (v3.0):**
 ```dart
-lastPositionMillis: 120000,  // 2 minutes in milliseconds
+startPositionSeconds: 120,  // 2 minutes in seconds (clear parameter name)
 ```
 
-**Conversion:**
-```dart
-// Old seconds → new milliseconds
-final milliseconds = oldSeconds * 1000;
-
-// New milliseconds → seconds for display
-final seconds = lastPositionMillis ~/ 1000;
-```
+**No conversion needed** - the unit is the same, but now explicit in the parameter name.
 
 ### 4. Update Error Handling
 
@@ -469,7 +476,7 @@ try {
 
 - [ ] Replace `List<int>?` result handling with `PlaybackResult` pattern matching
 - [ ] Update `PlayerConfiguration` to use `.remote()` or `.asset()` factories
-- [ ] Convert `lastPosition` from seconds to `lastPositionMillis` in milliseconds (multiply by 1000)
+- [ ] Rename parameter from `lastPosition` to `startPositionSeconds` for clarity (value stays in seconds)
 - [ ] Update error handling to distinguish validation vs runtime errors
 - [ ] Test video playback and resume functionality
 - [ ] Verify position tracking accuracy
