@@ -54,7 +54,16 @@ platform :ios, '15.0'
 
 ### Android Setup
 
-No additional setup required. The plugin automatically configures ExoPlayer.
+Update minimum SDK version to 26 in `android/app/build.gradle`:
+```gradle
+android {
+    defaultConfig {
+        minSdkVersion 26  // Required by video_player
+    }
+}
+```
+
+The plugin automatically configures ExoPlayer - no other setup required.
 
 ## Usage
 
@@ -197,6 +206,12 @@ The iOS implementation uses native iOS components for optimal performance:
 ### Screen Protection
 
 The iOS implementation includes `ScreenProtectorKit` for content protection:
+
+> **⚠️ Important Limitations:**
+> - Screen protection is **iOS only** - Android always protects video content via FLAG_SECURE
+> - Enabling screen protection may introduce 10-50ms startup jank on iOS 17+
+> - Layer manipulation used for protection may be fragile on newer iOS versions
+> - Only enable if content protection is critical for your use case
 
 ```swift
 // In your AppDelegate.swift
