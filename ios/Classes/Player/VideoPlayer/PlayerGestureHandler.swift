@@ -117,23 +117,23 @@ final class PlayerGestureHandler: NSObject {
         
         switch gesture.state {
         case .began:
-            let x = abs(translation.x)
-            let y = abs(translation.y)
+            let x = abs(velocity.x)
+            let y = abs(velocity.y)
             
-            if x < y {
+            if x > y {
+                panDirection = .horizontal
+            } else {
                 panDirection = .vertical
                 if location.x > targetView.bounds.width / 2 {
                     isVolume = true
                 } else {
                     isVolume = false
                 }
-            } else {
-                panDirection = .horizontal
             }
             
         case .changed:
             if panDirection == .vertical {
-                let delta = translation.y / 10000
+                let delta = velocity.y / 10000
                 if isVolume {
                     delegate?.gestureHandler(self, didSwipeVerticallyForVolume: -delta)
                 } else {

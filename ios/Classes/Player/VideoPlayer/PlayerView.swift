@@ -90,52 +90,68 @@ class PlayerView: UIView {
     }()
     private lazy var rotateButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.rotate, for: .normal)
+        if let icon = Svg.rotate {
+            button.setImage(icon, for: .normal)
+        }
         button.addTarget(self, action: #selector(changeOrientation(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var exitButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.exit, for: .normal)
+        if let icon = Svg.exit {
+            button.setImage(icon, for: .normal)
+        }
         button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.addTarget(self, action: #selector(exitButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var pipButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.pip, for: .normal)
+        if let icon = Svg.pip {
+            button.setImage(icon, for: .normal)
+        }
         button.addTarget(self, action: #selector(togglePictureInPictureMode(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var settingsButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.settings, for: .normal)
+        if let icon = Svg.settings {
+            button.setImage(icon, for: .normal)
+        }
         button.addTarget(self, action: #selector(settingPressed(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var shareButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.share, for: .normal)
+        if let icon = Svg.share {
+            button.setImage(icon, for: .normal)
+        }
         button.addTarget(self, action: #selector(share(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var playButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.play, for: .normal)
+        if let icon = Svg.play {
+            button.setImage(icon, for: .normal)
+        }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(playButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var skipForwardButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.forward, for: .normal)
+        if let icon = Svg.forward {
+            button.setImage(icon, for: .normal)
+        }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(skipForwardButtonPressed(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var skipBackwardButton: IconButton = {
         let button = IconButton()
-        button.setImage(Svg.rewind, for: .normal)
+        if let icon = Svg.rewind {
+            button.setImage(icon, for: .normal)
+        }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(skipBackButtonPressed(_:)), for: .touchUpInside)
         return button
