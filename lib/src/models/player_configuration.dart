@@ -3,15 +3,28 @@
 /// This class contains all settings needed to configure the native video player,
 /// including video source, UI labels, playback position, and sharing options.
 ///
+/// **IMPORTANT: All time values are in SECONDS (int), matching the native platform contract.**
+///
+/// **Recommended:** Use factory constructors [PlayerConfiguration.remote] or
+/// [PlayerConfiguration.asset] for cleaner, more maintainable code.
+///
 /// **Example:**
 /// ```dart
-/// final config = PlayerConfiguration(
+/// // Recommended: Use factory constructor
+/// final config = PlayerConfiguration.remote(
+///   videoUrl: 'https://example.com/video.m3u8',
+///   title: 'Sample Video',
+///   startPositionSeconds: 120, // Resume at 2 minutes
+/// );
+///
+/// // Advanced: Use full constructor for custom configuration
+/// final customConfig = PlayerConfiguration(
 ///   videoUrl: 'https://example.com/video.m3u8',
 ///   title: 'Sample Video',
 ///   qualityText: 'Quality',
 ///   speedText: 'Speed',
 ///   autoText: 'Auto',
-///   lastPosition: 0,
+///   lastPosition: 120, // SECONDS
 ///   playVideoFromAsset: false,
 ///   assetPath: '',
 ///   movieShareLink: 'https://example.com/share',
@@ -20,7 +33,11 @@
 class PlayerConfiguration {
   /// Creates a player configuration with the specified settings.
   ///
-  /// All parameters are required to ensure complete configuration.
+  /// **Advanced Constructor:** For most use cases, prefer [PlayerConfiguration.remote]
+  /// or [PlayerConfiguration.asset] factory constructors instead.
+  ///
+  /// This constructor requires all parameters to be specified. Use this only when
+  /// you need full control over all configuration options.
   const PlayerConfiguration({
     required this.videoUrl,
     required this.title,
@@ -32,7 +49,134 @@ class PlayerConfiguration {
     required this.movieShareLink,
     required this.playVideoFromAsset,
     this.enableScreenProtection = false,
-  });
+  }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
+
+  // assert(
+  //   (playVideoFromAsset && assetPath.isNotEmpty) || (!playVideoFromAsset && videoUrl.isNotEmpty),
+  //   'Either assetPath must be provided with playVideoFromAsset=true, or videoUrl with playVideoFromAsset=false',
+  // );
+
+  /// Creates a configuration for playing a remote video via HTTPS.
+  ///
+  /// This is the recommended constructor for most use cases. It provides sensible
+  /// defaults for all UI labels and playback settings.
+  ///
+  /// **Parameters:**
+  /// - [videoUrl]: The HTTPS URL of the video to play (required)
+  /// - [title]: The title displayed in the player UI (required)
+  /// - [startPositionSeconds]: Resume position in seconds (default: 0)
+  /// - [movieShareLink]: Share URL for the video (default: empty, disables sharing)
+  /// - [enableScreenProtection]: Enable screenshot prevention on iOS (default: false)
+  /// - [qualityText]: Label for quality selection (default: 'Quality')
+  /// - [speedText]: Label for speed selection (default: 'Speed')
+  /// - [autoText]: Label for auto quality option (default: 'Auto')
+  ///
+  /// **Example:**
+  /// ```dart
+  /// // Minimal usage
+  /// final config = PlayerConfiguration.remote(
+  ///   videoUrl: 'https://example.com/video.m3u8',
+  ///   title: 'My Video',
+  /// );
+  ///
+  /// // With resume position (in SECONDS)
+  /// final resumeConfig = PlayerConfiguration.remote(
+  ///   videoUrl: 'https://example.com/video.m3u8',
+  ///   title: 'My Video',
+  ///   startPositionSeconds: 120, // Resume at 2 minutes
+  /// );
+  ///
+  /// // With sharing enabled
+  /// final shareConfig = PlayerConfiguration.remote(
+  ///   videoUrl: 'https://example.com/video.m3u8',
+  ///   title: 'My Video',
+  ///   movieShareLink: 'https://example.com/share/video-123',
+  /// );
+  ///
+  /// // With screen protection (iOS only)
+  /// final protectedConfig = PlayerConfiguration.remote(
+  ///   videoUrl: 'https://example.com/private-video.m3u8',
+  ///   title: 'Confidential Video',
+  ///   enableScreenProtection: true,
+  /// );
+  /// ```
+  factory PlayerConfiguration.remote({
+    required String videoUrl,
+    required String title,
+    int startPositionSeconds = 0,
+    String movieShareLink = '',
+    bool enableScreenProtection = false,
+    String qualityText = 'Quality',
+    String speedText = 'Speed',
+    String autoText = 'Auto',
+  }) {
+    assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
+    return PlayerConfiguration(
+      videoUrl: videoUrl,
+      title: title,
+      autoText: autoText,
+      assetPath: '',
+      speedText: speedText,
+      qualityText: qualityText,
+      lastPosition: startPositionSeconds,
+      movieShareLink: movieShareLink,
+      playVideoFromAsset: false,
+      enableScreenProtection: enableScreenProtection,
+    );
+  }
+
+  /// Creates a configuration for playing a video from Flutter assets.
+  ///
+  /// **Note:** Asset playback support may be limited on some platforms.
+  /// For production use, prefer [PlayerConfiguration.remote] with HTTPS URLs.
+  ///
+  /// **Parameters:**
+  /// - [assetPath]: Path to the asset file (e.g., 'videos/intro.mp4')
+  /// - [title]: The title displayed in the player UI (required)
+  /// - [startPositionSeconds]: Resume position in seconds (default: 0)
+  /// - [enableScreenProtection]: Enable screenshot prevention on iOS (default: false)
+  /// - [qualityText]: Label for quality selection (default: 'Quality')
+  /// - [speedText]: Label for speed selection (default: 'Speed')
+  /// - [autoText]: Label for auto quality option (default: 'Auto')
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final config = PlayerConfiguration.asset(
+  ///   assetPath: 'assets/videos/intro.mp4',
+  ///   title: 'Introduction',
+  /// );
+  /// ```
+  ///
+  /// **Note:** Make sure the asset is declared in `pubspec.yaml`:
+  /// ```yaml
+  /// flutter:
+  ///   assets:
+  ///     - assets/videos/intro.mp4
+  /// ```
+  factory PlayerConfiguration.asset({
+    required String assetPath,
+    required String title,
+    int startPositionSeconds = 0,
+    bool enableScreenProtection = false,
+    String qualityText = 'Quality',
+    String speedText = 'Speed',
+    String autoText = 'Auto',
+  }) {
+    assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
+    assert(assetPath.isNotEmpty, 'assetPath cannot be empty');
+    return PlayerConfiguration(
+      videoUrl: '',
+      title: title,
+      autoText: autoText,
+      assetPath: assetPath,
+      speedText: speedText,
+      qualityText: qualityText,
+      lastPosition: startPositionSeconds,
+      movieShareLink: '',
+      playVideoFromAsset: true,
+      enableScreenProtection: enableScreenProtection,
+    );
+  }
 
   /// The title displayed in the video player UI.
   ///
@@ -59,10 +203,14 @@ class PlayerConfiguration {
   /// Use this to resume playback from a previously saved position.
   /// Set to `0` to start from the beginning.
   ///
+  /// **Unit:** Seconds (int) - matches native platform contract
+  ///
   /// **Example:**
   /// ```dart
-  /// lastPosition: 120, // Start at 2 minutes
+  /// lastPosition: 120, // Start at 2 minutes (120 seconds)
   /// ```
+  ///
+  /// **Range:** `>= 0`
   final int lastPosition;
 
   /// Label text for the automatic quality option (e.g., "Auto", "Automatic").
@@ -136,6 +284,8 @@ class PlayerConfiguration {
   ///
   /// This method is used internally to serialize configuration data
   /// for transmission to native iOS/Android code.
+  ///
+  /// Platform expects `lastPosition` in seconds (int), which matches our public API.
   Map<String, dynamic> toMap() => {
     'title': title,
     'videoUrl': videoUrl,
@@ -143,7 +293,7 @@ class PlayerConfiguration {
     'assetPath': assetPath,
     'speedText': speedText,
     'qualityText': qualityText,
-    'lastPosition': lastPosition,
+    'lastPosition': lastPosition, // Already in seconds
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
     'enableScreenProtection': enableScreenProtection,

@@ -6,9 +6,93 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/src/utils/url_validator.dart';
 
-enum ResizeMode { fit, fill, zoom }
+/// Video resize mode for embedded player view.
+///
+/// Determines how video content fits within the player view bounds.
+enum ResizeMode {
+  /// Fit video within view bounds while maintaining aspect ratio.
+  ///
+  /// Video is scaled to fit entirely within the view. Black bars may appear
+  /// if aspect ratios don't match.
+  fit('fit'),
 
-enum PlayerStatus { idle, buffering, ready, ended, playing, paused, error }
+  /// Fill the entire view, cropping video if necessary.
+  ///
+  /// Video is scaled to fill the view completely. Parts of the video may be
+  /// cropped if aspect ratios don't match.
+  fill('fill'),
+
+  /// Zoom video to fill view while maintaining aspect ratio.
+  ///
+  /// Similar to fill, but ensures the entire video area is visible.
+  zoom('zoom');
+
+  const ResizeMode(this.value);
+
+  /// Platform-stable serialization value.
+  ///
+  /// This value is used for method channel communication with native platforms.
+  /// Changing this value would break platform compatibility.
+  final String value;
+
+  /// Creates a [ResizeMode] from its platform value.
+  ///
+  /// Throws [ArgumentError] if the value is not recognized.
+  static ResizeMode fromValue(String value) => ResizeMode.values.firstWhere(
+    (mode) => mode.value == value,
+    orElse: () => throw ArgumentError('Invalid ResizeMode value: $value'),
+  );
+}
+
+/// Player status for embedded player view.
+///
+/// Represents the current state of the video player.
+enum PlayerStatus {
+  /// Player is idle and no video is loaded.
+  idle('idle'),
+
+  /// Player is buffering video data.
+  ///
+  /// This state occurs when the player is loading video data from the network
+  /// or waiting for buffered data to catch up during playback.
+  buffering('buffering'),
+
+  /// Player is ready to play.
+  ///
+  /// Video has loaded successfully and is ready for playback.
+  ready('ready'),
+
+  /// Video playback has ended.
+  ///
+  /// The player has reached the end of the video content.
+  ended('ended'),
+
+  /// Video is currently playing.
+  playing('playing'),
+
+  /// Video is paused.
+  paused('paused'),
+
+  /// Player encountered an error.
+  ///
+  /// Playback cannot continue due to an error condition.
+  error('error');
+
+  const PlayerStatus(this.value);
+
+  /// Platform-stable serialization value.
+  ///
+  /// This value is used for method channel communication with native platforms.
+  /// Changing this value would break platform compatibility.
+  final String value;
+
+  /// Creates a [PlayerStatus] from its platform value.
+  ///
+  /// Returns [PlayerStatus.idle] if the value is not recognized,
+  /// providing a safe fallback for unknown status values.
+  static PlayerStatus fromValue(String value) =>
+      PlayerStatus.values.firstWhere((status) => status.value == value, orElse: () => PlayerStatus.idle);
+}
 
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
@@ -41,7 +125,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.name},
+          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.value},
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -50,7 +134,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.name},
+          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.value},
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -139,7 +223,7 @@ final class VideoPlayerViewController {
   /// **Note:** This replaces the current video and resets playback position to 0.
   Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async {
     _checkNotDisposed();
-    return _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
+    return _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.value});
   }
 
   /// Loads and plays a video from Flutter assets.
@@ -164,7 +248,7 @@ final class VideoPlayerViewController {
   /// ```
   Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
     _checkNotDisposed();
-    await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.name});
+    await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.value});
   }
 
   /// Pauses video playback.
@@ -335,6 +419,9 @@ final class VideoPlayerViewController {
   /// **Parameters:**
   /// - [onFinished]: Callback function receiving playback data when video ends
   ///
+  /// **Throws:**
+  /// - [StateError] if called after [dispose]
+  ///
   /// **Example:**
   /// ```dart
   /// controller.setEventListener((data) {
@@ -345,36 +432,52 @@ final class VideoPlayerViewController {
   /// **Deprecated:** Consider using [statusStream] instead and listening
   /// for [PlayerStatus.ended] events for a more reactive approach.
   void setEventListener(void Function(Object object)? onFinished) {
+    _checkNotDisposed();
     _finishedCallback = onFinished;
     _setupMethodHandler();
   }
 
   void Function(double)? _durationReadyCallback;
 
+  /// Sets up the method call handler for receiving events from native platform.
+  ///
+  /// This handler is set only once during controller initialization and processes:
+  /// - Position updates during playback
+  /// - Duration ready notifications
+  /// - Player status changes
+  /// - Playback finished events
+  ///
+  /// All callbacks check disposal state before executing to prevent use-after-dispose errors.
   void _setupMethodHandler() {
     _channel.setMethodCallHandler((call) async {
+      // Ignore all callbacks if disposed
       if (_isDisposed) {
         return;
       }
 
-      if (call.method == 'positionUpdate') {
-        final position = (call.arguments as double?) ?? 0.0;
-        if (!_isDisposed) {
-          _positionController?.add(position);
-        }
-      } else if (call.method == 'durationReady') {
-        final duration = (call.arguments as double?) ?? 0.0;
-        if (!_isDisposed && duration > 0 && _durationReadyCallback != null) {
-          _durationReadyCallback!(duration);
-        }
-      } else if (call.method == 'playerStatus') {
-        final statusString = call.arguments as String?;
-        if (!_isDisposed && statusString != null) {
-          final status = PlayerStatus.values.firstWhere((e) => e.name == statusString, orElse: () => PlayerStatus.idle);
-          _statusController?.add(status);
-        }
-      } else if (call.method == 'finished' && !_isDisposed && _finishedCallback != null) {
-        _finishedCallback!(call.arguments);
+      switch (call.method) {
+        case 'positionUpdate':
+          final position = (call.arguments as double?) ?? 0.0;
+          if (!_isDisposed) {
+            _positionController?.add(position);
+          }
+        case 'durationReady':
+          final duration = (call.arguments as double?) ?? 0.0;
+          if (!_isDisposed && duration > 0 && _durationReadyCallback != null) {
+            _durationReadyCallback!(duration);
+          }
+        case 'playerStatus':
+          final statusString = call.arguments as String?;
+          if (!_isDisposed && statusString != null) {
+            final status = PlayerStatus.fromValue(statusString);
+            _statusController?.add(status);
+          }
+        case 'finished':
+          if (!_isDisposed && _finishedCallback != null) {
+            _finishedCallback!(call.arguments);
+          }
+        default:
+          break;
       }
     });
   }
@@ -387,6 +490,9 @@ final class VideoPlayerViewController {
   /// **Parameters:**
   /// - [callback]: Function receiving duration in seconds as a [double]
   ///
+  /// **Throws:**
+  /// - [StateError] if called after [dispose]
+  ///
   /// **Example:**
   /// ```dart
   /// controller.onDurationReady((duration) {
@@ -398,6 +504,7 @@ final class VideoPlayerViewController {
   /// **Alternative:** You can also use [getDuration] after receiving
   /// [PlayerStatus.ready] from [statusStream].
   void onDurationReady(void Function(double duration) callback) {
+    _checkNotDisposed();
     _durationReadyCallback = callback;
     _setupMethodHandler();
   }

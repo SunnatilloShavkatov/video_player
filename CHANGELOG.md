@@ -1,3 +1,210 @@
+## [3.0.0] - TBD
+
+### 🚨 BREAKING CHANGES
+
+This is a major version release focused on API clarity, type safety, and developer experience improvements. No new features are added, but the public API has changed to eliminate ambiguity and prevent common misuse patterns.
+
+#### 1. PlaybackResult replaces nullable List<int>?
+
+**Before (v2.x):**
+```
+final result = await VideoPlayer.instance.playVideo(playerConfig: config);
+if (result != null) {
+  final position = result[0];  // What unit? Seconds? Milliseconds?
+  final duration = result[1];
+  // Is null = cancelled or error? Who knows!
+}
+```
+
+**After (v3.0):**
+```
+final result = await VideoPlayer.instance.playVideo(playerConfig: config);
+
+switch (result) {
+  case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
+    // Clear semantics: position and duration in milliseconds
+    print('Watched ${lastPositionMillis}ms of ${durationMillis}ms');
+    await saveProgress(videoId, lastPositionMillis);
+
+  case PlaybackCancelled():
+    // User cancelled - not an error
+    print('User cancelled playback');
+
+  case PlaybackFailed(:final error, :final stackTrace):
+    // Actual error with debuggable info
+    print('Error: $error');
+    logError(error, stackTrace);
+}
+```
+
+**Migration:**
+- Replace `result != null` checks with pattern matching on `PlaybackResult`
+- Multiply old position/duration by 1000 to get milliseconds (if you need backward compat)
+- Handle all three cases: `PlaybackCompleted`, `PlaybackCancelled`, `PlaybackFailed`
+
+#### 2. PlayerConfiguration factory constructors
+
+**Before (v2.x):**
+```dart
+final config = PlayerConfiguration(
+  videoUrl: 'https://example.com/video.m3u8',
+  title: 'My Video',
+  qualityText: 'Quality',  // Boilerplate
+  speedText: 'Speed',      // Boilerplate
+  autoText: 'Auto',        // Boilerplate
+  lastPosition: 0,         // Seconds? Milliseconds? Unclear.
+  playVideoFromAsset: false,
+  assetPath: '',           // Always empty for remote videos
+  movieShareLink: '',
+);
+```
+
+**After (v3.0):**
+```dart
+// Recommended: Use factory constructor
+final config = PlayerConfiguration.remote(
+  videoUrl: 'https://example.com/video.m3u8',
+  title: 'My Video',
+  lastPositionMillis: 120000,  // Clear: 2 minutes in milliseconds
+);
+
+// For assets (if needed)
+final assetConfig = PlayerConfiguration.asset(
+  assetPath: 'videos/intro.mp4',
+  title: 'Introduction',
+);
+```
+
+**Migration:**
+- Use `PlayerConfiguration.remote()` for HTTPS videos (recommended)
+- Use `PlayerConfiguration.asset()` for asset videos
+- Change `lastPosition` (seconds) to `lastPositionMillis` (multiply by 1000)
+- Old constructor still works but is marked as advanced-use-only
+
+#### 3. Stable enum serialization
+
+**Before (v2.x):**
+```dart
+enum ResizeMode { fit, fill, zoom }
+// Used enum.name for platform communication
+// Renaming enum would break native code
+```
+
+**After (v3.0):**
+```dart
+enum ResizeMode {
+  fit('fit'),
+  fill('fill'),
+  zoom('zoom');
+
+  const ResizeMode(this.value);
+  final String value;  // Stable platform contract
+}
+```
+
+**Migration:**
+- No code changes required
+- Enums now use explicit `value` field for platform communication
+- Safe to refactor enum names without breaking platforms
+
+#### 4. Error handling normalization
+
+**Before (v2.x):**
+- Some errors threw exceptions
+- Some errors returned null
+- Some errors were swallowed silently
+
+**After (v3.0):**
+- **Validation errors** (invalid URL, bad config): Throw `ArgumentError` or `StateError`
+- **Runtime/platform errors**: Return `PlaybackFailed` with error details
+- **No silent failures**: All errors are either thrown or returned as `PlaybackFailed`
+
+**Migration:**
+```
+// Before
+try {
+  final result = await VideoPlayer.instance.playVideo(playerConfig: config);
+  if (result == null) {
+    // Was this an error or cancellation? Unknown.
+  }
+} catch (e) {
+  // Some validation error
+}
+
+// After
+try {
+  final result = await VideoPlayer.instance.playVideo(playerConfig: config);
+  if (result is PlaybackFailed) {
+    // Clear error case
+    handleError(result.error);
+  }
+} on ArgumentError catch (e) {
+  // Invalid configuration - fix before deploying
+  print('Configuration error: $e');
+}
+```
+
+#### 5. Hardened lifecycle guards
+
+**Before (v2.x):**
+```
+controller.dispose();
+controller.play(); // May cause undefined behavior
+```
+
+**After (v3.0):**
+```
+controller.dispose();
+controller.play(); // Throws StateError with clear message
+// StateError: VideoPlayerViewController is disposed and cannot be used
+```
+
+**Migration:**
+- Ensure you don't call methods after `dispose()`
+- If you hit `StateError`, fix your lifecycle management
+
+### Changed
+
+- **API**: `playVideo()` now returns `Future<PlaybackResult>` instead of `Future<List<int>?>`
+- **API**: Added `PlayerConfiguration.remote()` and `PlayerConfiguration.asset()` factory constructors
+- **API**: Renamed `lastPosition` to `lastPositionMillis` (with unit clarity)
+- **API**: Changed from seconds to milliseconds for all time values in public API
+- **API**: Platform communication still uses seconds internally for backward compat
+- **Error Handling**: Invalid URLs now throw `ArgumentError` instead of `Exception`
+- **Error Handling**: All runtime errors return `PlaybackFailed` instead of throwing or returning null
+- **Enums**: `ResizeMode` and `PlayerStatus` now use explicit `value` field for serialization
+- **Lifecycle**: All controller methods throw `StateError` after `dispose()`
+- **Type Safety**: Eliminated nullable return types from playback methods
+
+### Added
+
+- **Type**: `PlaybackResult` sealed class with `PlaybackCompleted`, `PlaybackCancelled`, `PlaybackFailed` variants
+- **Factory**: `PlayerConfiguration.remote()` for creating remote video configs with sensible defaults
+- **Factory**: `PlayerConfiguration.asset()` for creating asset video configs
+- **Method**: `ResizeMode.fromValue(String)` for stable deserialization
+- **Method**: `PlayerStatus.fromValue(String)` for stable deserialization
+- **Documentation**: Comprehensive API documentation for all breaking changes
+- **Documentation**: Migration guide in CHANGELOG and README
+
+### Removed
+
+- **Type**: No longer return `List<int>?` from `playVideo()` (use `PlaybackResult` instead)
+
+### Migration Time Estimate
+
+- **Small apps** (1-5 call sites): ~15 minutes
+- **Medium apps** (5-20 call sites): ~30-45 minutes
+- **Large apps** (20+ call sites): ~1 hour
+
+### Migration Checklist
+
+- [ ] Replace `List<int>?` result handling with `PlaybackResult` pattern matching
+- [ ] Update `PlayerConfiguration` to use `.remote()` or `.asset()` factories
+- [ ] Convert `lastPosition` (seconds) to `lastPositionMillis` (milliseconds)
+- [ ] Update error handling to catch `ArgumentError` for validation errors
+- [ ] Test all video playback flows
+- [ ] Verify position tracking and resume functionality
+
 ## [2.1.0] - 2026-01-24
 
 ### Fixed

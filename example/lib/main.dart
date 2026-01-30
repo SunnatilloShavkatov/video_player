@@ -74,11 +74,6 @@ class _MainPageState extends State<MainPage> {
       if (kDebugMode) {
         print('Playback completed. Times: $playbackTimes');
       }
-      if (playbackTimes != null && playbackTimes.isNotEmpty) {
-        _showSnackBar('Video played successfully');
-      } else {
-        _showSnackBar('Video playback completed with no time data');
-      }
     } on PlatformException catch (e) {
       debugPrint('Failed to play video: ${e.message}');
       _showSnackBar('Failed to play video: ${e.message}');

@@ -553,16 +553,16 @@ override fun onReceive(context: Context?, intent: Intent?) {
 
 ### Performance Summary Table
 
-| Layer | Component | Score | Critical Issues | Performance Impact |
-|-------|-----------|-------|-----------------|-------------------|
-| Flutter | VideoPlayerViewController | 6/10 | 3 | Use-after-dispose, method handler race, stream leaks |
-| Flutter | MethodChannel overhead | 9/10 | 0 | Negligible (<1ms per call) |
-| iOS | PlayerView.swift | 4/10 | 6 | KVO leaks, force unwraps, god object, threading issues |
-| iOS | ScreenProtectorKit | 3/10 | 1 | 10-50ms overhead, frame drops, fragile layer hacks |
-| iOS | VideoPlayerViewController | 5/10 | 2 | PiP observer leak, no background handling |
-| Android | VideoPlayerView.kt | 9/10 | 0 | ✅ Production-quality lifecycle management |
-| Android | VideoPlayerPlugin.kt | 5/10 | 1 | resultMethod use-after-finish |
-| Android | VideoPlayerActivity.kt | 6/10 | 4 | God object, lateinit crashes, listener leak, ANR risk |
+| Layer   | Component                 | Score | Critical Issues | Performance Impact                                     |
+|---------|---------------------------|-------|-----------------|--------------------------------------------------------|
+| Flutter | VideoPlayerViewController | 6/10  | 3               | Use-after-dispose, method handler race, stream leaks   |
+| Flutter | MethodChannel overhead    | 9/10  | 0               | Negligible (<1ms per call)                             |
+| iOS     | PlayerView.swift          | 4/10  | 6               | KVO leaks, force unwraps, god object, threading issues |
+| iOS     | ScreenProtectorKit        | 3/10  | 1               | 10-50ms overhead, frame drops, fragile layer hacks     |
+| iOS     | VideoPlayerViewController | 5/10  | 2               | PiP observer leak, no background handling              |
+| Android | VideoPlayerView.kt        | 9/10  | 0               | ✅ Production-quality lifecycle management              |
+| Android | VideoPlayerPlugin.kt      | 5/10  | 1               | resultMethod use-after-finish                          |
+| Android | VideoPlayerActivity.kt    | 6/10  | 4               | God object, lateinit crashes, listener leak, ANR risk  |
 
 ---
 
@@ -661,11 +661,11 @@ grep -r "import retrofit" android/src/ → NO MATCHES
 
 ### Binary Impact Summary
 
-| Platform | With Dependencies | Without Unused Deps | Optimization Potential |
-|----------|------------------|---------------------|------------------------|
-| iOS (Universal) | ~1.9MB | ~1.5MB (remove unused deps) | 21% reduction |
-| Android (arm64-v8a) | ~4.7MB | ~4.25MB (remove Retrofit) | 10% reduction |
-| Flutter Plugin | ~12KB | ~12KB | Minimal |
+| Platform            | With Dependencies | Without Unused Deps         | Optimization Potential |
+|---------------------|-------------------|-----------------------------|------------------------|
+| iOS (Universal)     | ~1.9MB            | ~1.5MB (remove unused deps) | 21% reduction          |
+| Android (arm64-v8a) | ~4.7MB            | ~4.25MB (remove Retrofit)   | 10% reduction          |
+| Flutter Plugin      | ~12KB             | ~12KB                       | Minimal                |
 
 ### Optimization Recommendations
 
@@ -863,15 +863,15 @@ Implement proper logging levels:
 
 ## 4️⃣ PRODUCTION READINESS SCORES (0-10)
 
-| Category | Score | Justification |
-|----------|-------|---------------|
-| **Performance** | 6/10 | Flutter OK, iOS has leaks, Android mostly good |
-| **Stability** | 5/10 | Multiple crash scenarios, race conditions, memory leaks |
-| **Maintainability** | 4/10 | God objects, tight coupling, poor separation |
-| **Scalability** | 6/10 | Works for simple apps, breaks under complex navigation |
-| **Security** | 6/10 | Screen protection has performance cost, iOS-only |
-| **API Quality** | 6/10 | Inconsistent errors, unclear return semantics |
-| **Overall** | 5.5/10 | **ACCEPTABLE FOR SMALL APPS, NOT ENTERPRISE-READY** |
+| Category            | Score  | Justification                                           |
+|---------------------|--------|---------------------------------------------------------|
+| **Performance**     | 6/10   | Flutter OK, iOS has leaks, Android mostly good          |
+| **Stability**       | 5/10   | Multiple crash scenarios, race conditions, memory leaks |
+| **Maintainability** | 4/10   | God objects, tight coupling, poor separation            |
+| **Scalability**     | 6/10   | Works for simple apps, breaks under complex navigation  |
+| **Security**        | 6/10   | Screen protection has performance cost, iOS-only        |
+| **API Quality**     | 6/10   | Inconsistent errors, unclear return semantics           |
+| **Overall**         | 5.5/10 | **ACCEPTABLE FOR SMALL APPS, NOT ENTERPRISE-READY**     |
 
 ---
 
@@ -986,19 +986,19 @@ Implement proper logging levels:
    - Expected benefit: Eliminates rotation crashes
 
 **Day 2: Memory Leak Fixes**
-4. Fix Flutter method handler race (6h)
+1. Fix Flutter method handler race (6h)
    - File: `lib/src/video_player_view.dart`
    - Single unified handler in constructor
    - Expected benefit: Reliable position/status updates
    - Risk: MEDIUM (changes event handling flow)
 
-5. Add iOS KVO contexts (4h)
+2. Add iOS KVO contexts (4h)
    - File: `ios/Classes/Player/VideoPlayer/PlayerView.swift`
    - Define static contexts like VideoViewController
    - Expected benefit: Safer observer management
    - Risk: LOW (defensive fix)
 
-6. Fix iOS observer removal order (4h)
+3. Fix iOS observer removal order (4h)
    - File: `ios/Classes/Player/VideoPlayer/PlayerView.swift`
    - Remove observers before setting flag
    - Use `.async` instead of `.sync`
@@ -1006,19 +1006,19 @@ Implement proper logging levels:
    - Risk: LOW
 
 **Day 3: Crash Prevention**
-7. Add Android `::player.isInitialized` checks (1h)
+1. Add Android `::player.isInitialized` checks (1h)
    - File: `android/src/main/kotlin/uz/shs/video_player/activities/VideoPlayerActivity.kt`
    - Lines 254, 507
    - Expected benefit: Graceful error handling
    - Risk: NONE
 
-8. Remove Android ExoPlayer listener before release (2h)
+2. Remove Android ExoPlayer listener before release (2h)
    - File: `android/src/main/kotlin/uz/shs/video_player/activities/VideoPlayerActivity.kt`
    - Store as field, explicit removal
    - Expected benefit: Cleaner shutdown
    - Risk: LOW
 
-9. Remove dead code (Retrofit) (2h)
+3. Remove dead code (Retrofit) (2h)
    - File: `android/build.gradle.kts`
    - Remove lines 66-70
    - Expected benefit: 450KB APK reduction
@@ -1033,45 +1033,45 @@ Implement proper logging levels:
 ### 🟡 Short-Term Fixes (1-2 Weeks)
 
 **Week 1: iOS Stability**
-10. Replace force unwraps with guard-let (12h)
-    - File: `ios/Classes/Player/VideoPlayer/PlayerView.swift` (25 instances)
-    - File: Multiple Swift files (47 more instances)
-    - Expected benefit: Graceful degradation instead of crashes
-    - Risk: LOW (defensive coding)
+1. Replace force unwraps with guard-let (12h)
+   - File: `ios/Classes/Player/VideoPlayer/PlayerView.swift` (25 instances)
+   - File: Multiple Swift files (47 more instances)
+   - Expected benefit: Graceful degradation instead of crashes
+   - Risk: LOW (defensive coding)
 
-11. Make ScreenProtectorKit optional (4h)
-    - Add `enableScreenProtection: bool` to `PlayerConfiguration`
-    - Skip layer manipulation if disabled
-    - Expected benefit: 10-50ms faster startup, optional feature
-    - Risk: MEDIUM (API change, needs documentation)
+2. Make ScreenProtectorKit optional (4h)
+   - Add `enableScreenProtection: bool` to `PlayerConfiguration`
+   - Skip layer manipulation if disabled
+   - Expected benefit: 10-50ms faster startup, optional feature
+   - Risk: MEDIUM (API change, needs documentation)
 
-12. Fix iOS podspec dependencies (2h)
-    - Declare TinyConstraints, XLActionController, SDWebImage
-    - OR remove unused imports/code
-    - Expected benefit: Reliable builds
-    - Risk: LOW (documentation fix)
+3. Fix iOS podspec dependencies (2h)
+   - Declare TinyConstraints, XLActionController, SDWebImage
+   - OR remove unused imports/code
+   - Expected benefit: Reliable builds
+   - Risk: LOW (documentation fix)
 
 **Week 2: API & Error Handling**
-13. Implement consistent error handling (8h)
-    - Choose strategy (throwing vs Result type)
-    - Update all methods
-    - Document breaking changes
-    - Expected benefit: Predictable error behavior
-    - Risk: HIGH (API breaking change)
+1. Implement consistent error handling (8h)
+   - Choose strategy (throwing vs Result type)
+   - Update all methods
+   - Document breaking changes
+   - Expected benefit: Predictable error behavior
+   - Risk: HIGH (API breaking change)
 
-14. Add production logging (4h)
-    - ERROR/WARN always logged
-    - INFO/DEBUG conditional
-    - Centralized logger class
-    - Expected benefit: Debuggable production issues
-    - Risk: LOW
+2. Add production logging (4h)
+   - ERROR/WARN always logged
+   - INFO/DEBUG conditional
+   - Centralized logger class
+   - Expected benefit: Debuggable production issues
+   - Risk: LOW
 
-15. Add integration tests (12h)
-    - Test video playback flow
-    - Test error scenarios
-    - Test lifecycle edge cases
-    - Expected benefit: Catch regressions
-    - Risk: NONE
+3. Add integration tests (12h)
+   - Test video playback flow
+   - Test error scenarios
+   - Test lifecycle edge cases
+   - Expected benefit: Catch regressions
+   - Risk: NONE
 
 **Total Effort:** 42 hours (2 weeks)
 **Risk Level:** MEDIUM (includes API changes)
@@ -1082,47 +1082,47 @@ Implement proper logging levels:
 ### 🟢 Long-Term Refactors (1-2 Months)
 
 **Month 1: Architecture Refactor**
-16. Split PlayerView.swift (1,248 lines → 5 classes) (40h)
-    - PlayerView (300 lines) - Core player + layout
-    - PlayerGestureHandler (250 lines) - Gestures
-    - PlayerControlsManager (200 lines) - UI controls
-    - PlayerObserverManager (200 lines) - KVO
-    - PlayerQualityManager (150 lines) - Quality/speed
-    - Expected benefit: Testable, maintainable code
-    - Risk: HIGH (major refactor)
+1. Split PlayerView.swift (1,248 lines → 5 classes) (40h)
+   - PlayerView (300 lines) - Core player + layout
+   - PlayerGestureHandler (250 lines) - Gestures
+   - PlayerControlsManager (200 lines) - UI controls
+   - PlayerObserverManager (200 lines) - KVO
+   - PlayerQualityManager (150 lines) - Quality/speed
+   - Expected benefit: Testable, maintainable code
+   - Risk: HIGH (major refactor)
 
-17. Split VideoPlayerActivity.kt (1,069 lines → 6 classes) (32h)
-    - VideoPlayerActivity (250 lines) - Lifecycle
-    - PlayerPresenter (200 lines) - Business logic
-    - PlayerGestureHandler (150 lines) - Gestures
-    - PlayerControlsView (150 lines) - UI
-    - PictureInPictureManager (100 lines) - PiP
-    - QualitySelectionManager (100 lines) - Quality
-    - Expected benefit: Testable, maintainable code
-    - Risk: HIGH (major refactor)
+2. Split VideoPlayerActivity.kt (1,069 lines → 6 classes) (32h)
+   - VideoPlayerActivity (250 lines) - Lifecycle
+   - PlayerPresenter (200 lines) - Business logic
+   - PlayerGestureHandler (150 lines) - Gestures
+   - PlayerControlsView (150 lines) - UI
+   - PictureInPictureManager (100 lines) - PiP
+   - QualitySelectionManager (100 lines) - Quality
+   - Expected benefit: Testable, maintainable code
+   - Risk: HIGH (major refactor)
 
 **Month 2: Feature Modularity**
-18. Implement feature flags (16h)
-    - Optional PiP
-    - Optional quality selection
-    - Optional gestures (brightness/volume)
-    - Optional screen protection
-    - Expected benefit: Smaller binary for apps that don't need features
-    - Risk: MEDIUM (build system changes)
+1. Implement feature flags (16h)
+   - Optional PiP
+   - Optional quality selection
+   - Optional gestures (brightness/volume)
+   - Optional screen protection
+   - Expected benefit: Smaller binary for apps that don't need features
+   - Risk: MEDIUM (build system changes)
 
-19. Optimize assets (8h)
-    - Convert iOS PNGs to PDF vectors
-    - Use Android vector drawables
-    - Lazy-load quality icons
-    - Expected benefit: 30-40KB size reduction
-    - Risk: LOW
+2. Optimize assets (8h)
+   - Convert iOS PNGs to PDF vectors
+   - Use Android vector drawables
+   - Lazy-load quality icons
+   - Expected benefit: 30-40KB size reduction
+   - Risk: LOW
 
-20. Create example apps (16h)
-    - Minimal example (basic playback)
-    - Advanced example (all features)
-    - Performance testing app
-    - Expected benefit: Better documentation, testing
-    - Risk: NONE
+3. Create example apps (16h)
+   - Minimal example (basic playback)
+   - Advanced example (all features)
+   - Performance testing app
+   - Expected benefit: Better documentation, testing
+   - Risk: NONE
 
 **Total Effort:** 112 hours (2 months)
 **Risk Level:** HIGH (major architecture changes)
@@ -1208,12 +1208,12 @@ Implement proper logging levels:
 
 ### Architecture Grade
 
-| Aspect | Grade | Notes |
-|--------|-------|-------|
-| Flutter Layer | C+ | Decent structure, poor lifecycle safety |
-| iOS Layer | D+ | God objects, memory leaks, force unwraps |
-| Android Layer | B- | Better than iOS, but still god object |
-| Overall Architecture | C- | Works but not maintainable long-term |
+| Aspect               | Grade | Notes                                    |
+|----------------------|-------|------------------------------------------|
+| Flutter Layer        | C+    | Decent structure, poor lifecycle safety  |
+| iOS Layer            | D+    | God objects, memory leaks, force unwraps |
+| Android Layer        | B-    | Better than iOS, but still god object    |
+| Overall Architecture | C-    | Works but not maintainable long-term     |
 
 ---
 
@@ -1427,7 +1427,7 @@ flutter run
 ### Step 6: Verify Drawable Resolution at Runtime
 
 Add this to your VideoPlayerActivity.kt temporarily:
-```kotlin
+```
 // In onCreate() or anywhere
 Log.d("DRAWABLE_DEBUG", "Package name: ${packageName}")
 Log.d("DRAWABLE_DEBUG", "Resource path: ${resources.getResourceName(R.drawable.ic_close)}")

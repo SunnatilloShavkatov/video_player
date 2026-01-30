@@ -1,6 +1,6 @@
 name: video_player
-version: 2.1.0
-description: "Play video natively and easily."
+version: 3.0.0
+description: "Play video natively and easily with type-safe APIs."
 homepage: https://github.com/SunnatilloShavkatov/video_player.git
 
 environment:

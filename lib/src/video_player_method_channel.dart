@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/src/models/playback_result.dart';
 import 'package:video_player/src/utils/log_message.dart';
 
 import 'package:video_player/src/video_player_platform_interface.dart';
@@ -16,18 +17,39 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   final methodChannel = const MethodChannel(_channelName);
 
   @override
-  Future<List<int>?> playVideo({required String playerConfigJsonString}) async {
+  Future<PlaybackResult> playVideo({required String playerConfigJsonString}) async {
     try {
       final result = await methodChannel.invokeMethod<List<Object?>>('playVideo', {
         'playerConfigJsonString': playerConfigJsonString,
       });
+
+      // Translate platform response into PlaybackResult
       if (result == null) {
-        return null;
+        // null response indicates user cancelled playback
+        return const PlaybackCancelled();
       }
-      return result.map((e) => (e ?? 1) as int).toList();
+
+      // Platform returns [lastPositionSeconds, durationSeconds] as integers (in SECONDS)
+      if (result.length != 2) {
+        return PlaybackFailed(
+          error: 'Invalid platform response: expected 2 elements, got ${result.length}',
+        );
+      }
+
+      final lastPositionSeconds = (result[0] ?? 0) as int;
+      final durationSeconds = (result[1] ?? 1) as int;
+
+      // Return as-is (platform already provides seconds)
+      return PlaybackCompleted(
+        lastPositionSeconds: lastPositionSeconds,
+        durationSeconds: durationSeconds,
+      );
+    } on PlatformException catch (error, stackTrace) {
+      logMessage('playVideo failed with PlatformException', error: error, stackTrace: stackTrace);
+      return PlaybackFailed(error: error, stackTrace: stackTrace);
     } catch (error, stackTrace) {
       logMessage('playVideo failed', error: error, stackTrace: stackTrace);
-      return null;
+      return PlaybackFailed(error: error, stackTrace: stackTrace);
     }
   }
 
@@ -36,7 +58,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     try {
       await methodChannel.invokeMethod<void>('close');
     } catch (error, stackTrace) {
-      logMessage('playVideo failed', error: error, stackTrace: stackTrace);
+      logMessage('close failed', error: error, stackTrace: stackTrace);
     }
   }
 }
