@@ -31,6 +31,7 @@ class PlayerConfiguration {
     required this.lastPosition,
     required this.movieShareLink,
     required this.playVideoFromAsset,
+    this.enableScreenProtection = false,
   });
 
   /// The title displayed in the video player UI.
@@ -106,6 +107,31 @@ class PlayerConfiguration {
   /// When `false`, the player loads video from [videoUrl].
   final bool playVideoFromAsset;
 
+  /// Whether to enable screen protection (iOS only).
+  ///
+  /// When enabled, prevents screenshots and screen recording on iOS devices.
+  /// This feature uses layer manipulation which may introduce 10-50ms startup jank.
+  ///
+  /// **Default:** `false` (disabled for better performance)
+  ///
+  /// **Platform support:**
+  /// - iOS: Full support (screenshot prevention and recording detection)
+  /// - Android: No effect (always protected via FLAG_SECURE)
+  ///
+  /// **Example:**
+  /// ```dart
+  /// // Enable screen protection for sensitive content
+  /// PlayerConfiguration(
+  ///   videoUrl: 'https://example.com/private-video.m3u8',
+  ///   enableScreenProtection: true,
+  ///   // ... other parameters
+  /// );
+  /// ```
+  ///
+  /// **Note:** Layer manipulation on iOS 17+ may be fragile. Only enable
+  /// if screen protection is critical for your use case.
+  final bool enableScreenProtection;
+
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -120,6 +146,7 @@ class PlayerConfiguration {
     'lastPosition': lastPosition,
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
+    'enableScreenProtection': enableScreenProtection,
   };
 
   @override
@@ -133,6 +160,7 @@ class PlayerConfiguration {
       'playVideoFromAsset: $playVideoFromAsset, '
       'assetPath: $assetPath, '
       'autoText: $autoText, '
-      'movieShareLink: $movieShareLink'
+      'movieShareLink: $movieShareLink, '
+      'enableScreenProtection: $enableScreenProtection'
       '}';
 }

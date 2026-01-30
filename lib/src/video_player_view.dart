@@ -106,12 +106,21 @@ class VideoPlayerView extends StatelessWidget {
 /// }
 /// ```
 final class VideoPlayerViewController {
-  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id');
+  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id') {
+    _setupMethodHandler();
+  }
 
   /// Method channel name prefix for video player view controllers
   static const String _channelPrefix = 'plugins.video/video_player_view_';
 
   final MethodChannel _channel;
+  bool _isDisposed = false;
+
+  void _checkNotDisposed() {
+    if (_isDisposed) {
+      throw StateError('VideoPlayerViewController is disposed and cannot be used');
+    }
+  }
 
   /// Changes the video URL and starts playing the new video.
   ///
@@ -128,8 +137,10 @@ final class VideoPlayerViewController {
   /// ```
   ///
   /// **Note:** This replaces the current video and resets playback position to 0.
-  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async =>
-      _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
+  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.name});
+  }
 
   /// Loads and plays a video from Flutter assets.
   ///
@@ -152,6 +163,7 @@ final class VideoPlayerViewController {
   ///     - assets/videos/intro.mp4
   /// ```
   Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
+    _checkNotDisposed();
     await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.name});
   }
 
@@ -163,7 +175,10 @@ final class VideoPlayerViewController {
   /// ```dart
   /// await controller.pause();
   /// ```
-  Future<void> pause() async => _channel.invokeMethod('pause');
+  Future<void> pause() async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('pause');
+  }
 
   /// Starts or resumes video playback.
   ///
@@ -174,7 +189,10 @@ final class VideoPlayerViewController {
   /// ```dart
   /// await controller.play();
   /// ```
-  Future<void> play() async => _channel.invokeMethod('play');
+  Future<void> play() async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('play');
+  }
 
   /// Mutes the video audio.
   ///
@@ -185,7 +203,10 @@ final class VideoPlayerViewController {
   /// ```dart
   /// await controller.mute();
   /// ```
-  Future<void> mute() async => _channel.invokeMethod('mute');
+  Future<void> mute() async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('mute');
+  }
 
   /// Unmutes the video audio.
   ///
@@ -195,7 +216,10 @@ final class VideoPlayerViewController {
   /// ```dart
   /// await controller.unmute();
   /// ```
-  Future<void> unmute() async => _channel.invokeMethod('unmute');
+  Future<void> unmute() async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('unmute');
+  }
 
   /// Gets the total duration of the currently loaded video.
   ///
@@ -213,6 +237,7 @@ final class VideoPlayerViewController {
   /// typically when player status changes to [PlayerStatus.ready].
   /// Use [onDurationReady] callback for automatic notification.
   Future<double> getDuration() async {
+    _checkNotDisposed();
     final result = await _channel.invokeMethod('getDuration');
     return (result as double?) ?? 0.0;
   }
@@ -237,7 +262,10 @@ final class VideoPlayerViewController {
   ///
   /// **Note:** Seeking may trigger buffering. Monitor [statusStream]
   /// for [PlayerStatus.buffering] and [PlayerStatus.ready] states.
-  Future<void> seekTo({required double seconds}) async => _channel.invokeMethod('seekTo', {'seconds': seconds});
+  Future<void> seekTo({required double seconds}) async {
+    _checkNotDisposed();
+    return _channel.invokeMethod('seekTo', {'seconds': seconds});
+  }
 
   StreamController<double>? _positionController;
   StreamController<PlayerStatus>? _statusController;
@@ -261,14 +289,8 @@ final class VideoPlayerViewController {
   /// **Note:** This stream is broadcast and can have multiple listeners.
   /// Remember to cancel subscriptions or call [dispose] to prevent memory leaks.
   Stream<double> get positionStream {
-    if (_positionController != null) {
-      return _positionController!.stream;
-    }
-    _positionController = StreamController<double>.broadcast();
-
-    // Setup handler to receive position updates
-    _setupMethodHandler();
-
+    _checkNotDisposed();
+    _positionController ??= StreamController<double>.broadcast();
     return _positionController!.stream;
   }
 
@@ -301,14 +323,8 @@ final class VideoPlayerViewController {
   ///
   /// **Note:** This stream is broadcast and can have multiple listeners.
   Stream<PlayerStatus> get statusStream {
-    if (_statusController != null) {
-      return _statusController!.stream;
-    }
-    _statusController = StreamController<PlayerStatus>.broadcast();
-
-    // Setup handler to receive status updates
-    _setupMethodHandler();
-
+    _checkNotDisposed();
+    _statusController ??= StreamController<PlayerStatus>.broadcast();
     return _statusController!.stream;
   }
 
@@ -337,21 +353,27 @@ final class VideoPlayerViewController {
 
   void _setupMethodHandler() {
     _channel.setMethodCallHandler((call) async {
+      if (_isDisposed) {
+        return;
+      }
+
       if (call.method == 'positionUpdate') {
         final position = (call.arguments as double?) ?? 0.0;
-        _positionController?.add(position);
+        if (!_isDisposed) {
+          _positionController?.add(position);
+        }
       } else if (call.method == 'durationReady') {
         final duration = (call.arguments as double?) ?? 0.0;
-        if (duration > 0 && _durationReadyCallback != null) {
+        if (!_isDisposed && duration > 0 && _durationReadyCallback != null) {
           _durationReadyCallback!(duration);
         }
       } else if (call.method == 'playerStatus') {
         final statusString = call.arguments as String?;
-        if (statusString != null) {
+        if (!_isDisposed && statusString != null) {
           final status = PlayerStatus.values.firstWhere((e) => e.name == statusString, orElse: () => PlayerStatus.idle);
           _statusController?.add(status);
         }
-      } else if (call.method == 'finished' && _finishedCallback != null) {
+      } else if (call.method == 'finished' && !_isDisposed && _finishedCallback != null) {
         _finishedCallback!(call.arguments);
       }
     });
@@ -409,6 +431,11 @@ final class VideoPlayerViewController {
   ///
   /// **Note:** After calling dispose, the controller should not be used anymore.
   Future<void> dispose() async {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+
     _channel.setMethodCallHandler(null);
     await _positionController?.close();
     _positionController = null;

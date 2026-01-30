@@ -54,7 +54,7 @@ android {
 
 dependencies {
     // Media3
-    val media3Version = "1.8.0"
+    val media3Version = "1.9.1"
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
@@ -63,11 +63,8 @@ dependencies {
     val multidexVersion = "2.0.1"
     implementation("androidx.multidex:multidex:$multidexVersion")
 
-    // Retrofit
-    val retrofitVersion = "3.0.0"
+    // JSON parsing (used in VideoPlayerPlugin for configuration deserialization)
     implementation("com.google.code.gson:gson:2.13.2")
-    implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
-    implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
 
     // UI
     implementation("androidx.appcompat:appcompat:1.7.1")

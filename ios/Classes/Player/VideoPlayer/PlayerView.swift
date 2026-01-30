@@ -26,6 +26,10 @@ enum LocalPlayerState: Int {
 
 class PlayerView: UIView {
 
+    private static var playerItemStatusContext = 0
+    private static var playerItemDurationContext = 0
+    private static var playerTimeControlStatusContext = 0
+
     private var player = AVPlayer()
     var playerLayer = AVPlayerLayer()
     private var mediaTimeObserver: Any?
@@ -117,6 +121,11 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.rotate {
             button.setImage(icon, for: .normal)
+        } else {
+            // Asset missing - log for debugging
+            #if DEBUG
+            print("Warning: Svg.rotate asset is nil")
+            #endif
         }
         button.addTarget(self, action: #selector(changeOrientation(_:)), for: .touchUpInside)
         return button
@@ -126,6 +135,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.exit {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.exit asset is nil")
+            #endif
         }
         button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.addTarget(self, action: #selector(exitButtonPressed(_:)), for: .touchUpInside)
@@ -136,6 +149,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.pip {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.pip asset is nil")
+            #endif
         }
         button.addTarget(self, action: #selector(togglePictureInPictureMode(_:)), for: .touchUpInside)
         return button
@@ -145,6 +162,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.settings {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.settings asset is nil")
+            #endif
         }
         button.addTarget(self, action: #selector(settingPressed(_:)), for: .touchUpInside)
         return button
@@ -154,6 +175,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.share {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.share asset is nil")
+            #endif
         }
         button.addTarget(self, action: #selector(share(_:)), for: .touchUpInside)
         return button
@@ -163,6 +188,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.play {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.play asset is nil")
+            #endif
         }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(playButtonPressed(_:)), for: .touchUpInside)
@@ -173,6 +202,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.forward {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.forward asset is nil")
+            #endif
         }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(skipForwardButtonPressed(_:)), for: .touchUpInside)
@@ -183,6 +216,10 @@ class PlayerView: UIView {
         let button = IconButton()
         if let icon = Svg.rewind {
             button.setImage(icon, for: .normal)
+        } else {
+            #if DEBUG
+            print("Warning: Svg.rewind asset is nil")
+            #endif
         }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         button.addTarget(self, action: #selector(skipBackButtonPressed(_:)), for: .touchUpInside)
@@ -783,22 +820,27 @@ class PlayerView: UIView {
 
                 if newValue != oldValue {
                     DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
                         if newValue == 2 {
-                            self?.playButton.setImage(Svg.pause!, for: .normal)
-                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                            self?.activityIndicatorView.stopAnimating()
-                            self?.enableGesture = true
+                            if let pauseIcon = Svg.pause {
+                                self.playButton.setImage(pauseIcon, for: .normal)
+                            }
+                            self.playButton.alpha = self.skipBackwardButton.alpha
+                            self.activityIndicatorView.stopAnimating()
+                            self.enableGesture = true
                         } else if newValue == 0 {
-                            self?.playButton.setImage(Svg.play!, for: .normal)
-                            self?.playButton.alpha = self?.skipBackwardButton.alpha ?? 0.0
-                            self?.activityIndicatorView.stopAnimating()
-                            self?.enableGesture = true
-                            self?.timer?.invalidate()
-                            self?.showControls()
+                            if let playIcon = Svg.play {
+                                self.playButton.setImage(playIcon, for: .normal)
+                            }
+                            self.playButton.alpha = self.skipBackwardButton.alpha
+                            self.activityIndicatorView.stopAnimating()
+                            self.enableGesture = true
+                            self.timer?.invalidate()
+                            self.showControls()
                         } else {
-                            self?.playButton.alpha = 0.0
-                            self?.activityIndicatorView.startAnimating()
-                            self?.enableGesture = false
+                            self.playButton.alpha = 0.0
+                            self.activityIndicatorView.startAnimating()
+                            self.enableGesture = false
                         }
                     }
                 }
@@ -1114,10 +1156,10 @@ class PlayerView: UIView {
             name: .AVPlayerItemDidPlayToEndTime,
             object: currentItem)
         
-        // Add KVO observers
-        currentItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: nil)
-        currentItem.addObserver(self, forKeyPath: "status", options: .new, context: nil)
-        player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: nil)
+        // Add KVO observers with proper contexts
+        currentItem.addObserver(self, forKeyPath: "duration", options: [.new, .initial], context: &PlayerView.playerItemDurationContext)
+        currentItem.addObserver(self, forKeyPath: "status", options: .new, context: &PlayerView.playerItemStatusContext)
+        player.addObserver(self, forKeyPath: "timeControlStatus", options: [.old, .new], context: &PlayerView.playerTimeControlStatusContext)
         
         // Add time observer - must succeed before marking as observing
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
@@ -1165,8 +1207,8 @@ class PlayerView: UIView {
     private func removeMediaPlayerObservers() {
         // Ensure we're on the main thread for observer removal
         guard Thread.isMainThread else {
-            DispatchQueue.main.sync {
-                removeMediaPlayerObservers()
+            DispatchQueue.main.async {
+                self.removeMediaPlayerObservers()
             }
             return
         }
@@ -1204,29 +1246,29 @@ class PlayerView: UIView {
                     name: .AVPlayerItemDidPlayToEndTime,
                     object: item)
                 
-                // Then remove KVO observers - must be done synchronously
+                // Then remove KVO observers with proper contexts - must be done synchronously
                 // and before the item is deallocated
                 // Note: Flag is already false, so any callbacks will be ignored
-                item.removeObserver(self, forKeyPath: "duration", context: nil)
-                item.removeObserver(self, forKeyPath: "status", context: nil)
+                item.removeObserver(self, forKeyPath: "duration", context: &PlayerView.playerItemDurationContext)
+                item.removeObserver(self, forKeyPath: "status", context: &PlayerView.playerItemStatusContext)
             }
             
             // Always remove player observer if we were observing
-            player.removeObserver(self, forKeyPath: "timeControlStatus", context: nil)
+            player.removeObserver(self, forKeyPath: "timeControlStatus", context: &PlayerView.playerTimeControlStatusContext)
         }
     }
     
     deinit {
-        // Critical: Clean up all observers when view is deallocated
-        removeMediaPlayerObservers()
-        // Remove any remaining notification observers
-        NotificationCenter.default.removeObserver(self)
-        // Invalidate timers
+        // Critical: Invalidate timers first to prevent any callbacks during teardown
         timer?.invalidate()
         seekForwardTimer?.invalidate()
         seekBackwardTimer?.invalidate()
         backwardGestureTimer?.invalidate()
         forwardGestureTimer?.invalidate()
+        // Remove any remaining notification observers
+        NotificationCenter.default.removeObserver(self)
+        // Clean up all observers when view is deallocated
+        removeMediaPlayerObservers()
     }
 
     func stop() {

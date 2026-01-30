@@ -72,7 +72,13 @@ class SettingCell: UITableViewCell {
         let image = UIImageView()
         image.backgroundColor = .clear
         image.sizeToFit()
-        image.image = Svg.right!
+        if let rightIcon = Svg.right {
+            image.image = rightIcon
+        } else {
+            #if DEBUG
+            print("Warning: Svg.right asset is nil")
+            #endif
+        }
         return image
     }()
     

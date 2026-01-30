@@ -77,21 +77,27 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         url = playerConfiguration.url
         title = playerConfiguration.title
         view.backgroundColor = .black
-        
+
         playerView.delegate = self
         playerView.playerConfiguration = playerConfiguration
         view.addSubview(playerView)
         playerView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        if let window = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .flatMap({ $0.windows })
-            .first(where: { $0.isKeyWindow }) {
-            screenProtectorKit = ScreenProtectorKit(window: window)
-            screenProtectorKit?.configurePreventionScreenshot()
-            screenProtectorKit?.enabledPreventScreenshot()
+
+        // Only enable screen protection if explicitly requested
+        // This avoids 10-50ms startup jank and fragile layer manipulation
+        if playerConfiguration.enableScreenProtection {
+            if let window = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .flatMap({ $0.windows })
+                .first(where: { $0.isKeyWindow }) {
+                screenProtectorKit = ScreenProtectorKit(window: window)
+                screenProtectorKit?.configurePreventionScreenshot()
+                screenProtectorKit?.enabledPreventScreenshot()
+            }
         }
+
         // Parse HLS master playlist to get quality variants
         loadQualityVariants()
     }
@@ -114,7 +120,15 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        pipPossibleObservation?.invalidate()
+        pipPossibleObservation = nil
         NotificationCenter.default.removeObserver(self)
+    }
+
+    deinit {
+        pipPossibleObservation?.invalidate()
+        pipPossibleObservation = nil
+        screenProtectorKit = nil
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -186,10 +200,17 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         vc.delegate = self
         vc.speedDelegate = self
         vc.subtitleDelegate = self
-        vc.settingModel = [
-            SettingModel(leftIcon: Svg.settings!, title: qualityLabelText, configureLabel: selectedQualityText),
-            SettingModel(leftIcon: Svg.playSpeed!, title: speedLabelText, configureLabel: selectedSpeedText),
-        ]
+        var settingModels: [SettingModel] = []
+
+        if let settingsIcon = Svg.settings {
+            settingModels.append(SettingModel(leftIcon: settingsIcon, title: qualityLabelText, configureLabel: selectedQualityText))
+        }
+
+        if let playSpeedIcon = Svg.playSpeed {
+            settingModels.append(SettingModel(leftIcon: playSpeedIcon, title: speedLabelText, configureLabel: selectedSpeedText))
+        }
+
+        vc.settingModel = settingModels
         self.present(vc, animated: true, completion: nil)
     }
     

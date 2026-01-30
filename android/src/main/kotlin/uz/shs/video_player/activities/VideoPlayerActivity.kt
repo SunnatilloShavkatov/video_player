@@ -251,12 +251,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private val onBackPressedCallback: OnBackPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (player.isPlaying) {
+                if (::player.isInitialized && player.isPlaying) {
                     player.stop()
                 }
                 val intent = Intent()
-                intent.putExtra("position", player.currentPosition / 1000)
-                intent.putExtra("duration", player.duration / 1000)
+                intent.putExtra("position", if (::player.isInitialized) player.currentPosition / 1000 else 0)
+                intent.putExtra("duration", if (::player.isInitialized) player.duration / 1000 else 0)
                 setResult(playerActivityFinish, intent)
                 finish()
             }
@@ -476,10 +476,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     System.currentTimeMillis()
                 } else {
                     if (isDoubleClicked(lastClicked1)) {
-                        if (motionEvent.x < sWidth / 2) {
-                            player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
-                        } else {
-                            player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                        if (::player.isInitialized) {
+                            if (motionEvent.x < sWidth / 2) {
+                                player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+                            } else {
+                                player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                            }
                         }
                     } else {
                         playerView.hideController()
@@ -504,12 +506,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
 
         close.setOnClickListener {
-            if (player.isPlaying) {
+            if (::player.isInitialized && player.isPlaying) {
                 player.stop()
             }
             val intent = Intent()
-            intent.putExtra("position", player.currentPosition / 1000)
-            intent.putExtra("duration", player.duration / 1000)
+            intent.putExtra("position", if (::player.isInitialized) player.currentPosition / 1000 else 0)
+            intent.putExtra("duration", if (::player.isInitialized) player.duration / 1000 else 0)
             setResult(playerActivityFinish, intent)
             finish()
         }
@@ -532,16 +534,22 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             showSettingsBottomSheet()
         }
         rewind.setOnClickListener {
-            player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+            if (::player.isInitialized) {
+                player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+            }
         }
         forward.setOnClickListener {
-            player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+            if (::player.isInitialized) {
+                player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+            }
         }
         playPause.setOnClickListener {
-            if (player.isPlaying) {
-                player.pause()
-            } else {
-                player.play()
+            if (::player.isInitialized) {
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    player.play()
+                }
             }
         }
 
@@ -911,10 +919,12 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             System.currentTimeMillis()
         } else {
             if (isDoubleClicked(lastClicked)) {
-                if (event.x < sWidth / 2) {
-                    player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
-                } else {
-                    player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                if (::player.isInitialized) {
+                    if (event.x < sWidth / 2) {
+                        player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+                    } else {
+                        player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                    }
                 }
             } else {
                 playerView.showController()
@@ -998,7 +1008,9 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
-                player.pause()
+                if (::player.isInitialized) {
+                    player.pause()
+                }
                 playerView.hideController()
             }
         }

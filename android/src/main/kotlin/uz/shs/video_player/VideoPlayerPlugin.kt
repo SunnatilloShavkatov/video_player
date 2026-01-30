@@ -82,6 +82,7 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        resultMethod = null
         cleanupActivityBinding()
     }
 
@@ -93,6 +94,7 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivity() {
+        resultMethod = null
         cleanupActivityBinding()
     }
 
