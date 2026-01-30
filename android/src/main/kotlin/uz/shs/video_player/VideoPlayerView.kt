@@ -105,7 +105,7 @@ class VideoPlayerView internal constructor(
                 // ✅ Safe requestLayout
                 try {
                     pView.requestLayout()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // View already disposed, ignore
                 }
             }
@@ -338,7 +338,7 @@ class VideoPlayerView internal constructor(
                     val positionSeconds = positionMs / 1000.0
                     channel.invokeMethod("positionUpdate", positionSeconds, null)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Stop on error
                 return
             }
@@ -424,7 +424,7 @@ class VideoPlayerView internal constructor(
 
         try {
             methodChannel?.invokeMethod(method, arguments, null)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Channel disposed, ignore
         }
     }
@@ -461,7 +461,7 @@ class VideoPlayerView internal constructor(
         player?.let { p ->
             try {
                 p.stop()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore stop errors
             }
         }
@@ -476,7 +476,7 @@ class VideoPlayerView internal constructor(
         player?.let { p ->
             try {
                 p.release()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore release errors
             }
         }

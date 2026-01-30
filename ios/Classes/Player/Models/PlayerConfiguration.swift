@@ -17,9 +17,8 @@ struct PlayerConfiguration{
     var qualityText: String
     var movieShareLink: String
     var playVideoFromAsset: Bool
-    var enableScreenProtection: Bool
 
-    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, enableScreenProtection: Bool = false) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String) {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -29,7 +28,6 @@ struct PlayerConfiguration{
         self.qualityText = qualityText
         self.movieShareLink = movieShareLink
         self.playVideoFromAsset = playVideoFromAsset
-        self.enableScreenProtection = enableScreenProtection
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
@@ -45,8 +43,6 @@ struct PlayerConfiguration{
         }
 
         let assetPath = map["assetPath"] as? String
-        // Default to false if not provided for backward compatibility
-        let enableScreenProtection = map["enableScreenProtection"] as? Bool ?? false
 
         return PlayerConfiguration(
             qualityText: qualityText,
@@ -57,8 +53,7 @@ struct PlayerConfiguration{
             assetPath: assetPath,
             autoText: autoText,
             url: videoUrl,
-            movieShareLink: movieShareLink,
-            enableScreenProtection: enableScreenProtection
+            movieShareLink: movieShareLink
         )
     }
 }

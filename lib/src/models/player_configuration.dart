@@ -48,7 +48,6 @@ class PlayerConfiguration {
     required this.lastPosition,
     required this.movieShareLink,
     required this.playVideoFromAsset,
-    this.enableScreenProtection = true,
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -61,7 +60,6 @@ class PlayerConfiguration {
   /// - [title]: The title displayed in the player UI (required)
   /// - [startPositionSeconds]: Resume position in seconds (default: 0)
   /// - [movieShareLink]: Share URL for the video (default: empty, disables sharing)
-  /// - [enableScreenProtection]: Enable screenshot prevention on iOS (default: false)
   /// - [qualityText]: Label for quality selection (default: 'Quality')
   /// - [speedText]: Label for speed selection (default: 'Speed')
   /// - [autoText]: Label for auto quality option (default: 'Auto')
@@ -98,12 +96,11 @@ class PlayerConfiguration {
   factory PlayerConfiguration.remote({
     required String videoUrl,
     required String title,
-    int startPositionSeconds = 0,
     String movieShareLink = '',
-    bool enableScreenProtection = false,
-    String qualityText = 'Quality',
-    String speedText = 'Speed',
     String autoText = 'Auto',
+    String speedText = 'Speed',
+    int startPositionSeconds = 0,
+    String qualityText = 'Quality',
   }) {
     assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
     return PlayerConfiguration(
@@ -113,10 +110,9 @@ class PlayerConfiguration {
       assetPath: '',
       speedText: speedText,
       qualityText: qualityText,
-      lastPosition: startPositionSeconds,
-      movieShareLink: movieShareLink,
       playVideoFromAsset: false,
-      enableScreenProtection: enableScreenProtection,
+      movieShareLink: movieShareLink,
+      lastPosition: startPositionSeconds,
     );
   }
 
@@ -129,7 +125,6 @@ class PlayerConfiguration {
   /// - [assetPath]: Path to the asset file (e.g., 'videos/intro.mp4')
   /// - [title]: The title displayed in the player UI (required)
   /// - [startPositionSeconds]: Resume position in seconds (default: 0)
-  /// - [enableScreenProtection]: Enable screenshot prevention on iOS (default: false)
   /// - [qualityText]: Label for quality selection (default: 'Quality')
   /// - [speedText]: Label for speed selection (default: 'Speed')
   /// - [autoText]: Label for auto quality option (default: 'Auto')
@@ -151,25 +146,23 @@ class PlayerConfiguration {
   factory PlayerConfiguration.asset({
     required String assetPath,
     required String title,
-    int startPositionSeconds = 0,
-    bool enableScreenProtection = false,
-    String qualityText = 'Quality',
-    String speedText = 'Speed',
     String autoText = 'Auto',
+    String speedText = 'Speed',
+    int startPositionSeconds = 0,
+    String qualityText = 'Quality',
   }) {
     assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
     assert(assetPath.isNotEmpty, 'assetPath cannot be empty');
     return PlayerConfiguration(
       videoUrl: '',
       title: title,
+      movieShareLink: '',
       autoText: autoText,
       assetPath: assetPath,
       speedText: speedText,
+      playVideoFromAsset: true,
       qualityText: qualityText,
       lastPosition: startPositionSeconds,
-      movieShareLink: '',
-      playVideoFromAsset: true,
-      enableScreenProtection: enableScreenProtection,
     );
   }
 
@@ -250,31 +243,6 @@ class PlayerConfiguration {
   /// When `false`, the player loads video from [videoUrl].
   final bool playVideoFromAsset;
 
-  /// Whether to enable screen protection (iOS only).
-  ///
-  /// When enabled, prevents screenshots and screen recording on iOS devices.
-  /// This feature uses layer manipulation which may introduce 10-50ms startup jank.
-  ///
-  /// **Default:** `false` (disabled for better performance)
-  ///
-  /// **Platform support:**
-  /// - iOS: Full support (screenshot prevention and recording detection)
-  /// - Android: No effect (always protected via FLAG_SECURE)
-  ///
-  /// **Example:**
-  /// ```
-  /// // Enable screen protection for sensitive content
-  /// PlayerConfiguration(
-  ///   videoUrl: 'https://example.com/private-video.m3u8',
-  ///   enableScreenProtection: true,
-  ///   // ... other parameters
-  /// );
-  /// ```
-  ///
-  /// **Note:** Layer manipulation on iOS 17+ may be fragile. Only enable
-  /// if screen protection is critical for your use case.
-  final bool enableScreenProtection;
-
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -291,7 +259,6 @@ class PlayerConfiguration {
     'lastPosition': lastPosition, // Already in seconds
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
-    'enableScreenProtection': enableScreenProtection,
   };
 
   @override
@@ -305,7 +272,6 @@ class PlayerConfiguration {
       'playVideoFromAsset: $playVideoFromAsset, '
       'assetPath: $assetPath, '
       'autoText: $autoText, '
-      'movieShareLink: $movieShareLink, '
-      'enableScreenProtection: $enableScreenProtection'
+      'movieShareLink: $movieShareLink '
       '}';
 }
