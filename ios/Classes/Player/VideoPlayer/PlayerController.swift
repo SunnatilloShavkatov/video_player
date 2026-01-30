@@ -216,9 +216,7 @@ final class PlayerController {
     /// Convert seconds to safe integer (avoiding overflow)
     func safeIntFromSeconds(_ seconds: Double) -> Int {
         guard seconds.isFinite, !seconds.isNaN else { return 0 }
-        let milliseconds = seconds * 1000
-        guard milliseconds >= Double(Int.min),
-              milliseconds <= Double(Int.max) else { return 0 }
-        return Int(milliseconds)
+        guard seconds >= Double(Int.min), seconds <= Double(Int.max) else { return 0 }
+        return Int(seconds)
     }
 }

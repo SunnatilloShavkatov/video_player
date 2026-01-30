@@ -169,7 +169,7 @@ final class PlayerGestureHandler: NSObject {
     @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         guard enableGesture else { return }
         
-        if gesture.state == .ended {
+        if gesture.state == .changed {
             delegate?.gestureHandler(self, didPinchToScale: gesture.scale)
         }
     }

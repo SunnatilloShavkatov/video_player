@@ -144,37 +144,25 @@ final class PlayerObserverManager {
                 )
                 
                 // Then remove KVO observers with proper contexts
-                do {
-                    item.removeObserver(
-                        self,
-                        forKeyPath: #keyPath(AVPlayerItem.duration),
-                        context: &PlayerObserverManager.playerItemDurationContext
-                    )
-                } catch {
-                    debugPrint("⚠️ Error removing duration observer: \(error)")
-                }
+                item.removeObserver(
+                    self,
+                    forKeyPath: #keyPath(AVPlayerItem.duration),
+                    context: &PlayerObserverManager.playerItemDurationContext
+                )
                 
-                do {
-                    item.removeObserver(
-                        self,
-                        forKeyPath: #keyPath(AVPlayerItem.status),
-                        context: &PlayerObserverManager.playerItemStatusContext
-                    )
-                } catch {
-                    debugPrint("⚠️ Error removing status observer: \(error)")
-                }
+                item.removeObserver(
+                    self,
+                    forKeyPath: #keyPath(AVPlayerItem.status),
+                    context: &PlayerObserverManager.playerItemStatusContext
+                )
             }
             
             // Always remove player observer if we were observing
-            do {
-                player.removeObserver(
-                    self,
-                    forKeyPath: #keyPath(AVPlayer.timeControlStatus),
-                    context: &PlayerObserverManager.playerTimeControlStatusContext
-                )
-            } catch {
-                debugPrint("⚠️ Error removing timeControlStatus observer: \(error)")
-            }
+            player.removeObserver(
+                self,
+                forKeyPath: #keyPath(AVPlayer.timeControlStatus),
+                context: &PlayerObserverManager.playerTimeControlStatusContext
+            )
         }
     }
     
