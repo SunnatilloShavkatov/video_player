@@ -75,10 +75,6 @@ final class PlayerGestureHandler: NSObject {
         targetView.addGestureRecognizer(tapGesture)
         
         // Single tap for hiding controls
-        tapHideGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapControls))
-        tapHideGesture.numberOfTapsRequired = 1
-        tapHideGesture.delegate = self
-        targetView.addGestureRecognizer(tapHideGesture)
         
         // Pinch gesture for zoom
         pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
@@ -192,9 +188,6 @@ final class PlayerGestureHandler: NSObject {
         }
         if let tapGesture = tapGesture {
             targetView.removeGestureRecognizer(tapGesture)
-        }
-        if let tapHideGesture = tapHideGesture {
-            targetView.removeGestureRecognizer(tapHideGesture)
         }
         if let pinchGesture = pinchGesture {
             targetView.removeGestureRecognizer(pinchGesture)
