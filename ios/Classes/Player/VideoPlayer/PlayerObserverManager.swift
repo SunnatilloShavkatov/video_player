@@ -20,7 +20,7 @@ protocol PlayerObserverDelegate: AnyObject {
 
 /// Manages all KVO and NotificationCenter observers for AVPlayer/AVPlayerItem.
 /// Ensures safe attach/detach following the rules from MEMORY_LEAK_FIXES.md
-final class PlayerObserverManager {
+final class PlayerObserverManager: NSObject {
     
     // MARK: - KVO Contexts (thread-safe unique identifiers)
     
@@ -42,6 +42,7 @@ final class PlayerObserverManager {
     
     init(player: AVPlayer) {
         self.player = player
+        super.init()
     }
     
     // MARK: - Public API

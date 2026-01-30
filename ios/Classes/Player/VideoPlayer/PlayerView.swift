@@ -40,9 +40,9 @@ class PlayerView: UIView {
     weak var delegate: PlayerViewDelegate?
     
     // MARK: - Computed Properties (delegated to components)
-    private(set) var streamPosition: TimeInterval? { playerController?.streamPosition }
-    private(set) var streamDuration: TimeInterval? { playerController?.streamDuration }
-    private(set) var playerState: LocalPlayerState { playerController?.playerState ?? .stopped }
+    var streamPosition: TimeInterval? { playerController?.streamPosition }
+    var streamDuration: TimeInterval? { playerController?.streamDuration }
+    var playerState: LocalPlayerState { playerController?.playerState ?? .stopped }
     var pendingPlay: Bool {
         get { playerController?.pendingPlay ?? false }
         set { playerController?.pendingPlay = newValue }

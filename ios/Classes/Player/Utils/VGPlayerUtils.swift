@@ -102,11 +102,6 @@ struct SortFunctions{
     }
 }
 
-enum SwipeDirection: Int {
-    case horizontal = 0
-    case vertical   = 1
-}
-
 struct Constants {
     static let horizontalSpacing: CGFloat = 0
     static let controlButtonSize: CGFloat = 55.0
