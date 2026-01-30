@@ -4,10 +4,12 @@
 
 This is a major version release focused on API clarity, type safety, and developer experience improvements. No new features are added, but the public API has changed to eliminate ambiguity and prevent common misuse patterns.
 
+**IMPORTANT: All time values remain in SECONDS (int) to match the native platform contract.**
+
 #### 1. PlaybackResult replaces nullable List<int>?
 
 **Before (v2.x):**
-```
+```dart
 final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 if (result != null) {
   final position = result[0];  // What unit? Seconds? Milliseconds?
