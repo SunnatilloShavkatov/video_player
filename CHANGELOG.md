@@ -21,10 +21,10 @@ if (result != null) {
 final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 
 switch (result) {
-  case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
-    // Clear semantics: position and duration in milliseconds
-    print('Watched ${lastPositionMillis}ms of ${durationMillis}ms');
-    await saveProgress(videoId, lastPositionMillis);
+  case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+    // Clear semantics: position and duration in seconds
+    print('Watched ${lastPositionSeconds}s of ${durationSeconds}s');
+    await saveProgress(videoId, lastPositionSeconds);
 
   case PlaybackCancelled():
     // User cancelled - not an error
@@ -39,7 +39,7 @@ switch (result) {
 
 **Migration:**
 - Replace `result != null` checks with pattern matching on `PlaybackResult`
-- Multiply old position/duration by 1000 to get milliseconds (if you need backward compat)
+- Time units remain in seconds (no conversion needed)
 - Handle all three cases: `PlaybackCompleted`, `PlaybackCancelled`, `PlaybackFailed`
 
 #### 2. PlayerConfiguration factory constructors
@@ -65,7 +65,7 @@ final config = PlayerConfiguration(
 final config = PlayerConfiguration.remote(
   videoUrl: 'https://example.com/video.m3u8',
   title: 'My Video',
-  lastPositionMillis: 120000,  // Clear: 2 minutes in milliseconds
+  startPositionSeconds: 120,  // Clear: 2 minutes in seconds
 );
 
 // For assets (if needed)
@@ -78,7 +78,7 @@ final assetConfig = PlayerConfiguration.asset(
 **Migration:**
 - Use `PlayerConfiguration.remote()` for HTTPS videos (recommended)
 - Use `PlayerConfiguration.asset()` for asset videos
-- Change `lastPosition` (seconds) to `lastPositionMillis` (multiply by 1000)
+- Rename `lastPosition` to `startPositionSeconds` for clarity (value stays in seconds)
 - Old constructor still works but is marked as advanced-use-only
 
 #### 3. Stable enum serialization
@@ -167,9 +167,8 @@ controller.play(); // Throws StateError with clear message
 
 - **API**: `playVideo()` now returns `Future<PlaybackResult>` instead of `Future<List<int>?>`
 - **API**: Added `PlayerConfiguration.remote()` and `PlayerConfiguration.asset()` factory constructors
-- **API**: Renamed `lastPosition` to `lastPositionMillis` (with unit clarity)
-- **API**: Changed from seconds to milliseconds for all time values in public API
-- **API**: Platform communication still uses seconds internally for backward compat
+- **API**: Renamed `lastPosition` to `startPositionSeconds` for clarity (unit remains seconds)
+- **API**: All time values remain in seconds (int) for consistency with native platforms
 - **Error Handling**: Invalid URLs now throw `ArgumentError` instead of `Exception`
 - **Error Handling**: All runtime errors return `PlaybackFailed` instead of throwing or returning null
 - **Enums**: `ResizeMode` and `PlayerStatus` now use explicit `value` field for serialization
@@ -200,7 +199,7 @@ controller.play(); // Throws StateError with clear message
 
 - [ ] Replace `List<int>?` result handling with `PlaybackResult` pattern matching
 - [ ] Update `PlayerConfiguration` to use `.remote()` or `.asset()` factories
-- [ ] Convert `lastPosition` (seconds) to `lastPositionMillis` (milliseconds)
+- [ ] Rename `lastPosition` to `startPositionSeconds` for clarity (no value conversion needed)
 - [ ] Update error handling to catch `ArgumentError` for validation errors
 - [ ] Test all video playback flows
 - [ ] Verify position tracking and resume functionality
