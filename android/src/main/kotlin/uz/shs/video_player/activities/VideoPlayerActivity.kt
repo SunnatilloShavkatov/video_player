@@ -65,6 +65,7 @@ import uz.shs.video_player.models.BottomSheet
 import uz.shs.video_player.models.PlayerConfiguration
 import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.services.NetworkChangeReceiver
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 @UnstableApi
@@ -130,6 +131,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var audioFocusRequest: AudioFocusRequest? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // STARTUP-SAFE GUARD
+    private val isSurfaceReady = AtomicBoolean(false)
+    private val isWindowReady = AtomicBoolean(false)
+    private val isStarted = AtomicBoolean(false)
+
     // ✅ FIXED: Store all Runnables for explicit removal
     private var hideControllerRunnable: Runnable? = null
     private var showControllerRunnable: Runnable? = null
@@ -159,7 +165,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
         setContentView(R.layout.activity_player)
         actionBar?.hide()
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+
+        // Apply FLAG_SECURE safely
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            window.decorView.post {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
         val rootView = findViewById<RelativeLayout>(R.id.player_activity)
@@ -201,7 +216,23 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         volumeSeekBar.max = maxVolume.toInt()
         maxVolume += 1.0
         volumeSeekBar.progress = volume.toInt()
-        playVideo()
+
+        // 1. Window render pipeline ready
+        window.decorView.post {
+            isWindowReady.set(true)
+            tryStartPlayback()
+        }
+
+        // 2. Surface ready
+        playerView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                isSurfaceReady.set(true)
+                tryStartPlayback()
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {}
+        })
+
         listenConnection()
     }
 
@@ -327,7 +358,17 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
     }
 
-    private fun playVideo() {
+    private fun tryStartPlayback() {
+        if (
+            isWindowReady.get() &&
+            isSurfaceReady.get() &&
+            isStarted.compareAndSet(false, true)
+        ) {
+            startPlaybackSafely()
+        }
+    }
+
+    private fun startPlaybackSafely() {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
         val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(url.toUri()))
