@@ -12,7 +12,7 @@ import 'package:flutter/services.dart';
 /// **IMPORTANT: All time values are in SECONDS (int), matching the native platform contract.**
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 ///
 /// switch (result) {
@@ -43,7 +43,7 @@ sealed class PlaybackResult {
 /// - [durationSeconds]: The total duration of the video, in seconds
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// if (result case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds)) {
 ///   final progressPercent = (lastPositionSeconds / durationSeconds * 100).toInt();
 ///   print('User watched $progressPercent% of the video');
@@ -110,7 +110,7 @@ final class PlaybackCompleted extends PlaybackResult {
 /// user action, not an error condition.
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// if (result is PlaybackCancelled) {
 ///   print('User cancelled video playback');
 ///   // Don't save progress or show error
@@ -143,7 +143,7 @@ final class PlaybackCancelled extends PlaybackResult {
 /// - [stackTrace]: Optional stack trace for debugging
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// if (result case PlaybackFailed(:final error, :final stackTrace)) {
 ///   print('Playback failed: $error');
 ///   if (stackTrace != null) {
@@ -174,7 +174,7 @@ final class PlaybackFailed extends PlaybackResult {
   /// - A [PlatformException] from the method channel
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// final errorMessage = error.toString();
   /// if (errorMessage.contains('network')) {
   ///   showNetworkErrorDialog();

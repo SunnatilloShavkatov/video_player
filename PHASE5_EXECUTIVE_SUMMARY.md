@@ -111,7 +111,7 @@ self?.playButton.setImage(Svg.pause ?? UIImage(), for: .normal)
 
 ### Example Usage Verified
 
-```dart
+```
 final result = await VideoPlayer.instance.playVideo(
   playerConfig: PlayerConfiguration.remote(
     videoUrl: 'https://example.com/video.m3u8',

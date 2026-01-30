@@ -68,7 +68,7 @@ This document outlines the long-term maintenance and support policy for the vide
 
 ### Example
 
-```dart
+```
 // v3.0.0
 @Deprecated('Use PlayerConfiguration.remote() instead. Will be removed in v4.0.0')
 PlayerConfiguration({...});

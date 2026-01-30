@@ -25,7 +25,7 @@ export 'package:video_player/src/models/player_configuration.dart';
 /// - Adaptive bitrate streaming
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// final result = await VideoPlayer.instance.playVideo(
 ///   playerConfig: PlayerConfiguration.remote(
 ///     videoUrl: 'https://example.com/video.m3u8',
@@ -76,7 +76,7 @@ final class VideoPlayer {
   /// - **Android**: Uses ExoPlayer with custom controls, supports Picture-in-Picture on Android 8.0+
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// final result = await VideoPlayer.instance.playVideo(
   ///   playerConfig: PlayerConfiguration.remote(
   ///     videoUrl: 'https://example.com/video.m3u8',
@@ -120,7 +120,7 @@ final class VideoPlayer {
   /// - **Android**: Finishes the VideoPlayerActivity
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// // Close the video player programmatically
   /// await VideoPlayer.instance.close();
   /// ```

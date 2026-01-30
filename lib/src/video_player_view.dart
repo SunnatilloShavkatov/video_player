@@ -165,7 +165,7 @@ class VideoPlayerView extends StatelessWidget {
 /// 4. Call [dispose] when done to clean up resources
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// late VideoPlayerViewController _controller;
 ///
 /// VideoPlayerView(
@@ -213,7 +213,7 @@ final class VideoPlayerViewController {
   /// - [resizeMode]: How the new video should fit in the view (default: [ResizeMode.fit])
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.setUrl(
   ///   url: 'https://example.com/another-video.m3u8',
   ///   resizeMode: ResizeMode.fill,
@@ -233,7 +233,7 @@ final class VideoPlayerViewController {
   /// - [resizeMode]: How the video should fit in the view (default: [ResizeMode.fit])
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.setAssets(
   ///   assets: 'videos/intro.mp4',
   ///   resizeMode: ResizeMode.fit,
@@ -256,7 +256,7 @@ final class VideoPlayerViewController {
   /// Playback position is preserved. Use [play] to resume.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.pause();
   /// ```
   Future<void> pause() async {
@@ -270,7 +270,7 @@ final class VideoPlayerViewController {
   /// If video hasn't started yet, playback begins from the start.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.play();
   /// ```
   Future<void> play() async {
@@ -284,7 +284,7 @@ final class VideoPlayerViewController {
   /// Use [unmute] to restore audio.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.mute();
   /// ```
   Future<void> mute() async {
@@ -297,7 +297,7 @@ final class VideoPlayerViewController {
   /// Restores audio if previously muted with [mute].
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// await controller.unmute();
   /// ```
   Future<void> unmute() async {
@@ -312,7 +312,7 @@ final class VideoPlayerViewController {
   /// - `0.0` if video is not yet loaded or duration is unavailable
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// final duration = await controller.getDuration();
   /// print('Video is ${duration.toInt()} seconds long');
   /// ```
@@ -332,7 +332,7 @@ final class VideoPlayerViewController {
   /// - [seconds]: Target position in seconds (required). Must be >= 0 and <= video duration.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// // Seek to 2 minutes 30 seconds
   /// await controller.seekTo(seconds: 150.0);
   ///
@@ -360,7 +360,7 @@ final class VideoPlayerViewController {
   /// Position is reported in seconds as a [double] value.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// controller.positionStream.listen((position) {
   ///   print('Current position: ${position.toStringAsFixed(1)}s');
   ///
@@ -384,7 +384,7 @@ final class VideoPlayerViewController {
   /// (e.g., from buffering to ready, ready to playing, playing to paused).
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// controller.statusStream.listen((status) {
   ///   switch (status) {
   ///     case PlayerStatus.buffering:
@@ -423,7 +423,7 @@ final class VideoPlayerViewController {
   /// - [StateError] if called after [dispose]
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// controller.setEventListener((data) {
   ///   print('Video finished with data: $data');
   /// });
@@ -494,7 +494,7 @@ final class VideoPlayerViewController {
   /// - [StateError] if called after [dispose]
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// controller.onDurationReady((duration) {
   ///   print('Video duration: ${duration.toInt()} seconds');
   ///   setState(() => _totalDuration = duration);
@@ -520,7 +520,7 @@ final class VideoPlayerViewController {
   /// - Clears all callbacks
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// class MyVideoWidget extends StatefulWidget {
   ///   // ...
   /// }

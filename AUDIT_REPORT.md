@@ -27,7 +27,7 @@ This is a **BRUTALLY HONEST** engineering-level audit of the `uz.shs.video_playe
 **File:** `lib/src/video_player_view.dart:242-419`
 
 **Problem:**
-```dart
+```
 Future<void> dispose() async {
   _channel.setMethodCallHandler(null);
   await _positionController?.close();
@@ -56,7 +56,7 @@ Future<void> play() async {
 - Native platform receives orphaned method calls → resource exhaustion
 
 **FIX REQUIRED:**
-```dart
+```
 bool _isDisposed = false;
 
 Future<void> play() async {
@@ -76,7 +76,7 @@ Future<void> dispose() async {
 **File:** `lib/src/video_player_view.dart:338-358`
 
 **Problem:**
-```dart
+```
 void _setupMethodHandler() {
   _channel.setMethodCallHandler((call) async {
     if (call.method == 'positionUpdate') {
@@ -831,7 +831,7 @@ try {
 ### 3.5 Logging & Debuggability: C-
 
 **Flutter:**
-```dart
+```
 // lib/src/log_message.dart:5
 void logMessage(String msg, {Object? error, StackTrace? stackTrace}) {
   if (kDebugMode) {

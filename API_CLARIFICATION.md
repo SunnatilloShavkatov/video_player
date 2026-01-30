@@ -89,7 +89,7 @@ class PlayerConfiguration {
 ### 4. **VideoPlayerViewController Lifecycle Unclear**
 
 **Current**:
-```dart
+```
 final class VideoPlayerViewController {
   VideoPlayerViewController._(int id) : _channel = MethodChannel('...');
 
@@ -219,7 +219,7 @@ final class PlaybackFailed extends PlaybackResult {
 /// - [ArgumentError] if [playerConfig.videoUrl] is not a valid HTTPS URL
 ///
 /// Example:
-/// ```dart
+/// ```
 /// final result = await VideoPlayer.instance.playVideo(
 ///   playerConfig: PlayerConfiguration(
 ///     videoUrl: 'https://example.com/video.mp4',
@@ -307,7 +307,7 @@ Future<PlaybackResult> playVideo({
 /// - [movieShareLink]: URL to share via native share sheet (empty string = no share button)
 ///
 /// Example:
-/// ```dart
+/// ```
 /// // Remote video
 /// final config = PlayerConfiguration(
 ///   videoUrl: 'https://example.com/video.m3u8',
@@ -396,7 +396,7 @@ class PlayerConfiguration {
 
 ### Fix 3: Harden VideoPlayerViewController Lifecycle
 
-```dart
+```
 /// Controller for an embedded video player view.
 ///
 /// ## Lifecycle
@@ -407,7 +407,7 @@ class PlayerConfiguration {
 ///
 /// ## Usage
 ///
-/// ```dart
+/// ```
 /// class VideoScreen extends StatefulWidget {
 ///   @override
 ///   State<VideoScreen> createState() => _VideoScreenState();
@@ -715,7 +715,7 @@ case 'playerStatus':
 
 ### Fix 5: Add Factory Constructors for Common Configurations
 
-```dart
+```
 /// Additional factory constructors for PlayerConfiguration
 extension PlayerConfigurationFactories on PlayerConfiguration {
   /// Creates configuration for remote video playback.
@@ -723,7 +723,7 @@ extension PlayerConfigurationFactories on PlayerConfiguration {
   /// Simplified constructor for common remote video use case.
   ///
   /// Example:
-  /// ```dart
+  /// ```
   /// final config = PlayerConfiguration.remote(
   ///   url: 'https://example.com/video.m3u8',
   ///   title: 'My Video',
@@ -757,7 +757,7 @@ extension PlayerConfigurationFactories on PlayerConfiguration {
   /// Simplified constructor for local asset video.
   ///
   /// Example:
-  /// ```dart
+  /// ```
   /// final config = PlayerConfiguration.asset(
   ///   path: 'assets/videos/intro.mp4',
   ///   title: 'Introduction',

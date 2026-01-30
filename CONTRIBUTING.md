@@ -47,7 +47,7 @@ flutter run
 - **Add dartdoc comments**: All public APIs must have comprehensive documentation
 - **Use explicit types**: Avoid `var` for public API return types
 
-```dart
+```
 // ✅ Good
 /// Gets the video duration in seconds.
 ///
@@ -145,7 +145,7 @@ fun dispose() {
 
 ### Dart Lifecycle
 
-```dart
+```
 // ✅ Add disposal guard
 void _checkNotDisposed() {
   if (_isDisposed) {
@@ -245,7 +245,7 @@ When deprecating APIs:
 3. Keep deprecated API for at least one major version
 4. Document in CHANGELOG under "Deprecated" section
 
-```dart
+```
 @Deprecated('Use PlayerConfiguration.remote() instead. Will be removed in v4.0.0')
 PlayerConfiguration(...);
 ```

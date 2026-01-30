@@ -9,7 +9,7 @@
 /// [PlayerConfiguration.asset] for cleaner, more maintainable code.
 ///
 /// **Example:**
-/// ```dart
+/// ```
 /// // Recommended: Use factory constructor
 /// final config = PlayerConfiguration.remote(
 ///   videoUrl: 'https://example.com/video.m3u8',
@@ -48,13 +48,8 @@ class PlayerConfiguration {
     required this.lastPosition,
     required this.movieShareLink,
     required this.playVideoFromAsset,
-    this.enableScreenProtection = false,
+    this.enableScreenProtection = true,
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
-
-  // assert(
-  //   (playVideoFromAsset && assetPath.isNotEmpty) || (!playVideoFromAsset && videoUrl.isNotEmpty),
-  //   'Either assetPath must be provided with playVideoFromAsset=true, or videoUrl with playVideoFromAsset=false',
-  // );
 
   /// Creates a configuration for playing a remote video via HTTPS.
   ///
@@ -72,7 +67,7 @@ class PlayerConfiguration {
   /// - [autoText]: Label for auto quality option (default: 'Auto')
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// // Minimal usage
   /// final config = PlayerConfiguration.remote(
   ///   videoUrl: 'https://example.com/video.m3u8',
@@ -140,7 +135,7 @@ class PlayerConfiguration {
   /// - [autoText]: Label for auto quality option (default: 'Auto')
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// final config = PlayerConfiguration.asset(
   ///   assetPath: 'assets/videos/intro.mp4',
   ///   title: 'Introduction',
@@ -206,7 +201,7 @@ class PlayerConfiguration {
   /// **Unit:** Seconds (int) - matches native platform contract
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// lastPosition: 120, // Start at 2 minutes (120 seconds)
   /// ```
   ///
@@ -222,7 +217,7 @@ class PlayerConfiguration {
   /// Path to asset file when [playVideoFromAsset] is true.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// assetPath: 'assets/videos/intro.mp4',
   /// playVideoFromAsset: true,
   /// ```
@@ -241,7 +236,7 @@ class PlayerConfiguration {
   /// Set to empty string `''` to disable sharing functionality.
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// movieShareLink: 'https://example.com/videos/123',
   /// ```
   final String movieShareLink;
@@ -267,7 +262,7 @@ class PlayerConfiguration {
   /// - Android: No effect (always protected via FLAG_SECURE)
   ///
   /// **Example:**
-  /// ```dart
+  /// ```
   /// // Enable screen protection for sensitive content
   /// PlayerConfiguration(
   ///   videoUrl: 'https://example.com/private-video.m3u8',

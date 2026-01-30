@@ -45,7 +45,7 @@ switch (result) {
 #### 2. PlayerConfiguration factory constructors
 
 **Before (v2.x):**
-```dart
+```
 final config = PlayerConfiguration(
   videoUrl: 'https://example.com/video.m3u8',
   title: 'My Video',
@@ -60,7 +60,7 @@ final config = PlayerConfiguration(
 ```
 
 **After (v3.0):**
-```dart
+```
 // Recommended: Use factory constructor
 final config = PlayerConfiguration.remote(
   videoUrl: 'https://example.com/video.m3u8',
@@ -84,14 +84,14 @@ final assetConfig = PlayerConfiguration.asset(
 #### 3. Stable enum serialization
 
 **Before (v2.x):**
-```dart
+```
 enum ResizeMode { fit, fill, zoom }
 // Used enum.name for platform communication
 // Renaming enum would break native code
 ```
 
 **After (v3.0):**
-```dart
+```
 enum ResizeMode {
   fit('fit'),
   fill('fill'),

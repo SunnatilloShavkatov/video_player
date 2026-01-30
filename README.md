@@ -1,23 +1,28 @@
 # Video Player
 
-A comprehensive Flutter video player plugin with advanced features including video playback and screen protection.
+A comprehensive Flutter video player plugin with advanced features including video playback and
+screen protection.
 
-> **⚠️ Version 3.0.0 Breaking Changes**: If you're upgrading from v2.x, please see the [Migration Guide](#migration-from-v2x-to-v30) below.
+> **⚠️ Version 3.0.0 Breaking Changes**: If you're upgrading from v2.x, please see
+> the [Migration Guide](#migration-from-v2x-to-v30) below.
 
 ## Features
 
 ### Video Playback
+
 - **Multi-source support**: Play videos from URLs, assets, and downloaded files
 - **Quality selection**: Multiple resolution options with automatic quality detection
 - **Playback controls**: Play, pause, seek, and speed control
 - **Fullscreen support**: Native fullscreen video playback experience
 
 ### Screen Protection (iOS)
+
 - **Screenshot prevention**: Prevent screenshots during video playback
 - **Screen recording detection**: Detect and handle screen recording attempts
 - **Secure playback**: Enhanced content protection for sensitive videos
 
 ### Platform Support
+
 - **iOS**: Full native implementation with AVPlayer and AVKit
 - **Android**: Native Android implementation
 - **Flutter integration**: Seamless integration with Flutter widgets
@@ -37,16 +42,18 @@ dependencies:
 ### iOS Setup
 
 1. Set minimum iOS version to 15.0 in `ios/Podfile`:
+
 ```ruby
 platform :ios, '15.0'
 ```
 
 2. Add network security configuration to `ios/Runner/Info.plist`:
+
 ```xml
-<key>NSAppTransportSecurity</key>
-<dict>
-    <key>NSAllowsArbitraryLoads</key>
-    <true/>
+
+<key>NSAppTransportSecurity</key><dict>
+<key>NSAllowsArbitraryLoads</key>
+<true />
 </dict>
 ```
 
@@ -55,6 +62,7 @@ platform :ios, '15.0'
 ### Android Setup
 
 Update minimum SDK version to 26 in `android/app/build.gradle`:
+
 ```gradle
 android {
     defaultConfig {
@@ -71,7 +79,7 @@ The plugin automatically configures ExoPlayer - no other setup required.
 
 Opens a native full-screen video player with built-in controls:
 
-```dart
+```
 import 'package:video_player/video_player.dart';
 
 // Play a remote video (recommended approach)
@@ -106,7 +114,7 @@ switch (result) {
 
 **Legacy approach (still supported):**
 
-```dart
+```
 // For advanced use cases with full control
 final result = await VideoPlayer.instance.playVideo(
   playerConfig: PlayerConfiguration(
@@ -127,7 +135,7 @@ final result = await VideoPlayer.instance.playVideo(
 
 Inline video playback within your Flutter UI:
 
-```dart
+```
 class VideoWidget extends StatefulWidget {
   @override
   State<VideoWidget> createState() => _VideoWidgetState();
@@ -172,7 +180,7 @@ class _VideoWidgetState extends State<VideoWidget> {
 
 ### Playback Control API
 
-```dart
+```
 // Playback control
 await controller.play();
 await controller.pause();
@@ -199,6 +207,7 @@ await controller.setAssets(assets: 'assets/videos/my_video.mp4');
 ### Native UI Components
 
 The iOS implementation uses native iOS components for optimal performance:
+
 - **UIActivityIndicatorView**: Native loading indicators for video buffering and loading states
 - **AVPlayer & AVKit**: Core video playback functionality
 - **Native gestures**: Swipe for volume/brightness, tap to play/pause, double-tap to seek
@@ -215,24 +224,25 @@ The iOS implementation includes `ScreenProtectorKit` for content protection:
 
 ```swift
 // In your AppDelegate.swift
+
 import video_player
 
 class AppDelegate: FlutterAppDelegate {
     private var screenProtectorKit: ScreenProtectorKit?
-    
+
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         screenProtectorKit = ScreenProtectorKit(window: window)
         screenProtectorKit?.configurePreventionScreenshot()
-        
+
         // Setup screenshot detection
         screenProtectorKit?.screenshotObserver {
             print("Screenshot detected!")
             // Handle screenshot event
         }
-        
+
         // Setup screen recording detection (iOS 11.0+)
         if #available(iOS 11.0, *) {
             screenProtectorKit?.screenRecordObserver { isCaptured in
@@ -240,14 +250,14 @@ class AppDelegate: FlutterAppDelegate {
                 // Handle screen recording state change
             }
         }
-        
+
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
-    
+
     override func applicationDidBecomeActive(_ application: UIApplication) {
         screenProtectorKit?.enabledPreventScreenshot()
     }
-    
+
     override func applicationWillResignActive(_ application: UIApplication) {
         screenProtectorKit?.disablePreventScreenshot()
     }
@@ -257,9 +267,11 @@ class AppDelegate: FlutterAppDelegate {
 ### Advanced Configuration
 
 #### Video Quality Selection
+
 The plugin automatically sorts video resolutions and provides quality selection UI during playback.
 
 #### Content Protection
+
 - HLS (HTTP Live Streaming) support with content protection
 - DRM-protected content playback (when supported by source)
 
@@ -270,7 +282,8 @@ The plugin automatically sorts video resolutions and provides quality selection 
 #### Factory Constructors (Recommended)
 
 **`PlayerConfiguration.remote()`** - For remote HTTPS videos
-```dart
+
+```
 PlayerConfiguration.remote({
   required String videoUrl,           // HTTPS URL
   required String title,              // Video title
@@ -284,7 +297,8 @@ PlayerConfiguration.remote({
 ```
 
 **`PlayerConfiguration.asset()`** - For bundled asset videos
-```dart
+
+```
 PlayerConfiguration.asset({
   required String assetPath,          // Asset path (e.g., 'videos/intro.mp4')
   required String title,              // Video title
@@ -297,6 +311,7 @@ PlayerConfiguration.asset({
 ```
 
 #### Properties
+
 - `videoUrl`: HTTPS URL of the video to play
 - `title`: Video title displayed in player UI
 - `lastPosition`: Resume position in seconds (>= 0)
@@ -313,20 +328,23 @@ PlayerConfiguration.asset({
 Sealed class representing the outcome of video playback:
 
 **`PlaybackCompleted`** - User watched and closed the video
-```dart
+
+```
 case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
   // lastPositionSeconds: Position when closed (seconds)
   // durationSeconds: Total video duration (seconds)
 ```
 
 **`PlaybackCancelled`** - User cancelled before video loaded
-```dart
+
+```
 case PlaybackCancelled():
   // User dismissed player early
 ```
 
 **`PlaybackFailed`** - Playback encountered an error
-```dart
+
+```
 case PlaybackFailed(:final error, :final stackTrace):
   // error: Error object
   // stackTrace: Optional stack trace for debugging
@@ -337,34 +355,41 @@ case PlaybackFailed(:final error, :final stackTrace):
 Controller for embedded player view:
 
 **Playback Control:**
+
 - `play()` - Start/resume playback
 - `pause()` - Pause playback
 - `seekTo({required double seconds})` - Seek to position
 
 **Audio Control:**
+
 - `mute()` - Mute audio
 - `unmute()` - Unmute audio
 
 **Video Source:**
+
 - `setUrl({required String url, ResizeMode resizeMode})` - Change video URL
 - `setAssets({required String assets, ResizeMode resizeMode})` - Load asset video
 
 **Information:**
+
 - `getDuration()` - Get video duration in seconds
 - `positionStream` - Stream of position updates (seconds)
 - `statusStream` - Stream of [PlayerStatus] changes
 
 **Lifecycle:**
+
 - `dispose()` - Clean up resources (always call in widget dispose)
 
 ### Enums
 
 **`ResizeMode`** - Video scaling mode
+
 - `fit` - Fit video within view (letterbox if needed)
 - `fill` - Fill entire view (crop if needed)
 - `zoom` - Zoom to fill while maintaining aspect ratio
 
 **`PlayerStatus`** - Player state
+
 - `idle` - No video loaded
 - `buffering` - Loading video data
 - `ready` - Ready to play
@@ -375,12 +400,14 @@ Controller for embedded player view:
 
 ## Migration from v2.x to v3.0
 
-Version 3.0.0 introduces breaking changes focused on API clarity and type safety. Here's how to migrate:
+Version 3.0.0 introduces breaking changes focused on API clarity and type safety. Here's how to
+migrate:
 
 ### 1. Update PlaybackResult Handling
 
 **Before (v2.x):**
-```dart
+
+```
 final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 if (result != null) {
   final position = result[0];  // Unclear units
@@ -390,7 +417,8 @@ if (result != null) {
 ```
 
 **After (v3.0):**
-```dart
+
+```
 final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 
 switch (result) {
@@ -409,7 +437,8 @@ switch (result) {
 ### 2. Use Factory Constructors
 
 **Before (v2.x):**
-```dart
+
+```
 PlayerConfiguration(
   videoUrl: 'https://example.com/video.m3u8',
   title: 'My Video',
@@ -424,7 +453,8 @@ PlayerConfiguration(
 ```
 
 **After (v3.0):**
-```dart
+
+```
 PlayerConfiguration.remote(
   videoUrl: 'https://example.com/video.m3u8',
   title: 'My Video',
@@ -437,12 +467,14 @@ PlayerConfiguration.remote(
 All time values remain in **seconds (int)** for consistency:
 
 **Before (v2.x):**
-```dart
+
+```
 lastPosition: 120,  // 2 minutes in seconds (unclear)
 ```
 
 **After (v3.0):**
-```dart
+
+```
 startPositionSeconds: 120,  // 2 minutes in seconds (clear parameter name)
 ```
 
@@ -451,7 +483,8 @@ startPositionSeconds: 120,  // 2 minutes in seconds (clear parameter name)
 ### 4. Update Error Handling
 
 **Before (v2.x):**
-```dart
+
+```
 try {
   final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 } catch (e) {
@@ -460,7 +493,8 @@ try {
 ```
 
 **After (v3.0):**
-```dart
+
+```
 try {
   final result = await VideoPlayer.instance.playVideo(playerConfig: config);
 
@@ -476,7 +510,8 @@ try {
 
 - [ ] Replace `List<int>?` result handling with `PlaybackResult` pattern matching
 - [ ] Update `PlayerConfiguration` to use `.remote()` or `.asset()` factories
-- [ ] Rename parameter from `lastPosition` to `startPositionSeconds` for clarity (value stays in seconds)
+- [ ] Rename parameter from `lastPosition` to `startPositionSeconds` for clarity (value stays in
+  seconds)
 - [ ] Update error handling to distinguish validation vs runtime errors
 - [ ] Test video playback and resume functionality
 - [ ] Verify position tracking accuracy
@@ -490,17 +525,19 @@ try {
 - **Flutter**: 3.32.0+
 - **Dart**: 3.8.0+
 
-## Dependencies. 
+## Dependencies.
 
 ### iOS
 
 **Third-party Libraries:**
+
 - **TinyConstraints**: Auto Layout DSL for Swift
 - **XLActionController**: Customizable action sheets
 - **SnapKit (~> 4.0)**: Swift Auto Layout DSL
 - **SDWebImage (~> 5.0)**: Image loading and caching
 
 **Native iOS Frameworks:**
+
 - **UIKit**: For native UI components (UIActivityIndicatorView, etc.)
 - **AVFoundation**: Core video playback engine
 - **AVKit**: Advanced video playback features and Picture-in-Picture

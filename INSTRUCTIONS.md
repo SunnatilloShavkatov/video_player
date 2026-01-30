@@ -239,7 +239,7 @@ try {
 ```
 
 ### Resource Cleanup
-```dart
+```
 class _MyWidgetState extends State<MyWidget> {
   StreamSubscription? _downloadSub;
   
