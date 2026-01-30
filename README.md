@@ -531,8 +531,6 @@ try {
 
 **Third-party Libraries:**
 
-- **TinyConstraints**: Auto Layout DSL for Swift
-- **XLActionController**: Customizable action sheets
 - **SnapKit (~> 4.0)**: Swift Auto Layout DSL
 - **SDWebImage (~> 5.0)**: Image loading and caching
 
