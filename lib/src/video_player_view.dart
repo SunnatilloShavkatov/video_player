@@ -221,7 +221,7 @@ final class VideoPlayerViewController {
   /// ```
   ///
   /// **Note:** This replaces the current video and resets playback position to 0.
-  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async {
+  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) {
     _checkNotDisposed();
     return _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.value});
   }
@@ -259,7 +259,7 @@ final class VideoPlayerViewController {
   /// ```
   /// await controller.pause();
   /// ```
-  Future<void> pause() async {
+  Future<void> pause() {
     _checkNotDisposed();
     return _channel.invokeMethod('pause');
   }
@@ -273,7 +273,7 @@ final class VideoPlayerViewController {
   /// ```
   /// await controller.play();
   /// ```
-  Future<void> play() async {
+  Future<void> play() {
     _checkNotDisposed();
     return _channel.invokeMethod('play');
   }
@@ -287,7 +287,7 @@ final class VideoPlayerViewController {
   /// ```
   /// await controller.mute();
   /// ```
-  Future<void> mute() async {
+  Future<void> mute() {
     _checkNotDisposed();
     return _channel.invokeMethod('mute');
   }
@@ -300,7 +300,7 @@ final class VideoPlayerViewController {
   /// ```
   /// await controller.unmute();
   /// ```
-  Future<void> unmute() async {
+  Future<void> unmute() {
     _checkNotDisposed();
     return _channel.invokeMethod('unmute');
   }
@@ -346,7 +346,7 @@ final class VideoPlayerViewController {
   ///
   /// **Note:** Seeking may trigger buffering. Monitor [statusStream]
   /// for [PlayerStatus.buffering] and [PlayerStatus.ready] states.
-  Future<void> seekTo({required double seconds}) async {
+  Future<void> seekTo({required double seconds}) {
     _checkNotDisposed();
     return _channel.invokeMethod('seekTo', {'seconds': seconds});
   }

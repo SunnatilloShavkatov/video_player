@@ -22,7 +22,7 @@ void main() {
       );
     });
 
-    test('throws exception for invalid URL format', () async {
+    test('throws exception for invalid URL format', () {
       expect(
         () => VideoPlayer.instance.playVideo(
           playerConfig: const PlayerConfiguration(
@@ -41,7 +41,7 @@ void main() {
       );
     });
 
-    test('throws exception for file URL', () async {
+    test('throws exception for file URL', () {
       expect(
         () => VideoPlayer.instance.playVideo(
           playerConfig: const PlayerConfiguration(
@@ -60,7 +60,7 @@ void main() {
       );
     });
 
-    test('throws exception for empty URL', () async {
+    test('throws exception for empty URL', () {
       expect(
         () => VideoPlayer.instance.playVideo(
           playerConfig: const PlayerConfiguration(

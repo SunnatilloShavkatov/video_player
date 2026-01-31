@@ -1,5 +1,3 @@
-// ignore_for_file: discarded_futures, unawaited_futures
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -84,9 +82,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           child: IconButton(
             onPressed: () {
               if (isPlay) {
-                controller?.pause();
+                controller?.pause().ignore();
               } else {
-                controller?.play();
+                controller?.play().ignore();
               }
               setState(() {
                 isPlay = !isPlay;
@@ -114,12 +112,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       SystemChrome.setPreferredOrientations([
                         DeviceOrientation.landscapeLeft,
                         DeviceOrientation.landscapeRight,
-                      ]);
+                      ]).ignore();
                     } else {
                       SystemChrome.setPreferredOrientations([
                         DeviceOrientation.portraitUp,
                         DeviceOrientation.portraitDown,
-                      ]);
+                      ]).ignore();
                     }
                   },
                   icon: const Icon(Icons.screen_rotation_rounded, color: Colors.white),
@@ -128,9 +126,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 IconButton(
                   onPressed: () {
                     if (isMute) {
-                      controller?.unmute();
+                      controller?.unmute().ignore();
                     } else {
-                      controller?.mute();
+                      controller?.mute().ignore();
                     }
                     setState(() {
                       isMute = !isMute;
@@ -167,7 +165,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                         });
                       },
                       onChangeEnd: (value) {
-                        controller?.seekTo(seconds: value);
+                        controller?.seekTo(seconds: value).ignore();
                       },
                     ),
                   Row(
@@ -209,7 +207,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     });
 
     // Listen to position stream
-    _positionSubscription?.cancel();
+    await _positionSubscription?.cancel();
     _positionSubscription = ctr.positionStream.listen((position) {
       if (mounted) {
         // if (position.toInt() == 100) {
@@ -230,15 +228,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   void _disposeController() {
-    controller?.dispose();
-    _positionSubscription?.cancel();
+    controller?.dispose().ignore();
+    _positionSubscription?.cancel().ignore();
     controller = null;
     _positionSubscription = null;
   }
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]).ignore();
     _disposeController();
     super.dispose();
   }
