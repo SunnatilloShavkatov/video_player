@@ -27,11 +27,7 @@ final class PlayerControlsCoordinator {
     
     // Timer for auto-hide
     private var controlsTimer: Timer?
-    
-    // Seek buttons (optional)
-    private weak var seekForwardButton: UIButton?
-    private weak var seekBackwardButton: UIButton?
-    
+
     // State
     private var controlsVisible = true
     
@@ -46,8 +42,6 @@ final class PlayerControlsCoordinator {
         topView: UIView?,
         bottomView: UIView?,
         overlayView: UIView?,
-        seekForwardButton: UIButton? = nil,
-        seekBackwardButton: UIButton? = nil
     ) {
         self.playButton = playButton
         self.timeSlider = timeSlider
@@ -57,8 +51,6 @@ final class PlayerControlsCoordinator {
         self.topView = topView
         self.bottomView = bottomView
         self.overlayView = overlayView
-        self.seekForwardButton = seekForwardButton
-        self.seekBackwardButton = seekBackwardButton
     }
     
     // MARK: - Play/Pause Button
@@ -158,33 +150,6 @@ final class PlayerControlsCoordinator {
             repeats: false
         ) { [weak self] _ in
             self?.hideControls()
-        }
-    }
-    
-    // MARK: - Seek Buttons (Forward/Backward indicators)
-    
-    enum SeekDirection {
-        case forward
-        case backward
-    }
-    
-    func showSeekIndicator(for direction: SeekDirection) {
-        let button = direction == .forward ? seekForwardButton : seekBackwardButton
-        
-        // Use alpha animation, NOT isHidden, to avoid conflicts with parent overlay alpha
-        UIView.animate(withDuration: 0.2) {
-            button?.alpha = 1.0
-        }
-        
-        // Auto-hide after 1 second using dispatch instead of timer
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self, weak button] in
-            guard let self = self, let button = button else { return }
-            // Only hide if controls are still visible
-            if self.controlsVisible {
-                UIView.animate(withDuration: 0.2) {
-                    button.alpha = 0.0
-                }
-            }
         }
     }
     

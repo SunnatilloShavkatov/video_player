@@ -144,7 +144,7 @@ class PlayerView: UIView {
             button.setImage(icon, for: .normal)
         }
         button.imageEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
-        button.addTarget(self, action: #selector(skipForwardButtonPressed(_:)), for: .touchUpInside)
+        button.addTarget(self, action: #selector(skipForwardPressed(_:)), for: .touchUpInside)
         return button
     }()
     private lazy var skipBackwardButton: IconButton = {
@@ -211,9 +211,7 @@ class PlayerView: UIView {
             activityIndicator: activityIndicatorView,
             topView: topView,
             bottomView: bottomView,
-            overlayView: overlayView,
-            seekForwardButton: skipForwardButton,
-            seekBackwardButton: skipBackwardButton
+            overlayView: overlayView
         )
         
         playButton.alpha = 0.0
@@ -324,7 +322,7 @@ class PlayerView: UIView {
         controlsCoordinator?.resetControlsTimer()
     }
     
-    @objc func skipForwardButtonPressed(_ sender: UIButton) {
+    @objc func skipForwardPressed(_ sender: UIButton) {
         playerController?.seekForward(by: 10.0)
         controlsCoordinator?.resetControlsTimer()
     }
@@ -657,10 +655,8 @@ extension PlayerView: PlayerGestureDelegate {
         switch zone {
         case .forward:
             playerController?.seekForward(by: 10.0)
-            controlsCoordinator?.showSeekIndicator(for: .forward)
         case .backward:
             playerController?.seekBackward(by: 10.0)
-            controlsCoordinator?.showSeekIndicator(for: .backward)
         case .center:
             controlsCoordinator?.toggleControls()
         }
