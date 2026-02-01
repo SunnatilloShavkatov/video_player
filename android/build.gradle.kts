@@ -50,6 +50,10 @@ android {
     androidResources {
         noCompress += "mp4"
     }
+
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {

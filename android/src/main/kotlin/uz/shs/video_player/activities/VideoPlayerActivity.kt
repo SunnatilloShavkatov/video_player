@@ -61,16 +61,26 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import uz.shs.video_player.R
 import uz.shs.video_player.adapters.QualitySpeedAdapter
 import uz.shs.video_player.extraArgument
+import uz.shs.video_player.delegates.PlayerControllerDelegate
+import uz.shs.video_player.databinding.ActivityPlayerBinding
+import uz.shs.video_player.databinding.CustomPlaybackViewBinding
 import uz.shs.video_player.models.BottomSheet
 import uz.shs.video_player.models.PlayerConfiguration
+import uz.shs.video_player.models.PlaybackState
+import uz.shs.video_player.models.PlayerViews
+import uz.shs.video_player.models.QualityOption
+import uz.shs.video_player.player.PlayerController
 import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.services.NetworkChangeReceiver
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 @UnstableApi
-class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListener,
-    ScaleGestureDetector.OnScaleGestureListener, AudioManager.OnAudioFocusChangeListener {
+class VideoPlayerActivity : AppCompatActivity(), 
+    GestureDetector.OnGestureListener,
+    ScaleGestureDetector.OnScaleGestureListener, 
+    AudioManager.OnAudioFocusChangeListener,
+    PlayerControllerDelegate {
 
     companion object {
         private const val SEEK_INCREMENT_MS = 10000L
@@ -88,10 +98,17 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private lateinit var playerView: PlayerView
-    private lateinit var player: ExoPlayer
+    private lateinit var playerController: PlayerController
     private lateinit var networkChangeReceiver: NetworkChangeReceiver
     private lateinit var intentFilter: IntentFilter
     private lateinit var playerConfiguration: PlayerConfiguration
+    
+    private lateinit var binding: ActivityPlayerBinding
+    private lateinit var playerViews: PlayerViews
+    
+    // Legacy view references will be removed after migration to playerViews
+    // private lateinit var close: ImageView
+    // ...
     private lateinit var close: ImageView
     private lateinit var pip: ImageView
     private lateinit var shareMovieLinkIv: ImageView
@@ -146,24 +163,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     private var wasInPictureInPicture: Boolean = false
     private var availableQualities: List<QualityOption> = emptyList()
 
-    enum class PlaybackState {
-        PLAYING, PAUSED, BUFFERING, IDLE
-    }
-
-    data class QualityOption(
-        val displayName: String,
-        val height: Int,
-        val width: Int,
-        val bitrate: Int,
-        val groupIndex: Int,
-        val trackIndex: Int
-    )
-
     @SuppressLint("AppCompatMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
-        setContentView(R.layout.activity_player)
+        // Initialize Binding First
+        binding = ActivityPlayerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        
         actionBar?.hide()
 
         // Apply FLAG_SECURE safely
@@ -177,7 +184,7 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
-        val rootView = findViewById<RelativeLayout>(R.id.player_activity)
+        val rootView = binding.root
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, insets ->
             val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.updatePadding(
@@ -189,17 +196,22 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             WindowInsetsCompat.CONSUMED
         }
 
-        val config = intent.getSerializableExtra(extraArgument) as? PlayerConfiguration
-        config ?: run {
+        // Initialize Binding
+        initializePlayerViews()
+        
+        playerView = binding.exoPlayerView
+        
+        try {
+            @Suppress("DEPRECATION")
+            playerConfiguration = intent.getSerializableExtra(extraArgument) as PlayerConfiguration
+        } catch (e: Exception) {
             finish()
             return
         }
-        playerConfiguration = config
         titleText = playerConfiguration.title
         url = playerConfiguration.videoUrl
         currentQuality = "Auto"
 
-        initializeViews()
         mPlaybackState = PlaybackState.PLAYING
 
         initializeClickListeners()
@@ -273,27 +285,28 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun rePlayVideo() {
-        if (::player.isInitialized) {
-            player.prepare()
-            player.play()
+        if (::playerController.isInitialized) {
+            playerController.getPlayer()?.prepare()
+            playerController.play()
         }
     }
 
     private val onBackPressedCallback: OnBackPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (::player.isInitialized && player.isPlaying) {
-                    player.stop()
+                if (::playerController.isInitialized && playerController.isPlaying()) {
+                    playerController.getPlayer()?.stop()
                 }
-                val intent = Intent()
-                intent.putExtra(
-                    "position",
-                    if (::player.isInitialized) player.currentPosition / 1000 else 0
-                )
-                intent.putExtra(
-                    "duration",
-                    if (::player.isInitialized) player.duration / 1000 else 0
-                )
+                val intent = Intent().apply {
+                    putExtra(
+                        "position",
+                        if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
+                    )
+                    putExtra(
+                        "duration",
+                        if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0
+                    )
+                }
                 setResult(playerActivityFinish, intent)
                 finish()
             }
@@ -307,13 +320,13 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             cancelAllPendingRunnables()
         }
 
-        if (::player.isInitialized) {
-            val isPlaying = player.isPlaying
-            player.playWhenReady = false
+        if (::playerController.isInitialized) {
+            val isPlaying = playerController.isPlaying()
+            playerController.getPlayer()?.playWhenReady = false
 
             if (isInPictureInPictureMode) {
                 // In PiP mode, restore playing state
-                player.playWhenReady = isPlaying
+                playerController.getPlayer()?.playWhenReady = isPlaying
                 dismissAllBottomSheets()
             }
         }
@@ -322,8 +335,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     override fun onResume() {
         super.onResume()
         setAudioFocus()
-        if (::player.isInitialized) {
-            player.playWhenReady = true
+        if (::playerController.isInitialized) {
+            playerController.getPlayer()?.playWhenReady = true
         }
         try {
             // Retrieve and set brightness safely
@@ -341,8 +354,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
     override fun onRestart() {
         super.onRestart()
-        if (::player.isInitialized) {
-            player.playWhenReady = true
+        if (::playerController.isInitialized) {
+            playerController.getPlayer()?.playWhenReady = true
         }
     }
 
@@ -350,16 +363,16 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         super.onStop()
         if (isInPictureInPictureMode) {
             // In PiP mode, keep player alive but pause if not playing
-            if (::player.isInitialized && !player.isPlaying) {
-                player.pause()
+            if (::playerController.isInitialized && !playerController.isPlaying()) {
+                playerController.pause()
             }
         } else {
             // Do not release player on stop during orientation/fullscreen changes
             // or when the activity is simply going to background. Rely on onDestroy
             // to release resources when the activity is actually finishing.
             // If you want to conserve resources in background, you can pause here.
-            if (::player.isInitialized && player.isPlaying) {
-                player.pause()
+            if (::playerController.isInitialized && playerController.isPlaying()) {
+                playerController.pause()
             }
         }
     }
@@ -375,133 +388,79 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     }
 
     private fun startPlaybackSafely() {
-        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-        val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(url.toUri()))
-        player = ExoPlayer.Builder(this).build()
-        playerView.player = player
-        playerView.keepScreenOn = true
-        playerView.useController = true
-        player.setMediaSource(hlsMediaSource)
-        player.seekTo(playerConfiguration.lastPosition * 1000)
-        player.prepare()
-        player.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                // Handle error silently
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (isPlaying) {
-                    mPlaybackState = PlaybackState.PLAYING
-                    playPause.setImageResource(R.drawable.ic_pause)
-                } else {
-                    mPlaybackState = PlaybackState.PAUSED
-                    playPause.setImageResource(R.drawable.ic_play)
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> {
-                        mPlaybackState = PlaybackState.BUFFERING
-                        playPause.visibility = View.GONE
-                        progressbar.visibility = View.VISIBLE
-                        if (!playerView.isControllerFullyVisible) {
-                            playerView.setShowBuffering(SHOW_BUFFERING_ALWAYS)
-                        }
-                    }
-
-                    Player.STATE_READY -> {
-                        playPause.visibility = View.VISIBLE
-                        progressbar.visibility = View.GONE
-                        if (!playerView.isControllerFullyVisible) {
-                            playerView.setShowBuffering(SHOW_BUFFERING_NEVER)
-                        }
-                    }
-
-                    Player.STATE_ENDED -> {
-                        playPause.setImageResource(R.drawable.ic_play)
-                        close.performClick()
-                    }
-
-                    Player.STATE_IDLE -> {
-                        mPlaybackState = PlaybackState.IDLE
-                    }
-                }
-            }
-
-            override fun onTracksChanged(tracks: Tracks) {
-                super.onTracksChanged(tracks)
-                extractQualityOptionsFromTracks(tracks)
-            }
-        })
-        player.playWhenReady = true
-    }
-
-    private fun extractQualityOptionsFromTracks(tracks: Tracks) {
-        val videoTracks = mutableListOf<QualityOption>()
-
-        tracks.groups.forEachIndexed { groupIndex, group ->
-            if (group.type == C.TRACK_TYPE_VIDEO) {
-                for (trackIndex in 0 until group.length) {
-                    val format = group.getTrackFormat(trackIndex)
-                    if (format.height > 0) {
-                        videoTracks.add(
-                            QualityOption(
-                                displayName = "${format.height}p",
-                                height = format.height,
-                                width = format.width,
-                                bitrate = format.bitrate,
-                                groupIndex = groupIndex,
-                                trackIndex = trackIndex
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        // Remove duplicates and sort
-        availableQualities =
-            videoTracks.distinctBy { it.height }.sortedByDescending { it.height }.toMutableList()
-                .apply { add(0, QualityOption("Auto", -1, -1, -1, -1, -1)) }
+        // ✅ Initialize PlayerController instead of direct ExoPlayer
+        playerController = PlayerController(this, this)
+        playerController.initialize(url, playerConfiguration.lastPosition)
+        playerController.attachToView(playerView)
     }
 
     private var lastClicked1: Long = -1L
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun initializeViews() {
-        shareMovieLinkIv = findViewById(R.id.iv_share_movie)
-        playerView = findViewById(R.id.exo_player_view)
-        customPlayback = findViewById(R.id.custom_playback)
-        layoutBrightness = findViewById(R.id.layout_brightness)
-        brightnessSeekbar = findViewById(R.id.brightness_seek)
+    private fun initializePlayerViews() {
+        // 1. Bind Activity Views
+        val activityBinding = binding
+
+        // 2. Bind Controller Views (inflated by ExoPlayer)
+        // We need to match the root ID from custom_playback_view.xml
+        val controllerView = binding.exoPlayerView.findViewById<RelativeLayout>(R.id.custom_playback)
+        val controllerBinding = CustomPlaybackViewBinding.bind(controllerView)
+
+        playerViews = PlayerViews(
+            close = controllerBinding.videoClose,
+            pip = controllerBinding.videoPip,
+            share = controllerBinding.ivShareMovie,
+            more = controllerBinding.videoMore,
+            title = controllerBinding.videoTitle,
+            title1 = controllerBinding.videoTitle1,
+            rewind = controllerBinding.videoRewind,
+            forward = controllerBinding.videoForward,
+            playPause = controllerBinding.videoPlayPause,
+            progressBar = controllerBinding.videoProgressBar,
+            exoProgress = controllerBinding.exoProgress,
+            layoutBrightness = activityBinding.layoutBrightness,
+            brightnessSeekbar = activityBinding.brightnessSeek,
+            layoutVolume = activityBinding.layoutVolume,
+            volumeSeekBar = activityBinding.volumeSeek,
+            timer = controllerBinding.timer,
+            videoPosition = controllerBinding.videoPosition,
+            exoPosition = controllerBinding.exoPosition,
+            zoom = controllerBinding.zoom,
+            orientation = controllerBinding.orientation,
+            customPlayback = controllerBinding.customPlayback
+        )
+
+        // Initialize legacy properties (Temporary Bridge)
+        shareMovieLinkIv = playerViews.share
+        customPlayback = playerViews.customPlayback
+        layoutBrightness = playerViews.layoutBrightness
+        brightnessSeekbar = playerViews.brightnessSeekbar
+        layoutVolume = playerViews.layoutVolume
+        volumeSeekBar = playerViews.volumeSeekBar
+        close = playerViews.close
+        pip = playerViews.pip
+        more = playerViews.more
+        title = playerViews.title
+        title1 = playerViews.title1
+        rewind = playerViews.rewind
+        forward = playerViews.forward
+        playPause = playerViews.playPause
+        progressbar = playerViews.progressBar
+        timer = playerViews.timer
+        videoPosition = playerViews.videoPosition
+        exoPosition = playerViews.exoPosition
+        zoom = playerViews.zoom
+        orientation = playerViews.orientation
+        exoProgress = playerViews.exoProgress
+
+        // Initial setup
         brightnessSeekbar.isEnabled = false
-        layoutVolume = findViewById(R.id.layout_volume)
-        volumeSeekBar = findViewById(R.id.volume_seek)
         volumeSeekBar.isEnabled = false
-        close = findViewById(R.id.video_close)
-        pip = findViewById(R.id.video_pip)
-        more = findViewById(R.id.video_more)
-        title = findViewById(R.id.video_title)
-        title1 = findViewById(R.id.video_title1)
         title.text = titleText
         title1.text = titleText
 
-        rewind = findViewById(R.id.video_rewind)
-        forward = findViewById(R.id.video_forward)
-        playPause = findViewById(R.id.video_play_pause)
-        progressbar = findViewById(R.id.video_progress_bar)
-        timer = findViewById(R.id.timer)
-
-        videoPosition = findViewById(R.id.video_position)
-        exoPosition = findViewById(R.id.exo_position)
-
-        zoom = findViewById(R.id.zoom)
-        orientation = findViewById(R.id.orientation)
-        exoProgress = findViewById(R.id.exo_progress)
-
-        findViewById<PlayerView>(R.id.exo_player_view).setOnTouchListener { _, motionEvent ->
+        // Touch Listener
+        binding.exoPlayerView.setOnTouchListener { _, motionEvent ->
             if (motionEvent.pointerCount == 2) {
                 scaleGestureDetector.onTouchEvent(motionEvent)
             } else if (!playerView.isControllerFullyVisible && motionEvent.pointerCount == 1) {
@@ -523,11 +482,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     System.currentTimeMillis()
                 } else {
                     if (isDoubleClicked(lastClicked1)) {
-                        if (::player.isInitialized) {
+                        if (::playerController.isInitialized) {
                             if (motionEvent.x < sWidth / 2) {
-                                player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+                                playerController.seekBackward(SEEK_INCREMENT_MS)
                             } else {
-                                player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                                playerController.seekForward(SEEK_INCREMENT_MS)
                             }
                         }
                     } else {
@@ -553,15 +512,15 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         }
 
         close.setOnClickListener {
-            if (::player.isInitialized && player.isPlaying) {
-                player.stop()
+            if (::playerController.isInitialized && playerController.isPlaying()) {
+                playerController.getPlayer()?.stop()
             }
             val intent = Intent()
             intent.putExtra(
                 "position",
-                if (::player.isInitialized) player.currentPosition / 1000 else 0
+                if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
             )
-            intent.putExtra("duration", if (::player.isInitialized) player.duration / 1000 else 0)
+            intent.putExtra("duration", if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0)
             setResult(playerActivityFinish, intent)
             finish()
         }
@@ -584,21 +543,21 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             showSettingsBottomSheet()
         }
         rewind.setOnClickListener {
-            if (::player.isInitialized) {
-                player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+            if (::playerController.isInitialized) {
+                playerController.seekBackward(SEEK_INCREMENT_MS)
             }
         }
         forward.setOnClickListener {
-            if (::player.isInitialized) {
-                player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+            if (::playerController.isInitialized) {
+                playerController.seekForward(SEEK_INCREMENT_MS)
             }
         }
         playPause.setOnClickListener {
-            if (::player.isInitialized) {
-                if (player.isPlaying) {
-                    player.pause()
+            if (::playerController.isInitialized) {
+                if (playerController.isPlaying()) {
+                    playerController.pause()
                 } else {
-                    player.play()
+                    playerController.play()
                 }
             }
         }
@@ -708,15 +667,15 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 val isConfigChange = isChangingConfigurations
                 if (!isVisible && !isConfigChange && wasInPictureInPicture) {
                     // PiP window was closed (user dismissed it) → finish with result
-                    if (::player.isInitialized) {
-                        player.stop()
+                    if (::playerController.isInitialized) {
+                        playerController.getPlayer()?.stop()
                     }
                     val intent = Intent()
                     intent.putExtra(
-                        "position", if (::player.isInitialized) player.currentPosition / 1000 else 0
+                        "position", if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
                     )
                     intent.putExtra(
-                        "duration", if (::player.isInitialized) player.duration / 1000 else 0
+                        "duration", if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0
                     )
                     setResult(playerActivityFinish, intent)
                     finish()
@@ -926,8 +885,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                         handleQualitySelection(position)
                     } else {
                         currentSpeed = l[position]
-                        speedText?.text = currentSpeed
-                        player.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
+                        currentSpeed = "${l[position]}"
+                        playerController.getPlayer()?.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
                     }
                     bottomSheetDialog.dismiss()
                 }
@@ -948,14 +907,21 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
         if (selectedQuality.displayName == "Auto") {
             // Auto - clear overrides for adaptive streaming
-            player.trackSelectionParameters =
-                player.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+            playerController.getPlayer()?.let { player ->
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
                     .build()
+            }
         } else {
             // Manual quality - set max/min video size
-            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-                .setMaxVideoSize(selectedQuality.width, selectedQuality.height)
-                .setMinVideoSize(selectedQuality.width, selectedQuality.height).build()
+            playerController.getPlayer()?.let { player ->
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .setMaxVideoSize(selectedQuality.width, selectedQuality.height)
+                    .setMinVideoSize(selectedQuality.width, selectedQuality.height)
+                    .build()
+            }
         }
     }
 
@@ -969,11 +935,11 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
             System.currentTimeMillis()
         } else {
             if (isDoubleClicked(lastClicked)) {
-                if (::player.isInitialized) {
+                if (::playerController.isInitialized) {
                     if (event.x < sWidth / 2) {
-                        player.seekTo(player.currentPosition - SEEK_INCREMENT_MS)
+                        playerController.seekBackward(SEEK_INCREMENT_MS)
                     } else {
-                        player.seekTo(player.currentPosition + SEEK_INCREMENT_MS)
+                        playerController.seekForward(SEEK_INCREMENT_MS)
                     }
                 }
             } else {
@@ -1058,8 +1024,8 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
-                if (::player.isInitialized) {
-                    player.pause()
+                if (::playerController.isInitialized) {
+                    playerController.pause()
                 }
                 playerView.hideController()
             }
@@ -1101,12 +1067,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         cancelAllPendingRunnables()
 
         try {
-            // Clean up player resources
-            if (::player.isInitialized) {
-                player.stop()
-                player.clearVideoSurface()
+            // Clean up player resources using PlayerController
+            if (::playerController.isInitialized) {
                 playerView.player = null
-                player.release()
+                playerController.release()
             }
 
             // Remove any remaining handler callbacks to prevent memory leaks
@@ -1126,5 +1090,68 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
 
         // Dismiss all bottom sheets
         dismissAllBottomSheets()
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // MARK: - PlayerControllerDelegate Implementation
+    // ═══════════════════════════════════════════════════════════════════
+    
+    override fun onPlayerReady() {
+        // Player is ready, show controls initially
+        if (::playerView.isInitialized) {
+            playerView.showController()
+        }
+    }
+    
+    override fun onPlaybackStateChanged(state: PlaybackState) {
+        mPlaybackState = state
+        
+        when (state) {
+            PlaybackState.BUFFERING -> {
+                playPause.visibility = View.GONE
+                progressbar.visibility = View.VISIBLE
+                if (!playerView.isControllerFullyVisible) {
+                    playerView.setShowBuffering(SHOW_BUFFERING_ALWAYS)
+                }
+            }
+            PlaybackState.PLAYING, PlaybackState.PAUSED -> {
+                playPause.visibility = View.VISIBLE
+                progressbar.visibility = View.GONE
+                if (!playerView.isControllerFullyVisible) {
+                    playerView.setShowBuffering(SHOW_BUFFERING_NEVER)
+                }
+            }
+            PlaybackState.IDLE -> {
+                // Player idle
+            }
+        }
+    }
+    
+    override fun onPlayerError(error: PlaybackException) {
+        // Handle error silently for now
+    }
+    
+    override fun onTracksChanged(qualities: List<QualityOption>) {
+        // Add "Auto" option at the beginning
+        availableQualities = mutableListOf(
+            QualityOption("Auto", -1, -1, -1, -1, -1)
+        ).apply {
+            addAll(qualities)
+        }
+    }
+    
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) {
+            mPlaybackState = PlaybackState.PLAYING
+            playPause.setImageResource(R.drawable.ic_pause)
+        } else {
+            mPlaybackState = PlaybackState.PAUSED
+            playPause.setImageResource(R.drawable.ic_play)
+        }
+    }
+    
+    override fun onPlaybackEnded() {
+        playPause.setImageResource(R.drawable.ic_play)
+        close.performClick()
     }
 }
