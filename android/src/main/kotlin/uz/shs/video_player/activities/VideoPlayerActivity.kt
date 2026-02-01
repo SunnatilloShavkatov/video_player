@@ -286,8 +286,14 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                     player.stop()
                 }
                 val intent = Intent()
-                intent.putExtra("position", if (::player.isInitialized) player.currentPosition / 1000 else 0)
-                intent.putExtra("duration", if (::player.isInitialized) player.duration / 1000 else 0)
+                intent.putExtra(
+                    "position",
+                    if (::player.isInitialized) player.currentPosition / 1000 else 0
+                )
+                intent.putExtra(
+                    "duration",
+                    if (::player.isInitialized) player.duration / 1000 else 0
+                )
                 setResult(playerActivityFinish, intent)
                 finish()
             }
@@ -551,7 +557,10 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
                 player.stop()
             }
             val intent = Intent()
-            intent.putExtra("position", if (::player.isInitialized) player.currentPosition / 1000 else 0)
+            intent.putExtra(
+                "position",
+                if (::player.isInitialized) player.currentPosition / 1000 else 0
+            )
             intent.putExtra("duration", if (::player.isInitialized) player.duration / 1000 else 0)
             setResult(playerActivityFinish, intent)
             finish()
@@ -1091,22 +1100,22 @@ class VideoPlayerActivity : AppCompatActivity(), GestureDetector.OnGestureListen
         // ✅ FIXED: Cancel all pending runnables explicitly
         cancelAllPendingRunnables()
 
-        // Clean up player resources
-        if (::player.isInitialized) {
-            player.stop()
-            player.clearVideoSurface()
-            playerView.player = null
-            player.release()
-        }
-
-        // Remove any remaining handler callbacks to prevent memory leaks
-        mainHandler.removeCallbacksAndMessages(null)
-
-        // Abandon audio focus
-        abandonAudioFocus()
-
-        // Unregister broadcast receiver safely
         try {
+            // Clean up player resources
+            if (::player.isInitialized) {
+                player.stop()
+                player.clearVideoSurface()
+                playerView.player = null
+                player.release()
+            }
+
+            // Remove any remaining handler callbacks to prevent memory leaks
+            mainHandler.removeCallbacksAndMessages(null)
+
+            // Abandon audio focus
+            abandonAudioFocus()
+
+            // Unregister broadcast receiver safely
             if (isNetworkReceiverRegistered && ::networkChangeReceiver.isInitialized) {
                 unregisterReceiver(networkChangeReceiver)
                 isNetworkReceiverRegistered = false

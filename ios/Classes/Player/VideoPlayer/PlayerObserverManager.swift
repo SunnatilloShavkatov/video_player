@@ -180,12 +180,19 @@ final class PlayerObserverManager: NSObject {
         guard let player = player else { return }
         
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        let mainQueue = DispatchQueue.main
+        
+        // ✅ OPTIMIZED: Use background queue for time observer processing
+        // This prevents blocking the main thread during playback time calculations
+        let timeObserverQueue = DispatchQueue(
+            label: "video.player.time.observer",
+            qos: .userInitiated  // High priority but non-UI work
+        )
         
         mediaTimeObserver = player.addPeriodicTimeObserver(
             forInterval: interval,
-            queue: mainQueue
+            queue: timeObserverQueue  // ✅ Background queue
         ) { [weak self] time in
+            // BACKGROUND THREAD: Do all calculations here
             guard let self = self,
                   !self.isDisposed,
                   let currentItem = self.player?.currentItem else { return }
@@ -204,11 +211,15 @@ final class PlayerObserverManager: NSObject {
                     let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
                     let seekableSeconds = CMTimeGetSeconds(endTime)
                     if seekableSeconds.isFinite && !seekableSeconds.isNaN && seekableSeconds > 0 {
-                        self.delegate?.observerManager(
-                            self,
-                            didUpdatePosition: 0,
-                            duration: seekableSeconds
-                        )
+                        // ✅ MAIN THREAD: Dispatch delegate call (UI update)
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self = self, !self.isDisposed else { return }
+                            self.delegate?.observerManager(
+                                self,
+                                didUpdatePosition: 0,
+                                duration: seekableSeconds
+                            )
+                        }
                     }
                 }
                 return
@@ -219,11 +230,15 @@ final class PlayerObserverManager: NSObject {
             
             guard currentSeconds.isFinite && !currentSeconds.isNaN else { return }
             
-            self.delegate?.observerManager(
-                self,
-                didUpdatePosition: currentSeconds,
-                duration: durationSeconds
-            )
+            // ✅ MAIN THREAD: Dispatch delegate call (UI update)
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !self.isDisposed else { return }
+                self.delegate?.observerManager(
+                    self,
+                    didUpdatePosition: currentSeconds,
+                    duration: durationSeconds
+                )
+            }
         }
     }
     
