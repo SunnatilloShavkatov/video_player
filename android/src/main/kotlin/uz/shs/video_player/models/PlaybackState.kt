@@ -7,13 +7,13 @@ package uz.shs.video_player.models
 enum class PlaybackState {
     /** Video is actively playing */
     PLAYING,
-    
+
     /** Video is paused */
     PAUSED,
-    
+
     /** Video is buffering/loading */
     BUFFERING,
-    
+
     /** Player is idle (not initialized or stopped) */
     IDLE
 }

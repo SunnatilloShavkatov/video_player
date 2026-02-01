@@ -76,9 +76,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 @UnstableApi
-class VideoPlayerActivity : AppCompatActivity(), 
+class VideoPlayerActivity : AppCompatActivity(),
     GestureDetector.OnGestureListener,
-    ScaleGestureDetector.OnScaleGestureListener, 
+    ScaleGestureDetector.OnScaleGestureListener,
     AudioManager.OnAudioFocusChangeListener,
     PlayerControllerDelegate {
 
@@ -102,10 +102,10 @@ class VideoPlayerActivity : AppCompatActivity(),
     private lateinit var networkChangeReceiver: NetworkChangeReceiver
     private lateinit var intentFilter: IntentFilter
     private lateinit var playerConfiguration: PlayerConfiguration
-    
+
     private lateinit var binding: ActivityPlayerBinding
     private lateinit var playerViews: PlayerViews
-    
+
     // Legacy view references will be removed after migration to playerViews
     // private lateinit var close: ImageView
     // ...
@@ -170,7 +170,7 @@ class VideoPlayerActivity : AppCompatActivity(),
         // Initialize Binding First
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
         actionBar?.hide()
 
         // Apply FLAG_SECURE safely
@@ -198,9 +198,9 @@ class VideoPlayerActivity : AppCompatActivity(),
 
         // Initialize Binding
         initializePlayerViews()
-        
+
         playerView = binding.exoPlayerView
-        
+
         try {
             @Suppress("DEPRECATION")
             playerConfiguration = intent.getSerializableExtra(extraArgument) as PlayerConfiguration
@@ -403,7 +403,8 @@ class VideoPlayerActivity : AppCompatActivity(),
 
         // 2. Bind Controller Views (inflated by ExoPlayer)
         // We need to match the root ID from custom_playback_view.xml
-        val controllerView = binding.exoPlayerView.findViewById<RelativeLayout>(R.id.custom_playback)
+        val controllerView =
+            binding.exoPlayerView.findViewById<RelativeLayout>(R.id.custom_playback)
         val controllerBinding = CustomPlaybackViewBinding.bind(controllerView)
 
         playerViews = PlayerViews(
@@ -520,7 +521,10 @@ class VideoPlayerActivity : AppCompatActivity(),
                 "position",
                 if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
             )
-            intent.putExtra("duration", if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0)
+            intent.putExtra(
+                "duration",
+                if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0
+            )
             setResult(playerActivityFinish, intent)
             finish()
         }
@@ -672,10 +676,12 @@ class VideoPlayerActivity : AppCompatActivity(),
                     }
                     val intent = Intent()
                     intent.putExtra(
-                        "position", if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
+                        "position",
+                        if (::playerController.isInitialized) playerController.getCurrentPosition() / 1000 else 0
                     )
                     intent.putExtra(
-                        "duration", if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0
+                        "duration",
+                        if (::playerController.isInitialized) playerController.getDuration() / 1000 else 0
                     )
                     setResult(playerActivityFinish, intent)
                     finish()
@@ -886,7 +892,8 @@ class VideoPlayerActivity : AppCompatActivity(),
                     } else {
                         currentSpeed = l[position]
                         currentSpeed = "${l[position]}"
-                        playerController.getPlayer()?.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
+                        playerController.getPlayer()
+                            ?.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
                     }
                     bottomSheetDialog.dismiss()
                 }
@@ -1091,21 +1098,21 @@ class VideoPlayerActivity : AppCompatActivity(),
         // Dismiss all bottom sheets
         dismissAllBottomSheets()
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════
     // MARK: - PlayerControllerDelegate Implementation
     // ═══════════════════════════════════════════════════════════════════
-    
+
     override fun onPlayerReady() {
         // Player is ready, show controls initially
         if (::playerView.isInitialized) {
             playerView.showController()
         }
     }
-    
+
     override fun onPlaybackStateChanged(state: PlaybackState) {
         mPlaybackState = state
-        
+
         when (state) {
             PlaybackState.BUFFERING -> {
                 playPause.visibility = View.GONE
@@ -1114,6 +1121,7 @@ class VideoPlayerActivity : AppCompatActivity(),
                     playerView.setShowBuffering(SHOW_BUFFERING_ALWAYS)
                 }
             }
+
             PlaybackState.PLAYING, PlaybackState.PAUSED -> {
                 playPause.visibility = View.VISIBLE
                 progressbar.visibility = View.GONE
@@ -1121,16 +1129,17 @@ class VideoPlayerActivity : AppCompatActivity(),
                     playerView.setShowBuffering(SHOW_BUFFERING_NEVER)
                 }
             }
+
             PlaybackState.IDLE -> {
                 // Player idle
             }
         }
     }
-    
+
     override fun onPlayerError(error: PlaybackException) {
         // Handle error silently for now
     }
-    
+
     override fun onTracksChanged(qualities: List<QualityOption>) {
         // Add "Auto" option at the beginning
         availableQualities = mutableListOf(
@@ -1139,7 +1148,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             addAll(qualities)
         }
     }
-    
+
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isPlaying) {
             mPlaybackState = PlaybackState.PLAYING
@@ -1149,7 +1158,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             playPause.setImageResource(R.drawable.ic_play)
         }
     }
-    
+
     override fun onPlaybackEnded() {
         playPause.setImageResource(R.drawable.ic_play)
         close.performClick()

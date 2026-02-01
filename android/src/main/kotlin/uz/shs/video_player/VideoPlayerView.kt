@@ -133,15 +133,19 @@ class VideoPlayerView internal constructor(
             val pView = playerView ?: return
             val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(pView.context)
 
-            val mediaSource: MediaSource = if (url.startsWith("http://") || url.startsWith("https://")) {
-                if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
-                    HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(uri))
+            val mediaSource: MediaSource =
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
+                        HlsMediaSource.Factory(dataSourceFactory)
+                            .createMediaSource(MediaItem.fromUri(uri))
+                    } else {
+                        ProgressiveMediaSource.Factory(dataSourceFactory)
+                            .createMediaSource(MediaItem.fromUri(uri))
+                    }
                 } else {
-                    ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(uri))
+                    ProgressiveMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri))
                 }
-            } else {
-                ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(uri))
-            }
 
             player?.setMediaSource(mediaSource)
             player?.prepare()
@@ -245,11 +249,14 @@ class VideoPlayerView internal constructor(
             val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(pView.context)
             val uri = url.toUri()
 
-            val mediaSource: MediaSource = if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
-                HlsMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(uri))
-            } else {
-                ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(uri))
-            }
+            val mediaSource: MediaSource =
+                if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
+                    HlsMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri))
+                } else {
+                    ProgressiveMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri))
+                }
 
             configurePlayerViewAndLoadMedia(mediaSource, args.getResizeMode())
             result.success(null)
@@ -382,6 +389,7 @@ class VideoPlayerView internal constructor(
                 stopPositionUpdates()
                 "idle"
             }
+
             Player.STATE_BUFFERING -> "buffering"
             Player.STATE_READY -> {
                 startPositionUpdates()
@@ -394,10 +402,12 @@ class VideoPlayerView internal constructor(
                 }
                 "ready"
             }
+
             Player.STATE_ENDED -> {
                 stopPositionUpdates()
                 "ended"
             }
+
             else -> null
         }
 

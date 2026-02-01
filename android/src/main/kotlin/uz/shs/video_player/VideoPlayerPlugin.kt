@@ -59,7 +59,8 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                     result.error("NO_ACTIVITY", "Activity is null", null)
                     return
                 }
-                val intent = Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
+                val intent =
+                    Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
                 intent.putExtra(extraArgument, playerConfiguration)
                 currentActivity.startActivityForResult(intent, playerActivity)
                 resultMethod = result
