@@ -20,6 +20,7 @@ protocol PlayerGestureDelegate: AnyObject {
     func gestureHandler(_ handler: PlayerGestureHandler, didPinchToScale scale: CGFloat)
     func gestureHandler(_ handler: PlayerGestureHandler, didSwipeVerticallyForBrightness delta: CGFloat)
     func gestureHandler(_ handler: PlayerGestureHandler, didSwipeVerticallyForVolume delta: CGFloat)
+    func gestureHandlerDidEndVerticalSwipe(_ handler: PlayerGestureHandler)
 }
 
 enum TapZone {
@@ -39,8 +40,8 @@ final class PlayerGestureHandler: NSObject {
     private weak var overlayView: UIView?
     
     private var swipeGesture: UIPanGestureRecognizer!
-    private var tapGesture: UITapGestureRecognizer!
-    private var tapHideGesture: UITapGestureRecognizer!
+    private var singleTapGesture: UITapGestureRecognizer!
+    private var doubleTapGesture: UITapGestureRecognizer!
     private var pinchGesture: UIPinchGestureRecognizer!
     
     private var panDirection = SwipeDirection.vertical
@@ -68,13 +69,18 @@ final class PlayerGestureHandler: NSObject {
         swipeGesture.delegate = self
         targetView.addGestureRecognizer(swipeGesture)
         
-        // Single tap for play/pause zone detection
-        tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapControls))
-        tapGesture.numberOfTapsRequired = 1
-        tapGesture.delegate = self
-        targetView.addGestureRecognizer(tapGesture)
+        // Double tap for seek (must be added first)
+        doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
+        doubleTapGesture.numberOfTapsRequired = 2
+        doubleTapGesture.delegate = self
+        targetView.addGestureRecognizer(doubleTapGesture)
         
-        // Single tap for hiding controls
+        // Single tap for toggle controls (waits for double tap to fail)
+        singleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleSingleTap))
+        singleTapGesture.numberOfTapsRequired = 1
+        singleTapGesture.delegate = self
+        singleTapGesture.require(toFail: doubleTapGesture)  // CRITICAL: Wait for double tap check
+        targetView.addGestureRecognizer(singleTapGesture)
         
         // Pinch gesture for zoom
         pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
@@ -96,8 +102,8 @@ final class PlayerGestureHandler: NSObject {
     func setGesturesEnabled(_ enabled: Bool) {
         enableGesture = enabled
         swipeGesture?.isEnabled = enabled
-        tapGesture?.isEnabled = enabled
-        tapHideGesture?.isEnabled = enabled
+        singleTapGesture?.isEnabled = enabled
+        doubleTapGesture?.isEnabled = enabled
         pinchGesture?.isEnabled = enabled
     }
     
@@ -137,7 +143,11 @@ final class PlayerGestureHandler: NSObject {
                 }
             }
             
-        case .ended:
+        case .ended, .cancelled:
+            // Hide volume/brightness UI when finger lifts
+            if panDirection == .vertical {
+                delegate?.gestureHandlerDidEndVerticalSwipe(self)
+            }
             panDirection = .vertical
             
         default:
@@ -145,21 +155,26 @@ final class PlayerGestureHandler: NSObject {
         }
     }
     
-    @objc private func handleTapControls(_ gesture: UITapGestureRecognizer) {
+    @objc private func handleSingleTap(_ gesture: UITapGestureRecognizer) {
+        guard enableGesture else { return }
+        // Single tap ONLY toggles controls, does NOT seek
+        delegate?.gestureHandlerDidTapToToggleControls(self)
+    }
+    
+    @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
         guard enableGesture else { return }
         guard let overlayView = overlayView else { return }
         
         let location = gesture.location(in: overlayView)
         let overlayWidth = overlayView.bounds.width
         
-        // Detect tap zone: forward (right), backward (left), center
+        // Double tap seeks: forward (right), backward (left)
         if location.x >= overlayWidth / 2 + 50 {
             delegate?.gestureHandler(self, didTapInZone: .forward)
         } else if location.x <= overlayWidth / 2 - 50 {
             delegate?.gestureHandler(self, didTapInZone: .backward)
-        } else {
-            delegate?.gestureHandlerDidTapToToggleControls(self)
         }
+        // Center double tap does nothing (could be used for future features)
     }
     
     @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
@@ -186,8 +201,11 @@ final class PlayerGestureHandler: NSObject {
         if let swipeGesture = swipeGesture {
             targetView.removeGestureRecognizer(swipeGesture)
         }
-        if let tapGesture = tapGesture {
-            targetView.removeGestureRecognizer(tapGesture)
+        if let singleTapGesture = singleTapGesture {
+            targetView.removeGestureRecognizer(singleTapGesture)
+        }
+        if let doubleTapGesture = doubleTapGesture {
+            targetView.removeGestureRecognizer(doubleTapGesture)
         }
         if let pinchGesture = pinchGesture {
             targetView.removeGestureRecognizer(pinchGesture)

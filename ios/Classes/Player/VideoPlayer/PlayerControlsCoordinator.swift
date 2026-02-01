@@ -25,10 +25,8 @@ final class PlayerControlsCoordinator {
     private weak var bottomView: UIView?
     private weak var overlayView: UIView?
     
-    // Timers for auto-hide
+    // Timer for auto-hide
     private var controlsTimer: Timer?
-    private var seekForwardTimer: Timer?
-    private var seekBackwardTimer: Timer?
     
     // Seek buttons (optional)
     private weak var seekForwardButton: UIButton?
@@ -165,45 +163,28 @@ final class PlayerControlsCoordinator {
     
     // MARK: - Seek Buttons (Forward/Backward indicators)
     
-    func showSeekForwardButton() {
-        seekForwardButton?.isHidden = false
-        resetSeekForwardTimer()
+    enum SeekDirection {
+        case forward
+        case backward
     }
     
-    func hideSeekForwardButton() {
-        seekForwardButton?.isHidden = true
-        seekForwardTimer?.invalidate()
-        seekForwardTimer = nil
-    }
-    
-    func showSeekBackwardButton() {
-        seekBackwardButton?.isHidden = false
-        resetSeekBackwardTimer()
-    }
-    
-    func hideSeekBackwardButton() {
-        seekBackwardButton?.isHidden = true
-        seekBackwardTimer?.invalidate()
-        seekBackwardTimer = nil
-    }
-    
-    private func resetSeekForwardTimer() {
-        seekForwardTimer?.invalidate()
-        seekForwardTimer = Timer.scheduledTimer(
-            withTimeInterval: 1.0,
-            repeats: false
-        ) { [weak self] _ in
-            self?.hideSeekForwardButton()
+    func showSeekIndicator(for direction: SeekDirection) {
+        let button = direction == .forward ? seekForwardButton : seekBackwardButton
+        
+        // Use alpha animation, NOT isHidden, to avoid conflicts with parent overlay alpha
+        UIView.animate(withDuration: 0.2) {
+            button?.alpha = 1.0
         }
-    }
-    
-    private func resetSeekBackwardTimer() {
-        seekBackwardTimer?.invalidate()
-        seekBackwardTimer = Timer.scheduledTimer(
-            withTimeInterval: 1.0,
-            repeats: false
-        ) { [weak self] _ in
-            self?.hideSeekBackwardButton()
+        
+        // Auto-hide after 1 second using dispatch instead of timer
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self, weak button] in
+            guard let self = self, let button = button else { return }
+            // Only hide if controls are still visible
+            if self.controlsVisible {
+                UIView.animate(withDuration: 0.2) {
+                    button.alpha = 0.0
+                }
+            }
         }
     }
     
@@ -211,12 +192,7 @@ final class PlayerControlsCoordinator {
     
     func invalidateTimers() {
         controlsTimer?.invalidate()
-        seekForwardTimer?.invalidate()
-        seekBackwardTimer?.invalidate()
-        
         controlsTimer = nil
-        seekForwardTimer = nil
-        seekBackwardTimer = nil
     }
     
     deinit {

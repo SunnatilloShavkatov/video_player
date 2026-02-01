@@ -657,10 +657,10 @@ extension PlayerView: PlayerGestureDelegate {
         switch zone {
         case .forward:
             playerController?.seekForward(by: 10.0)
-            controlsCoordinator?.showSeekForwardButton()
+            controlsCoordinator?.showSeekIndicator(for: .forward)
         case .backward:
             playerController?.seekBackward(by: 10.0)
-            controlsCoordinator?.showSeekBackwardButton()
+            controlsCoordinator?.showSeekIndicator(for: .backward)
         case .center:
             controlsCoordinator?.toggleControls()
         }
@@ -679,5 +679,9 @@ extension PlayerView: PlayerGestureDelegate {
     
     func gestureHandler(_ handler: PlayerGestureHandler, didSwipeVerticallyForVolume delta: CGFloat) {
         handler.adjustVolume(by: -Float(delta))
+    }
+    
+    func gestureHandlerDidEndVerticalSwipe(_ handler: PlayerGestureHandler) {
+        brightnessSlider.isHidden = true
     }
 }
