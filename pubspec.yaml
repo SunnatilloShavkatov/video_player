@@ -1,5 +1,5 @@
 name: video_player
-version: 3.0.0
+version: 3.0.1
 description: >-
   A comprehensive Flutter video player plugin with native iOS (AVPlayer) and Android (ExoPlayer) 
   implementations. Features include HLS streaming, quality selection, speed control, fullscreen 
