@@ -558,7 +558,11 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
         playPause.setOnClickListener {
             if (::playerController.isInitialized) {
-                if (playerController.isPlaying()) {
+                if (mPlaybackState == PlaybackState.ERROR) {
+                    // Retry on error
+                    playerController.getPlayer()?.prepare()
+                    playerController.play()
+                } else if (playerController.isPlaying()) {
                     playerController.pause()
                 } else {
                     playerController.play()
@@ -1133,11 +1137,21 @@ class VideoPlayerActivity : AppCompatActivity(),
             PlaybackState.IDLE -> {
                 // Player idle
             }
+
+            PlaybackState.ERROR -> {
+                playPause.visibility = View.VISIBLE
+                playPause.setImageResource(R.drawable.ic_play)
+                progressbar.visibility = View.GONE
+                if (!playerView.isControllerFullyVisible) {
+                    playerView.setShowBuffering(SHOW_BUFFERING_NEVER)
+                }
+                android.widget.Toast.makeText(this, "Playback error. Tap play to retry.", android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
 
     override fun onPlayerError(error: PlaybackException) {
-        // Handle error silently for now
+        android.util.Log.e("VideoPlayer", "Playback error: ${error.message}", error)
     }
 
     override fun onTracksChanged(qualities: List<QualityOption>) {

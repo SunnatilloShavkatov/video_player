@@ -1,4 +1,22 @@
-## [3.0.0] - TBD
+## [3.0.2] - 2026-03-02
+
+### Fixed
+- **iOS**: Fixed dangling observers for `AVPlayerItemPlaybackStalled` and `AVPlayerItemFailedToPlayToEndTime` during video source switching (`changeUrl`).
+- **iOS**: Improved stall detection and error propagation in `PlayerObserverManager`.
+- **Android**: Improved HLS buffering by increasing LoadControl parameters to prevent playback freezes on slow networks.
+- **Android**: Implemented retry logic on playback errors (tap play to retry).
+- **Core**: Added `PlaybackState.ERROR` for better internal state tracking of failures.
+
+### Added
+- **UI**: Added visual feedback (loading indicators) when playback stalls on iOS.
+- **UI**: Added error toast message and play button retry state on Android failures.
+
+## [3.0.1] - 2026-01-31
+
+### Changed
+- Incremental maintenance update.
+
+## [3.0.0] - 2026-01-30
 
 ### 🚨 BREAKING CHANGES
 

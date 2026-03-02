@@ -16,6 +16,8 @@ protocol PlayerObserverDelegate: AnyObject {
     func observerManager(_ manager: PlayerObserverManager, didChangeTimeControlStatus status: AVPlayer.TimeControlStatus)
     func observerManager(_ manager: PlayerObserverManager, didUpdatePosition position: TimeInterval, duration: TimeInterval)
     func observerManagerDidFinishPlaying(_ manager: PlayerObserverManager)
+    func observerManagerDidStall(_ manager: PlayerObserverManager)
+    func observerManager(_ manager: PlayerObserverManager, didFailWithError error: Error?)
 }
 
 /// Manages all KVO and NotificationCenter observers for AVPlayer/AVPlayerItem.
@@ -68,6 +70,20 @@ final class PlayerObserverManager: NSObject {
             self,
             selector: #selector(playerDidFinishPlaying),
             name: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerStalled),
+            name: .AVPlayerItemPlaybackStalled,
+            object: playerItem
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerFailedToPlay),
+            name: .AVPlayerItemFailedToPlayToEndTime,
             object: playerItem
         )
         
@@ -137,13 +153,25 @@ final class PlayerObserverManager: NSObject {
             
             // Remove observers from the stored item reference
             if let item = observedItem {
-                // Remove notification observer first
+                // Remove notification observers first
                 NotificationCenter.default.removeObserver(
                     self,
                     name: .AVPlayerItemDidPlayToEndTime,
                     object: item
                 )
-                
+
+                NotificationCenter.default.removeObserver(
+                    self,
+                    name: .AVPlayerItemPlaybackStalled,
+                    object: item
+                )
+
+                NotificationCenter.default.removeObserver(
+                    self,
+                    name: .AVPlayerItemFailedToPlayToEndTime,
+                    object: item
+                )
+
                 // Then remove KVO observers with proper contexts
                 item.removeObserver(
                     self,
@@ -289,6 +317,17 @@ final class PlayerObserverManager: NSObject {
     @objc private func playerDidFinishPlaying(_ notification: Notification) {
         guard !isDisposed else { return }
         delegate?.observerManagerDidFinishPlaying(self)
+    }
+    
+    @objc private func playerStalled(_ notification: Notification) {
+        guard !isDisposed else { return }
+        delegate?.observerManagerDidStall(self)
+    }
+    
+    @objc private func playerFailedToPlay(_ notification: Notification) {
+        guard !isDisposed else { return }
+        let error = (notification.object as? AVPlayerItem)?.error
+        delegate?.observerManager(self, didFailWithError: error)
     }
     
     // MARK: - Deinitialization

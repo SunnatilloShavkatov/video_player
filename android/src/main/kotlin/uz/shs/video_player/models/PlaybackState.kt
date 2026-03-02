@@ -15,5 +15,8 @@ enum class PlaybackState {
     BUFFERING,
 
     /** Player is idle (not initialized or stopped) */
-    IDLE
+    IDLE,
+
+    /** Player encountered an error and cannot continue */
+    ERROR
 }

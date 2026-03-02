@@ -607,6 +607,13 @@ extension PlayerView: PlayerObserverDelegate {
     func observerManager(_ manager: PlayerObserverManager, didUpdateStatus status: AVPlayerItem.Status) {
         if status == .readyToPlay {
             playerController?.handlePlayerReady()
+        } else if status == .failed {
+            // Show error in UI
+            DispatchQueue.main.async { [weak self] in
+                self?.controlsCoordinator?.hideLoadingIndicator()
+                // You could show an alert or toast here
+                debugPrint("❌ AVPlayerItem Status Failed: \(self?.player.currentItem?.error?.localizedDescription ?? "Unknown error")")
+            }
         }
     }
     
@@ -641,6 +648,18 @@ extension PlayerView: PlayerObserverDelegate {
     
     func observerManagerDidFinishPlaying(_ manager: PlayerObserverManager) {
         playerController?.notifyPlaybackFinished()
+    }
+    
+    func observerManagerDidStall(_ manager: PlayerObserverManager) {
+        // Show loading indicator when playback stalls
+        DispatchQueue.main.async { [weak self] in
+            self?.controlsCoordinator?.showLoadingIndicator()
+        }
+    }
+    
+    func observerManager(_ manager: PlayerObserverManager, didFailWithError error: Error?) {
+        // Handle playback failure
+        debugPrint("❌ Playback failed with error: \(error?.localizedDescription ?? "Unknown")")
     }
 }
 

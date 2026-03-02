@@ -55,8 +55,20 @@ class PlayerController(
         val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(url.toUri()))
 
+        // CUSTOM LOAD CONTROL: Increase buffer for stability on slow networks
+        val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                30000, // minBufferMs
+                60000, // maxBufferMs
+                1500,  // bufferForPlaybackMs
+                2500   // bufferForPlaybackAfterRebufferMs
+            )
+            .build()
+
         // Initialize ExoPlayer
-        player = ExoPlayer.Builder(context).build().apply {
+        player = ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .build().apply {
             setMediaSource(hlsMediaSource)
             seekTo(lastPositionSeconds * 1000) // Convert seconds to milliseconds
             prepare()
@@ -174,6 +186,7 @@ class PlayerController(
     private fun createPlayerListener() = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
             delegate?.onPlayerError(error)
+            delegate?.onPlaybackStateChanged(PlaybackState.ERROR)
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
