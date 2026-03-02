@@ -6,9 +6,9 @@ This document outlines the long-term maintenance and support policy for the vide
 
 ### Current Stable Version
 
-- **Version**: 3.0.0
+- **Version**: 3.0.2
 - **Support Status**: ✅ Fully supported
-- **Release Date**: TBD
+- **Release Date**: 2026-03-02
 
 ### Platform Support
 
@@ -237,7 +237,7 @@ This maintenance policy is reviewed:
 - **Annually**: For major policy changes
 - **As needed**: For critical issues or community feedback
 
-Last updated: 2026-01-30
+Last updated: 2026-03-02
 
 ---
 
