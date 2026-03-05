@@ -51,17 +51,29 @@ class PlayerController(
         // Create data source factory for network streams
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
 
-        // Create HLS media source
-        val hlsMediaSource: HlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(url.toUri()))
+        val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
+            url.toUri()
+        } else {
+            "asset:///flutter_assets/$url".toUri()
+        }
 
-        // CUSTOM LOAD CONTROL: Increase buffer for stability on slow networks
+        // Create media source based on URL content
+        val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+        val mediaSource: androidx.media3.exoplayer.source.MediaSource = if (isHls) {
+            HlsMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(uri))
+        } else {
+            androidx.media3.exoplayer.source.ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(uri))
+        }
+
+        // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                30000, // minBufferMs
-                60000, // maxBufferMs
-                1500,  // bufferForPlaybackMs
-                2500   // bufferForPlaybackAfterRebufferMs
+                15000, // minBufferMs
+                30000, // maxBufferMs
+                1000,  // bufferForPlaybackMs
+                2000   // bufferForPlaybackAfterRebufferMs
             )
             .build()
 
@@ -69,7 +81,7 @@ class PlayerController(
         player = ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .build().apply {
-            setMediaSource(hlsMediaSource)
+            setMediaSource(mediaSource)
             seekTo(lastPositionSeconds * 1000) // Convert seconds to milliseconds
             prepare()
             addListener(playerListener)

@@ -167,23 +167,18 @@ class VideoPlayerActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
-        // Initialize Binding First
+        // Critical MTK EglMakeCurrent Crash Fix:
+        // FLAG_SECURE and Window properties MUST be set BEFORE setContentView.
+        // Doing it after introduces a race condition on SurfaceView's EGL context creation.
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+
+        // Initialize Binding
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         actionBar?.hide()
-
-        // Apply FLAG_SECURE safely
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-            window.decorView.post {
-                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-            }
-        } else {
-            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        }
-
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
         val rootView = binding.root
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, insets ->
             val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -1078,9 +1073,14 @@ class VideoPlayerActivity : AppCompatActivity(),
         cancelAllPendingRunnables()
 
         try {
+            // REDMI 10A/MTK FIX: Detach player from view and hide it BEFORE release
+            if (::playerView.isInitialized) {
+                playerView.player = null
+                playerView.visibility = View.GONE
+            }
+
             // Clean up player resources using PlayerController
             if (::playerController.isInitialized) {
-                playerView.player = null
                 playerController.release()
             }
 
