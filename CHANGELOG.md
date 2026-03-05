@@ -1,5 +1,12 @@
-## [3.0.2] - 2026-03-02
+## [3.0.3] - 2026-03-05
 
+### Fixed
+- **Android**: Fixed a critical native EGL driver crash (`eglMakeCurrent`) on MediaTek (MTK) devices (like Redmi 9A/10A) by correcting the initialization order of `FLAG_SECURE` against `SurfaceView`.
+- **Android**: Safely detach and hide `PlayerView` prior to ExoPlayer release during activity destruction, preventing background hardware surface leaks on low-end devices.
+- **Android**: Added dynamic media source detection in `PlayerController` to correctly support both HLS (`.m3u8`) and Progressive (e.g. `.mp4`) streams, fixing crashes on direct video links.
+- **Android**: Reduced ExoPlayer `LoadControl` buffer limits to prevent Out-Of-Memory (OOM) crashes and startup freezes on low-RAM (2GB/3GB) devices.
+
+## [3.0.2] - 2026-03-02
 ### Fixed
 - **iOS**: Fixed dangling observers for `AVPlayerItemPlaybackStalled` and `AVPlayerItemFailedToPlayToEndTime` during video source switching (`changeUrl`).
 - **iOS**: Improved stall detection and error propagation in `PlayerObserverManager`.

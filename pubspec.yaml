@@ -1,5 +1,5 @@
 name: video_player
-version: 3.0.2
+version: 3.0.3
 description: >-
   A comprehensive Flutter video player plugin with native iOS (AVPlayer) and Android (ExoPlayer) 
   implementations. Features include HLS streaming, quality selection, speed control, fullscreen 
@@ -8,8 +8,8 @@ homepage: https://github.com/SunnatilloShavkatov/video_player
 repository: https://github.com/SunnatilloShavkatov/video_player
 
 environment:
-  sdk: ">=3.10.0 <4.0.0"
-  flutter: ">=3.38.0"
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
