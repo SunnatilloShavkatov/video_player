@@ -34,8 +34,8 @@ export 'package:video_player/src/models/player_configuration.dart';
 /// );
 ///
 /// switch (result) {
-///   case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
-///     print('Video closed at ${lastPositionMillis}ms of ${durationMillis}ms');
+///   case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+///     print('Video closed at ${lastPositionSeconds}s of ${durationSeconds}s');
 ///   case PlaybackCancelled():
 ///     print('User cancelled');
 ///   case PlaybackFailed(:final error):
@@ -85,10 +85,9 @@ final class VideoPlayer {
   /// );
   ///
   /// switch (result) {
-  ///   case PlaybackCompleted(:final lastPositionMillis, :final durationMillis):
-  ///     final seconds = lastPositionMillis ~/ 1000;
-  ///     print('User stopped at $seconds seconds');
-  ///     await saveWatchProgress(videoId, lastPositionMillis);
+  ///   case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+  ///     print('User stopped at ${lastPositionSeconds}s of ${durationSeconds}s');
+  ///     await saveWatchProgress(videoId, lastPositionSeconds);
   ///
   ///   case PlaybackCancelled():
   ///     print('User cancelled playback');
@@ -99,7 +98,8 @@ final class VideoPlayer {
   /// }
   /// ```
   Future<PlaybackResult> playVideo({required PlayerConfiguration playerConfig}) {
-    if (UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
+    if (!playerConfig.playVideoFromAsset &&
+        UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
       throw ArgumentError.value(
         playerConfig.videoUrl,
         'playerConfig.videoUrl',

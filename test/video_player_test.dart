@@ -37,7 +37,7 @@ void main() {
             movieShareLink: '',
           ),
         ),
-        throwsA(isA<Exception>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
 
@@ -56,7 +56,7 @@ void main() {
             movieShareLink: '',
           ),
         ),
-        throwsA(isA<Exception>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
 
@@ -75,7 +75,7 @@ void main() {
             movieShareLink: '',
           ),
         ),
-        throwsA(isA<Exception>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
 
@@ -104,8 +104,9 @@ void main() {
         ),
       );
 
-      expect(result, isNotNull);
-      expect(result, [0, 100]);
+      expect(result, isA<PlaybackCompleted>());
+      expect((result as PlaybackCompleted).lastPositionSeconds, 0);
+      expect(result.durationSeconds, 100);
     });
   });
 }

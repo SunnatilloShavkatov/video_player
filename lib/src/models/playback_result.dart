@@ -60,8 +60,7 @@ sealed class PlaybackResult {
 final class PlaybackCompleted extends PlaybackResult {
   const PlaybackCompleted({required this.lastPositionSeconds, required this.durationSeconds})
     : assert(lastPositionSeconds >= 0, 'lastPositionSeconds must be non-negative'),
-      assert(durationSeconds >= 0, 'durationSeconds must be non-negative'),
-      assert(lastPositionSeconds <= durationSeconds, 'lastPositionSeconds cannot exceed durationSeconds');
+      assert(durationSeconds >= 0, 'durationSeconds must be non-negative');
 
   /// The playback position when the player was closed, in seconds.
   ///

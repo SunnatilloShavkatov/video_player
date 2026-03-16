@@ -10,10 +10,11 @@ screen protection.
 
 ### Video Playback
 
-- **Multi-source support**: Play videos from URLs, assets, and downloaded files
+- **Multi-source support**: Play videos from HTTPS URLs and Flutter assets
 - **Quality selection**: Multiple resolution options with automatic quality detection
 - **Playback controls**: Play, pause, seek, and speed control
 - **Fullscreen support**: Native fullscreen video playback experience
+- **Android reconnect retry**: Full-screen remote playback on Android retries after temporary network loss and shows clearer offline error messaging
 
 ### Screen Protection (iOS)
 
@@ -26,6 +27,16 @@ screen protection.
 - **iOS**: Full native implementation with AVPlayer and AVKit
 - **Android**: Native Android implementation
 - **Flutter integration**: Seamless integration with Flutter widgets
+
+### Android Error Messages
+
+The fullscreen Android player shows localized retry messages for playback failures:
+
+- **English**
+- **Uzbek**
+- **Russian**
+
+When the device is offline, users see a dedicated no-internet message instead of a generic playback error.
 
 ## Installation
 
@@ -47,17 +58,10 @@ dependencies:
 platform :ios, '15.0'
 ```
 
-2. Add network security configuration to `ios/Runner/Info.plist`:
+2. Use **HTTPS** URLs for remote playback.
 
-```xml
-
-<key>NSAppTransportSecurity</key><dict>
-<key>NSAllowsArbitraryLoads</key>
-<true />
-</dict>
-```
-
-**Note**: For production apps, restrict allowed domains instead of allowing arbitrary loads.
+This plugin validates remote URLs and rejects non-HTTPS streams. No extra ATS override is required
+for normal HTTPS playback.
 
 ### Android Setup
 
@@ -214,55 +218,10 @@ The iOS implementation uses native iOS components for optimal performance:
 
 ### Screen Protection
 
-The iOS implementation includes `ScreenProtectorKit` for content protection:
+The fullscreen iOS player uses `ScreenProtectorKit` internally.
 
-> **⚠️ Important Limitations:**
-> - Screen protection is **iOS only** - Android always protects video content via FLAG_SECURE
-> - Enabling screen protection may introduce 10-50ms startup jank on iOS 17+
-> - Layer manipulation used for protection may be fragile on newer iOS versions
-> - Only enable if content protection is critical for your use case
-
-```swift
-// In your AppDelegate.swift
-
-import video_player
-
-class AppDelegate: FlutterAppDelegate {
-    private var screenProtectorKit: ScreenProtectorKit?
-
-    override func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-        screenProtectorKit = ScreenProtectorKit(window: window)
-        screenProtectorKit?.configurePreventionScreenshot()
-
-        // Setup screenshot detection
-        screenProtectorKit?.screenshotObserver {
-            print("Screenshot detected!")
-            // Handle screenshot event
-        }
-
-        // Setup screen recording detection (iOS 11.0+)
-        if #available(iOS 11.0, *) {
-            screenProtectorKit?.screenRecordObserver { isCaptured in
-                print("Screen recording: \(isCaptured)")
-                // Handle screen recording state change
-            }
-        }
-
-        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    }
-
-    override func applicationDidBecomeActive(_ application: UIApplication) {
-        screenProtectorKit?.enabledPreventScreenshot()
-    }
-
-    override func applicationWillResignActive(_ application: UIApplication) {
-        screenProtectorKit?.disablePreventScreenshot()
-    }
-}
-```
+> **Current behavior:** there is no public Dart toggle for screen protection in the current API.
+> The plugin manages the native protection layer itself during fullscreen playback.
 
 ### Advanced Configuration
 
@@ -273,7 +232,6 @@ The plugin automatically sorts video resolutions and provides quality selection 
 #### Content Protection
 
 - HLS (HTTP Live Streaming) support with content protection
-- DRM-protected content playback (when supported by source)
 
 ## API Reference
 
@@ -289,7 +247,6 @@ PlayerConfiguration.remote({
   required String title,              // Video title
   int startPositionSeconds = 0,       // Resume position (seconds)
   String movieShareLink = '',         // Share URL (optional)
-  bool enableScreenProtection = false,// iOS screenshot prevention
   String qualityText = 'Quality',     // UI label (optional)
   String speedText = 'Speed',         // UI label (optional)
   String autoText = 'Auto',           // UI label (optional)
@@ -303,7 +260,6 @@ PlayerConfiguration.asset({
   required String assetPath,          // Asset path (e.g., 'videos/intro.mp4')
   required String title,              // Video title
   int startPositionSeconds = 0,       // Resume position (seconds)
-  bool enableScreenProtection = false,// iOS screenshot prevention
   String qualityText = 'Quality',     // UI label (optional)
   String speedText = 'Speed',         // UI label (optional)
   String autoText = 'Auto',           // UI label (optional)
@@ -316,7 +272,6 @@ PlayerConfiguration.asset({
 - `title`: Video title displayed in player UI
 - `lastPosition`: Resume position in seconds (>= 0)
 - `movieShareLink`: Share URL for the video (empty to disable sharing)
-- `enableScreenProtection`: Enable screenshot prevention (iOS only)
 - `qualityText`: Label for quality selection button
 - `speedText`: Label for speed selection button
 - `autoText`: Label for automatic quality option
@@ -522,8 +477,8 @@ try {
 
 - **iOS**: 15.0+
 - **Android**: 26+
-- **Flutter**: 3.32.0+
-- **Dart**: 3.8.0+
+- **Flutter**: 3.41.0+
+- **Dart**: 3.11.0+
 
 ## Dependencies.
 
@@ -532,7 +487,6 @@ try {
 **Third-party Libraries:**
 
 - **SnapKit (~> 4.0)**: Swift Auto Layout DSL
-- **SDWebImage (~> 5.0)**: Image loading and caching
 
 **Native iOS Frameworks:**
 

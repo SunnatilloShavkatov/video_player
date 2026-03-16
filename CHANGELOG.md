@@ -1,3 +1,16 @@
+## [3.0.4] - 2026-03-16
+
+### Fixed
+- **Android**: Simplified fullscreen reconnect retry flow so temporary network loss resumes through a lighter `prepare() + play()` path instead of a more aggressive recovery state machine.
+- **Android**: Changed fullscreen replay behavior to be explicit and user-driven after playback ends, avoiding immediate auto-replay jumps back to `0` seconds.
+- **Android**: Improved fullscreen playback error handling with a dedicated no-internet message when the device is offline.
+
+### Added
+- **Android**: Added localized fullscreen retry/no-internet error messages for English, Uzbek, and Russian users.
+
+### Documentation
+- Synchronized release metadata and package docs for `3.0.4`, including podspec metadata and release-readiness notes.
+
 ## [3.0.3] - 2026-03-05
 
 ### Fixed

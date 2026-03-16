@@ -65,6 +65,9 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 currentActivity.startActivityForResult(intent, playerActivity)
                 resultMethod = result
             }
+        } else if (call.method == "close") {
+            VideoPlayerActivity.closeCurrentIfActive()
+            result.success(null)
         } else {
             result.notImplemented()
         }

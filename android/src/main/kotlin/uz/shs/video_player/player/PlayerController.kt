@@ -11,6 +11,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import uz.shs.video_player.delegates.PlayerControllerDelegate
 import uz.shs.video_player.models.PlaybackState
@@ -37,9 +39,11 @@ class PlayerController(
     private val context: Context,
     private val delegate: PlayerControllerDelegate?
 ) {
-
     private var player: ExoPlayer? = null
     private val playerListener = createPlayerListener()
+    private var isRemotePlayback = false
+    private var playWhenReadyIntent = true
+    private var waitingForNetworkRecovery = false
 
     /**
      * Initialize the player with a video URL and optional starting position.
@@ -48,24 +52,11 @@ class PlayerController(
      * @param lastPositionSeconds Starting position in seconds
      */
     fun initialize(url: String, lastPositionSeconds: Long) {
-        // Create data source factory for network streams
-        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
+        isRemotePlayback = url.startsWith("http://") || url.startsWith("https://")
+        playWhenReadyIntent = true
+        waitingForNetworkRecovery = false
 
-        val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
-            url.toUri()
-        } else {
-            "asset:///flutter_assets/$url".toUri()
-        }
-
-        // Create media source based on URL content
-        val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
-        val mediaSource: androidx.media3.exoplayer.source.MediaSource = if (isHls) {
-            HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(uri))
-        } else {
-            androidx.media3.exoplayer.source.ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(uri))
-        }
+        val mediaSource = createMediaSource(url)
 
         // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
@@ -106,6 +97,7 @@ class PlayerController(
      * Start or resume playback.
      */
     fun play() {
+        playWhenReadyIntent = true
         player?.play()
     }
 
@@ -113,8 +105,26 @@ class PlayerController(
      * Pause playback.
      */
     fun pause() {
+        playWhenReadyIntent = false
+        waitingForNetworkRecovery = false
         player?.pause()
     }
+
+    fun pauseForTransientLoss() {
+        player?.playWhenReady = false
+        player?.pause()
+    }
+
+    fun resumeAfterTransientLoss() {
+        if (!playWhenReadyIntent) {
+            return
+        }
+
+        player?.playWhenReady = true
+        player?.play()
+    }
+
+    fun shouldResumeOnHostResume(): Boolean = playWhenReadyIntent
 
     /**
      * Seek to a specific position.
@@ -123,6 +133,57 @@ class PlayerController(
      */
     fun seekTo(positionMs: Long) {
         player?.seekTo(positionMs)
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        player?.setPlaybackSpeed(speed)
+    }
+
+    fun applyAutomaticQuality() {
+        player?.let { exoPlayer ->
+            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                .clearVideoSizeConstraints()
+                .build()
+        }
+    }
+
+    fun applyManualQuality(option: QualityOption) {
+        player?.let { exoPlayer ->
+            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                .buildUpon()
+                .setMaxVideoSize(option.width, option.height)
+                .setMinVideoSize(option.width, option.height)
+                .build()
+        }
+    }
+
+    fun onNetworkLost() {
+        if (!isRemotePlayback) {
+            return
+        }
+        waitingForNetworkRecovery = playWhenReadyIntent
+    }
+
+    fun shouldAutoRecoverAfterNetworkRestore(): Boolean {
+        return isRemotePlayback && waitingForNetworkRecovery && playWhenReadyIntent
+    }
+
+    fun retryPlayback(shouldResumePlayback: Boolean = playWhenReadyIntent) {
+        val exoPlayer = player ?: return
+
+        playWhenReadyIntent = shouldResumePlayback
+        waitingForNetworkRecovery = false
+
+        exoPlayer.prepare()
+        if (shouldResumePlayback) {
+            exoPlayer.playWhenReady = true
+            exoPlayer.play()
+        } else {
+            exoPlayer.playWhenReady = false
+            exoPlayer.pause()
+        }
     }
 
     /**
@@ -190,18 +251,27 @@ class PlayerController(
             it.release()
         }
         player = null
+        waitingForNetworkRecovery = false
     }
+
+    fun isRemotePlayback(): Boolean = isRemotePlayback
 
     /**
      * Create the player event listener for delegating callbacks.
      */
     private fun createPlayerListener() = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
+            if (isRemotePlayback && playWhenReadyIntent) {
+                waitingForNetworkRecovery = true
+            }
             delegate?.onPlayerError(error)
             delegate?.onPlaybackStateChanged(PlaybackState.ERROR)
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying) {
+                waitingForNetworkRecovery = false
+            }
             delegate?.onIsPlayingChanged(isPlaying)
         }
 
@@ -215,6 +285,8 @@ class PlayerController(
                 }
 
                 Player.STATE_ENDED -> {
+                    playWhenReadyIntent = false
+                    waitingForNetworkRecovery = false
                     delegate?.onPlaybackEnded()
                     PlaybackState.IDLE
                 }
@@ -264,5 +336,24 @@ class PlayerController(
 
         // Sort by height descending (highest quality first)
         return videoTracks.sortedByDescending { it.height }.distinctBy { it.height }
+    }
+
+    private fun createMediaSource(url: String): MediaSource {
+        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
+
+        val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
+            url.toUri()
+        } else {
+            "asset:///flutter_assets/$url".toUri()
+        }
+
+        val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+        return if (isHls) {
+            HlsMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(uri))
+        } else {
+            ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(uri))
+        }
     }
 }

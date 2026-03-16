@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -13,8 +12,6 @@ import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -72,6 +69,7 @@ import uz.shs.video_player.models.QualityOption
 import uz.shs.video_player.player.PlayerController
 import uz.shs.video_player.playerActivityFinish
 import uz.shs.video_player.services.NetworkChangeReceiver
+import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
@@ -95,20 +93,29 @@ class VideoPlayerActivity : AppCompatActivity(),
         private const val PIP_ASPECT_RATIO_HEIGHT = 9
         private const val PIP_ASPECT_RATIO_WIDTH_HINT = 100
         private const val PIP_ASPECT_RATIO_HEIGHT_HINT = 50
+
+        @Volatile
+        private var currentInstance: WeakReference<VideoPlayerActivity>? = null
+
+        /** Programmatically close the active VideoPlayerActivity (called from plugin's close()). */
+        fun closeCurrentIfActive() {
+            currentInstance?.get()?.let { activity ->
+                if (!activity.isFinishing) {
+                    activity.close.performClick()
+                }
+            }
+            currentInstance = null
+        }
     }
 
     private lateinit var playerView: PlayerView
     private lateinit var playerController: PlayerController
-    private lateinit var networkChangeReceiver: NetworkChangeReceiver
-    private lateinit var intentFilter: IntentFilter
+    private var networkChangeReceiver: NetworkChangeReceiver? = null
     private lateinit var playerConfiguration: PlayerConfiguration
 
     private lateinit var binding: ActivityPlayerBinding
     private lateinit var playerViews: PlayerViews
 
-    // Legacy view references will be removed after migration to playerViews
-    // private lateinit var close: ImageView
-    // ...
     private lateinit var close: ImageView
     private lateinit var pip: ImageView
     private lateinit var shareMovieLinkIv: ImageView
@@ -159,20 +166,26 @@ class VideoPlayerActivity : AppCompatActivity(),
     private var orientationRestoreRunnable: Runnable? = null
     private var pipDismissCheckRunnable: Runnable? = null
 
-    private var isNetworkReceiverRegistered = false
     private var wasInPictureInPicture: Boolean = false
     private var availableQualities: List<QualityOption> = emptyList()
+    private var shouldResumeOnForeground = false
+    private var hasPlaybackEnded = false
+    private var pendingErrorToastMessage: String? = null
 
     @SuppressLint("AppCompatMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentInstance = WeakReference(this)
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
         // Critical MTK EglMakeCurrent Crash Fix:
         // FLAG_SECURE and Window properties MUST be set BEFORE setContentView.
         // Doing it after introduces a race condition on SurfaceView's EGL context creation.
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        @Suppress("DEPRECATION")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            window.statusBarColor = Color.BLACK
+            window.navigationBarColor = Color.BLACK
+        }
 
         // Initialize Binding
         binding = ActivityPlayerBinding.inflate(layoutInflater)
@@ -244,46 +257,57 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun listenConnection() {
-        if (isNetworkReceiverRegistered) {
-            return // Already registered
+        if (networkChangeReceiver != null) {
+            return
         }
 
-        // IntentFilter create
-        intentFilter = IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
-
-        // NetworkChangeReceiver create
-        networkChangeReceiver = object : NetworkChangeReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                super.onReceive(context, intent)
-                if (hasInternetConnection()) {
+        val networkMonitor = NetworkChangeReceiver(
+            context = applicationContext,
+            onConnected = {
+                if (!::playerController.isInitialized) {
+                    return@NetworkChangeReceiver
+                }
+                if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED) && !isInPictureInPictureMode) {
+                    return@NetworkChangeReceiver
+                }
+                if (playerController.shouldAutoRecoverAfterNetworkRestore()) {
                     rePlayVideo()
                 }
+            },
+            onDisconnected = {
+                if (::playerController.isInitialized) {
+                    playerController.onNetworkLost()
+                }
             }
-        }
-
-        // BroadcastReceiver active
-        try {
-            registerReceiver(networkChangeReceiver, intentFilter)
-            isNetworkReceiverRegistered = true
-        } catch (_: Exception) {
-            // Failed to register network receiver
-        }
-    }
-
-    private fun Context.hasInternetConnection(): Boolean {
-        val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(network) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && caps.hasCapability(
-            NetworkCapabilities.NET_CAPABILITY_VALIDATED
         )
+        networkMonitor.start()
+        networkChangeReceiver = networkMonitor
     }
 
     private fun rePlayVideo() {
-        if (::playerController.isInitialized) {
-            playerController.getPlayer()?.prepare()
-            playerController.play()
+        if (!::playerController.isInitialized) {
+            return
         }
+
+        playerController.retryPlayback(shouldResumePlayback = true)
+    }
+
+    private fun resumePlaybackIfNeeded() {
+        if (!::playerController.isInitialized || !shouldResumeOnForeground || isInPictureInPictureMode) {
+            return
+        }
+
+        if (playerController.isRemotePlayback() && networkChangeReceiver?.hasConnection() == false) {
+            playerController.onNetworkLost()
+            return
+        }
+
+        if (playerController.shouldAutoRecoverAfterNetworkRestore()) {
+            rePlayVideo()
+            return
+        }
+
+        playerController.resumeAfterTransientLoss()
     }
 
     private val onBackPressedCallback: OnBackPressedCallback =
@@ -316,12 +340,14 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
 
         if (::playerController.isInitialized) {
-            val isPlaying = playerController.isPlaying()
-            playerController.getPlayer()?.playWhenReady = false
+            shouldResumeOnForeground = playerController.shouldResumeOnHostResume()
+            playerController.pauseForTransientLoss()
 
             if (isInPictureInPictureMode) {
                 // In PiP mode, restore playing state
-                playerController.getPlayer()?.playWhenReady = isPlaying
+                if (shouldResumeOnForeground) {
+                    playerController.resumeAfterTransientLoss()
+                }
                 dismissAllBottomSheets()
             }
         }
@@ -330,9 +356,7 @@ class VideoPlayerActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         setAudioFocus()
-        if (::playerController.isInitialized) {
-            playerController.getPlayer()?.playWhenReady = true
-        }
+        resumePlaybackIfNeeded()
         try {
             // Retrieve and set brightness safely
             val currentBrightness: Int = Settings.System.getInt(
@@ -349,9 +373,7 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     override fun onRestart() {
         super.onRestart()
-        if (::playerController.isInitialized) {
-            playerController.getPlayer()?.playWhenReady = true
-        }
+        resumePlaybackIfNeeded()
     }
 
     override fun onStop() {
@@ -365,9 +387,9 @@ class VideoPlayerActivity : AppCompatActivity(),
             // Do not release player on stop during orientation/fullscreen changes
             // or when the activity is simply going to background. Rely on onDestroy
             // to release resources when the activity is actually finishing.
-            // If you want to conserve resources in background, you can pause here.
+            // Preserve play intent so foreground return and network recovery can resume safely.
             if (::playerController.isInitialized && playerController.isPlaying()) {
-                playerController.pause()
+                playerController.pauseForTransientLoss()
             }
         }
     }
@@ -553,10 +575,12 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
         playPause.setOnClickListener {
             if (::playerController.isInitialized) {
-                if (mPlaybackState == PlaybackState.ERROR) {
-                    // Retry on error
-                    playerController.getPlayer()?.prepare()
+                if (hasPlaybackEnded) {
+                    hasPlaybackEnded = false
+                    playerController.seekTo(0)
                     playerController.play()
+                } else if (mPlaybackState == PlaybackState.ERROR) {
+                    playerController.retryPlayback(shouldResumePlayback = true)
                 } else if (playerController.isPlaying()) {
                     playerController.pause()
                 } else {
@@ -891,8 +915,7 @@ class VideoPlayerActivity : AppCompatActivity(),
                     } else {
                         currentSpeed = l[position]
                         currentSpeed = "${l[position]}"
-                        playerController.getPlayer()
-                            ?.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
+                        playerController.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
                     }
                     bottomSheetDialog.dismiss()
                 }
@@ -912,22 +935,9 @@ class VideoPlayerActivity : AppCompatActivity(),
         qualityText?.text = currentQuality
 
         if (selectedQuality.displayName == "Auto") {
-            // Auto - clear overrides for adaptive streaming
-            playerController.getPlayer()?.let { player ->
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
-                    .build()
-            }
+            playerController.applyAutomaticQuality()
         } else {
-            // Manual quality - set max/min video size
-            playerController.getPlayer()?.let { player ->
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .setMaxVideoSize(selectedQuality.width, selectedQuality.height)
-                    .setMinVideoSize(selectedQuality.width, selectedQuality.height)
-                    .build()
-            }
+            playerController.applyManualQuality(selectedQuality)
         }
     }
 
@@ -1068,6 +1078,9 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
+        if (currentInstance?.get() === this) {
+            currentInstance = null
+        }
 
         // ✅ FIXED: Cancel all pending runnables explicitly
         cancelAllPendingRunnables()
@@ -1090,13 +1103,10 @@ class VideoPlayerActivity : AppCompatActivity(),
             // Abandon audio focus
             abandonAudioFocus()
 
-            // Unregister broadcast receiver safely
-            if (isNetworkReceiverRegistered && ::networkChangeReceiver.isInitialized) {
-                unregisterReceiver(networkChangeReceiver)
-                isNetworkReceiverRegistered = false
-            }
+            networkChangeReceiver?.stop()
+            networkChangeReceiver = null
         } catch (_: IllegalArgumentException) {
-            // Receiver was not registered, ignore
+            // Ignore cleanup exceptions during shutdown races
         }
 
         // Dismiss all bottom sheets
@@ -1119,6 +1129,8 @@ class VideoPlayerActivity : AppCompatActivity(),
 
         when (state) {
             PlaybackState.BUFFERING -> {
+                hasPlaybackEnded = false
+                pendingErrorToastMessage = null
                 playPause.visibility = View.GONE
                 progressbar.visibility = View.VISIBLE
                 if (!playerView.isControllerFullyVisible) {
@@ -1127,6 +1139,8 @@ class VideoPlayerActivity : AppCompatActivity(),
             }
 
             PlaybackState.PLAYING, PlaybackState.PAUSED -> {
+                hasPlaybackEnded = false
+                pendingErrorToastMessage = null
                 playPause.visibility = View.VISIBLE
                 progressbar.visibility = View.GONE
                 if (!playerView.isControllerFullyVisible) {
@@ -1139,18 +1153,26 @@ class VideoPlayerActivity : AppCompatActivity(),
             }
 
             PlaybackState.ERROR -> {
+                hasPlaybackEnded = false
                 playPause.visibility = View.VISIBLE
                 playPause.setImageResource(R.drawable.ic_play)
                 progressbar.visibility = View.GONE
                 if (!playerView.isControllerFullyVisible) {
                     playerView.setShowBuffering(SHOW_BUFFERING_NEVER)
                 }
-                android.widget.Toast.makeText(this, "Playback error. Tap play to retry.", android.widget.Toast.LENGTH_LONG).show()
+                val toastMessage = pendingErrorToastMessage ?: getString(R.string.video_player_error_retry)
+                android.widget.Toast.makeText(this, toastMessage, android.widget.Toast.LENGTH_LONG).show()
+                pendingErrorToastMessage = null
             }
         }
     }
 
     override fun onPlayerError(error: PlaybackException) {
+        pendingErrorToastMessage = if (networkChangeReceiver?.hasConnection() == false) {
+            getString(R.string.video_player_error_no_internet)
+        } else {
+            getString(R.string.video_player_error_retry)
+        }
         android.util.Log.e("VideoPlayer", "Playback error: ${error.message}", error)
     }
 
@@ -1167,14 +1189,17 @@ class VideoPlayerActivity : AppCompatActivity(),
         if (isPlaying) {
             mPlaybackState = PlaybackState.PLAYING
             playPause.setImageResource(R.drawable.ic_pause)
-        } else {
+        } else if (!hasPlaybackEnded && mPlaybackState != PlaybackState.ERROR) {
             mPlaybackState = PlaybackState.PAUSED
             playPause.setImageResource(R.drawable.ic_play)
         }
     }
 
     override fun onPlaybackEnded() {
+        hasPlaybackEnded = true
         playPause.setImageResource(R.drawable.ic_play)
-        close.performClick()
+        if (::playerView.isInitialized) {
+            playerView.showController()
+        }
     }
 }

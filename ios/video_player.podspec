@@ -4,15 +4,16 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'video_player'
-  s.version          = '3.0.3'
-  s.summary          = 'A Flutter video player plugin with download support and advanced features.'
+  s.version          = '3.0.4'
+  s.summary          = 'A Flutter video player plugin with native iOS and Android playback.'
   s.description      = <<-DESC
-A comprehensive Flutter video player plugin that supports playing videos from URLs and assets,
-downloading videos for offline playback, quality selection, and screen protection features.
+A comprehensive Flutter video player plugin that supports fullscreen and embedded playback
+from HTTPS URLs and Flutter assets, with quality selection, speed control, Picture-in-Picture,
+and iOS screen protection features.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/SunnatilloShavkatov/video_player'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'sunnatilloshavkatov@gmail.com' }
+  s.author           = { 'Sunnatillo Shavkatov' => 'sunnatilloshavkatov@gmail.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'

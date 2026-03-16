@@ -4,19 +4,19 @@ import 'package:video_player/src/video_player_view.dart';
 void main() {
   group('VideoPlayerView Lifecycle Safety', () {
     test('ResizeMode enum values are stable', () {
-      expect(ResizeMode.fit.name, 'fit');
-      expect(ResizeMode.fill.name, 'fill');
-      expect(ResizeMode.zoom.name, 'zoom');
+      expect(ResizeMode.fit.value, 'fit');
+      expect(ResizeMode.fill.value, 'fill');
+      expect(ResizeMode.zoom.value, 'zoom');
     });
 
     test('PlayerStatus enum values are stable', () {
-      expect(PlayerStatus.idle.name, 'idle');
-      expect(PlayerStatus.buffering.name, 'buffering');
-      expect(PlayerStatus.ready.name, 'ready');
-      expect(PlayerStatus.ended.name, 'ended');
-      expect(PlayerStatus.playing.name, 'playing');
-      expect(PlayerStatus.paused.name, 'paused');
-      expect(PlayerStatus.error.name, 'error');
+      expect(PlayerStatus.idle.value, 'idle');
+      expect(PlayerStatus.buffering.value, 'buffering');
+      expect(PlayerStatus.ready.value, 'ready');
+      expect(PlayerStatus.ended.value, 'ended');
+      expect(PlayerStatus.playing.value, 'playing');
+      expect(PlayerStatus.paused.value, 'paused');
+      expect(PlayerStatus.error.value, 'error');
     });
 
     test('PlayerStatus enum order is stable', () {

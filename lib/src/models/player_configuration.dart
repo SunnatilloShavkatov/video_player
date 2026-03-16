@@ -86,13 +86,6 @@ class PlayerConfiguration {
   ///   movieShareLink: 'https://example.com/share/video-123',
   /// );
   ///
-  /// // With screen protection (iOS only)
-  /// final protectedConfig = PlayerConfiguration.remote(
-  ///   videoUrl: 'https://example.com/private-video.m3u8',
-  ///   title: 'Confidential Video',
-  ///   enableScreenProtection: true,
-  /// );
-  /// ```
   factory PlayerConfiguration.remote({
     required String videoUrl,
     required String title,

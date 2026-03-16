@@ -3,4 +3,6 @@
     <string name="app_name">Video Player</string>
     <string name="error_drm_unsupported_before_api_18">DRM content not supported on API levels below 18</string>
     <string name="track_selection_title">Select tracks</string>
+    <string name="video_player_error_retry">Playback error. Tap play to retry.</string>
+    <string name="video_player_error_no_internet">No internet connection. Check your internet and tap play to retry.</string>
 </resources>

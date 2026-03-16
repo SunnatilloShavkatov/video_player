@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="video_player_error_retry">Ошибка воспроизведения. Нажмите play, чтобы попробовать снова.</string>
+    <string name="video_player_error_no_internet">Нет подключения к интернету. Проверьте интернет и нажмите play, чтобы попробовать снова.</string>
+</resources>
+

@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:video_player/src/models/playback_result.dart';
 import 'package:video_player/src/video_player_method_channel.dart';
 
 void main() {
@@ -41,8 +42,9 @@ void main() {
         playerConfigJsonString: '{"videoUrl": "https://example.com/video.m3u8"}',
       );
 
-      expect(result, isNotNull);
-      expect(result, [100, 300]);
+      expect(result, isA<PlaybackCompleted>());
+      expect((result as PlaybackCompleted).lastPositionSeconds, 100);
+      expect(result.durationSeconds, 300);
     });
 
     test('playVideo handles null result', () async {
@@ -61,7 +63,7 @@ void main() {
         playerConfigJsonString: '{"videoUrl": "https://example.com/video.m3u8"}',
       );
 
-      expect(result, isNull);
+      expect(result, isA<PlaybackCancelled>());
     });
 
     test('playVideo handles platform exception gracefully', () async {
@@ -80,7 +82,7 @@ void main() {
         playerConfigJsonString: '{"videoUrl": "https://example.com/video.m3u8"}',
       );
 
-      expect(result, isNull);
+      expect(result, isA<PlaybackFailed>());
     });
 
     test('close completes without error', () async {
