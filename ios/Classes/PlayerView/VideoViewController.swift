@@ -94,7 +94,7 @@ class VideoViewController: UIViewController {
             videoView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
-        playVideo(gravity: gravity)
+        _ = playVideo(gravity: gravity)
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -127,32 +127,23 @@ class VideoViewController: UIViewController {
         layer.frame = videoView.bounds
     }
 
-    func playVideo(gravity: AVLayerVideoGravity) {
-        guard !isDisposed else { return }
+    @discardableResult
+    func playVideo(gravity: AVLayerVideoGravity) -> FlutterError? {
+        guard !isDisposed else {
+            return FlutterError(code: "DISPOSED", message: "Video view controller is already disposed", details: nil)
+        }
 
         stopObservingPlayerIfNeeded()
 
         player.pause()
 
-        var videoURL: URL?
-        if url.isEmpty {
-            let key = self.registrar?.lookupKey(forAsset: assets)
-            guard let path = Bundle.main.path(forResource: key, ofType: nil) else {
-                sendError("Video not found for asset: \(assets)")
-                return
-            }
-            videoURL = URL(fileURLWithPath: path)
-        } else {
-            guard let parsedUrl = URL(string: url) else {
-                sendError("Invalid video URL: \(url)")
-                return
-            }
-            videoURL = parsedUrl
-        }
-
-        guard let videoURL = videoURL else {
-            sendError("Failed to create video URL")
-            return
+        let videoURL: URL
+        switch resolvePlaybackURL() {
+        case .success(let resolvedURL):
+            videoURL = resolvedURL
+        case .failure(let error):
+            sendError(error.message)
+            return FlutterError(code: error.code, message: error.message, details: nil)
         }
 
         if playerLayer == nil {
@@ -174,6 +165,30 @@ class VideoViewController: UIViewController {
         startObservingPlayerIfNeeded()
 
         player.play()
+        return nil
+    }
+
+    private func resolvePlaybackURL() -> Result<URL, VideoSourceResolutionFailure> {
+        let trimmedAssetPath = assets.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAssetPath.isEmpty {
+            guard let registrar else {
+                return .failure(VideoSourceResolutionFailure(code: "NO_REGISTRAR", message: "Flutter registrar unavailable for asset lookup"))
+            }
+
+            let lookupKey = registrar.lookupKey(forAsset: trimmedAssetPath)
+            guard let assetFilePath = Bundle.main.path(forResource: lookupKey, ofType: nil) else {
+                return .failure(VideoSourceResolutionFailure(code: "ASSET_NOT_FOUND", message: "Asset not found: \(trimmedAssetPath)"))
+            }
+
+            return .success(URL(fileURLWithPath: assetFilePath))
+        }
+
+        let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl) else {
+            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL: \(url)"))
+        }
+
+        return .success(remoteURL)
     }
 
     // MARK: - Observer Management (Centralized)
@@ -446,29 +461,30 @@ class VideoViewController: UIViewController {
     }
 
     private func cleanup() {
-        disposalQueue.sync {
-            guard !isDisposed else { return }
+        let shouldCleanup = disposalQueue.sync { () -> Bool in
+            guard !isDisposed else { return false }
             isDisposed = true
+            return true
+        }
 
-            player.pause()
+        guard shouldCleanup else { return }
 
-            // ✅ FIX: Avoid deadlock - if already on main, call directly; otherwise async
-            if Thread.isMainThread {
-                self.stopObservingPlayerIfNeeded()
-            } else {
-                DispatchQueue.main.async {
-                    self.stopObservingPlayerIfNeeded()
-                }
-            }
+        let teardown = {
+            self.player.pause()
+            self.stopObservingPlayerIfNeeded()
+            self.player.replaceCurrentItem(with: nil)
 
-            player.replaceCurrentItem(with: nil)
-
-            if let layer = playerLayer, layer.superlayer != nil {
+            if let layer = self.playerLayer, layer.superlayer != nil {
                 layer.removeFromSuperlayer()
             }
-            playerLayer = nil
+            self.playerLayer = nil
+            self.currentPlayerItem = nil
+        }
 
-            currentPlayerItem = nil
+        if Thread.isMainThread {
+            teardown()
+        } else {
+            DispatchQueue.main.sync(execute: teardown)
         }
     }
 

@@ -16,9 +16,16 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
     private var pipController: AVPictureInPictureController?
     private var pipPossibleObservation: NSKeyValueObservation?
+    private var hasReportedPlaybackResult = false
+    private var hasNotifiedDismissal = false
+    private var isClosingPlayer = false
+    private var dismissalCompletionHandlers: [() -> Void] = []
+    private var settingsActions: [SettingAction] = []
 
     ///
     weak var delegate: VideoPlayerDelegate?
+    var onPlaybackFinished: (([Int]) -> Void)?
+    var onDidDismiss: (() -> Void)?
     private var url: String?
     private var screenProtectorKit: ScreenProtectorKit?
     var qualityLabelText = ""
@@ -36,6 +43,19 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private lazy var playerView: PlayerView = {
         return PlayerView()
     }()
+
+    private var supportsQualitySelection: Bool {
+        !playerConfiguration.playVideoFromAsset && HlsParser.isLikelyHls(url: playerConfiguration.url)
+    }
+
+    private var canShareContent: Bool {
+        !playerConfiguration.playVideoFromAsset &&
+            !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasSubtitleSelection: Bool {
+        playerView.hasSubtitleTracks()
+    }
 
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -97,12 +117,14 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             screenProtectorKit?.enabledPreventScreenshot()
         }
 
+        playerView.setShareEnabled(canShareContent)
         // Parse HLS master playlist to get quality variants
         loadQualityVariants()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         playerView.loadMedia(autoPlay: true, playPosition: TimeInterval(playerConfiguration.lastPosition), area: view.safeAreaLayoutGuide)
+        playerView.setShareEnabled(canShareContent)
         setupPictureInPicture()
         super.viewWillAppear(animated)
     }
@@ -115,6 +137,15 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        if isBeingDismissed || navigationController?.isBeingDismissed == true {
+            reportPlaybackResultIfNeeded(currentPlaybackPayload())
+            notifyDismissalIfNeeded()
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -149,18 +180,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
 
 
     func close(duration: [Int]) {
-        screenProtectorKit?.disablePreventScreenshot()
-        if UIDevice.current.userInterfaceIdiom != .pad {
-            if let orientation = self.view.window?.windowScene?.interfaceOrientation,
-               orientation.isLandscape {
-                changeOrientation()
-            }
-        }
-        self.dismiss(animated: true, completion: nil)
-        delegate?.getDuration(duration: duration)
+        requestClose(duration: duration)
     }
 
     func share() {
+        guard canShareContent else { return }
         if let link = NSURL(string: playerConfiguration.movieShareLink) {
             let objectsToShare = [link] as [Any]
             let activityVC = UIActivityViewController(activityItems: objectsToShare, applicationActivities: nil)
@@ -195,21 +219,15 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     func settingsPressed() {
+        let settingModels = buildSettingModels()
+        guard !settingModels.isEmpty else { return }
+
+        settingsActions = settingModels.map(\.action)
         let vc = SettingVC()
         vc.modalPresentationStyle = .custom
         vc.delegate = self
         vc.speedDelegate = self
         vc.subtitleDelegate = self
-        var settingModels: [SettingModel] = []
-
-        if let settingsIcon = Svg.settings {
-            settingModels.append(SettingModel(leftIcon: settingsIcon, title: qualityLabelText, configureLabel: selectedQualityText))
-        }
-
-        if let playSpeedIcon = Svg.playSpeed {
-            settingModels.append(SettingModel(leftIcon: playSpeedIcon, title: speedLabelText, configureLabel: selectedSpeedText))
-        }
-
         vc.settingModel = settingModels
         self.present(vc, animated: true, completion: nil)
     }
@@ -235,23 +253,75 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
     }
 
+    func requestClose(duration: [Int]? = nil, completion: (() -> Void)? = nil) {
+        if hasNotifiedDismissal {
+            completion?()
+            return
+        }
+
+        if let completion {
+            dismissalCompletionHandlers.append(completion)
+        }
+
+        let payload = duration ?? currentPlaybackPayload()
+        reportPlaybackResultIfNeeded(payload)
+
+        guard !isClosingPlayer else {
+            return
+        }
+
+        isClosingPlayer = true
+        screenProtectorKit?.disablePreventScreenshot()
+
+        if UIDevice.current.userInterfaceIdiom != .pad,
+           let orientation = self.view.window?.windowScene?.interfaceOrientation,
+           orientation.isLandscape {
+            changeOrientation()
+        }
+
+        guard presentingViewController != nil || navigationController?.presentingViewController != nil else {
+            notifyDismissalIfNeeded()
+            return
+        }
+
+        dismiss(animated: true) { [weak self] in
+            self?.notifyDismissalIfNeeded()
+        }
+    }
+
+    private func currentPlaybackPayload() -> [Int] {
+        let currentSeconds = safeIntFromSeconds(playerView.streamPosition ?? 0)
+        let durationSeconds = safeIntFromSeconds(playerView.streamDuration ?? 0)
+        return [currentSeconds, durationSeconds]
+    }
+
+    private func safeIntFromSeconds(_ seconds: TimeInterval) -> Int {
+        guard seconds.isFinite, !seconds.isNaN else { return 0 }
+        guard seconds >= Double(Int.min), seconds <= Double(Int.max) else { return 0 }
+        return Int(seconds)
+    }
+
+    private func reportPlaybackResultIfNeeded(_ payload: [Int]) {
+        guard !hasReportedPlaybackResult else { return }
+        hasReportedPlaybackResult = true
+        onPlaybackFinished?(payload)
+        delegate?.getDuration(duration: payload)
+    }
+
+    private func notifyDismissalIfNeeded() {
+        guard !hasNotifiedDismissal else { return }
+        hasNotifiedDismissal = true
+        onDidDismiss?()
+
+        let completions = dismissalCompletionHandlers
+        dismissalCompletionHandlers.removeAll()
+        completions.forEach { $0() }
+    }
+
     // settings bottom sheet tapped
     func onSettingsBottomSheetCellTapped(index: Int) {
-        switch index {
-        case 0:
-            showQualityBottomSheet()
-            break
-        case 1:
-            showSpeedBottomSheet()
-            break
-        case 2:
-            showSubtitleBottomSheet()
-            break
-        case 3:
-            break
-        default:
-            break
-        }
+        guard index < settingsActions.count else { return }
+        dispatchSettingAction(settingsActions[index])
     }
 
     // bottom sheet tapped
@@ -290,6 +360,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             break
         case .subtitle:
             let subtitles = playerView.setSubtitleCurrentItem()
+            guard index < subtitles.count else { return }
             let selectedSubtitleLabel = subtitles[index]
             if playerView.getSubtitleTrackIsEmpty(selectedSubtitleLabel: selectedSubtitleLabel) {
                 selectedSubtitle = selectedSubtitleLabel
@@ -301,6 +372,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     private func showSubtitleBottomSheet() {
+        guard hasSubtitleSelection else { return }
         let subtitles = playerView.setSubtitleCurrentItem()
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .overCurrentContext
@@ -315,6 +387,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     private func loadQualityVariants() {
+        guard supportsQualitySelection else {
+            availableQualities = []
+            return
+        }
+
         let videoUrl = playerConfiguration.url
         guard !videoUrl.isEmpty else {
             return
@@ -341,6 +418,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     func showQualityBottomSheet() {
+        guard supportsQualitySelection else { return }
         // Build quality list from parsed variants
         var listOfQuality = ["Auto"]
         if !availableQualities.isEmpty {
@@ -371,6 +449,56 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         bottomSheetVC.selectedIndex = speedList.firstIndex(of: "\(self.playerRate)") ?? 0
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             self.present(bottomSheetVC, animated: false, completion: nil)
+        }
+    }
+
+    private func buildSettingModels() -> [SettingModel] {
+        var models: [SettingModel] = []
+
+        if supportsQualitySelection, let qualityIcon = Svg.settings {
+            models.append(
+                SettingModel(
+                    leftIcon: qualityIcon,
+                    title: qualityLabelText,
+                    configureLabel: selectedQualityText,
+                    action: .quality
+                )
+            )
+        }
+
+        if let playSpeedIcon = Svg.playSpeed {
+            models.append(
+                SettingModel(
+                    leftIcon: playSpeedIcon,
+                    title: speedLabelText,
+                    configureLabel: selectedSpeedText,
+                    action: .speed
+                )
+            )
+        }
+
+        if hasSubtitleSelection, let subtitleIcon = UIImage(systemName: "captions.bubble") {
+            models.append(
+                SettingModel(
+                    leftIcon: subtitleIcon,
+                    title: "Subtitle",
+                    configureLabel: selectedSubtitle,
+                    action: .subtitle
+                )
+            )
+        }
+
+        return models
+    }
+
+    private func dispatchSettingAction(_ action: SettingAction) {
+        switch action {
+        case .quality:
+            showQualityBottomSheet()
+        case .speed:
+            showSpeedBottomSheet()
+        case .subtitle:
+            showSubtitleBottomSheet()
         }
     }
 }

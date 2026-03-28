@@ -33,6 +33,9 @@ class PlayerView: UIView {
     private var gestureHandler: PlayerGestureHandler!
     private var controlsCoordinator: PlayerControlsCoordinator!
     
+    // Stall recovery
+    private var stallRecoveryTimer: Timer?
+    
     // MARK: - Core Properties
     private var player = AVPlayer()
     var playerLayer = AVPlayerLayer()
@@ -182,6 +185,16 @@ class PlayerView: UIView {
     func isHiddenPiP(isPiP: Bool) {
         overlayView.isHidden = isPiP
     }
+
+    func setShareEnabled(_ enabled: Bool) {
+        shareButton.isHidden = !enabled
+        shareButton.isEnabled = enabled
+    }
+
+    func hasSubtitleTracks() -> Bool {
+        guard let currentItem = player.currentItem else { return false }
+        return !currentItem.tracks(type: .subtitle).isEmpty
+    }
     
     func loadMedia(autoPlay: Bool, playPosition: TimeInterval, area: UILayoutGuide) {
         translatesAutoresizingMaskIntoConstraints = false
@@ -216,7 +229,18 @@ class PlayerView: UIView {
         
         playButton.alpha = 0.0
         activityIndicatorView.startAnimating()
-        playOfflineAsset()
+        loadInitialMediaSource()
+        
+        // Start network monitoring — auto-recover when connection is restored
+        NetworkMonitor.shared.startMonitoring()
+        NetworkMonitor.shared.onNetworkStatusChange = { [weak self] isConnected in
+            guard let self = self, isConnected else { return }
+            // Network restored — attempt stall recovery if player is stuck
+            if self.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                debugPrint("🌐 Network restored — triggering stall recovery")
+                self.scheduleStallRecovery()
+            }
+        }
     }
     
     func changeUrl(url: String?, title: String?) {
@@ -345,11 +369,96 @@ class PlayerView: UIView {
     private func uiSetup() {
         setSliderThumbTintColor(Colors.white)
         setTitle(title: playerConfiguration.title)
+        // Listen for app foreground — recover player after long background
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
     
-    private func playOfflineAsset() {
-        guard let url = URL(string: playerConfiguration.url) else { return }
-        loadMediaPlayer(asset: AVURLAsset(url: url))
+    @objc private func appDidBecomeActive() {
+        // After returning from background (or long inactivity), ensure player recovers
+        guard let item = player.currentItem else { return }
+        if player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+            // Player is waiting/stalled after foreground — give it a nudge
+            let currentTime = player.currentTime()
+            player.seek(to: currentTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+                self?.player.play()
+            }
+        } else if item.status == .readyToPlay && player.timeControlStatus == .paused {
+            // Player was playing before background — resume it
+            if playerController?.playerState == .playing {
+                player.play()
+            }
+        }
+    }
+    
+    /// Schedule a stall recovery attempt after 8 seconds with exponential backoff
+    private func scheduleStallRecovery() {
+        // Don't schedule if already has a pending recovery
+        guard stallRecoveryTimer == nil || !(stallRecoveryTimer?.isValid ?? false) else { return }
+        
+        stallRecoveryTimer?.invalidate()
+        stallRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: false) { [weak self] _ in
+            self?.recoverFromStall()
+        }
+    }
+    
+    /// Attempt to recover from stall by seeking to current position and re-playing
+    private func recoverFromStall() {
+        guard player.timeControlStatus == .waitingToPlayAtSpecifiedRate else {
+            // Player already recovered on its own
+            stallRecoveryTimer = nil
+            return
+        }
+        
+        debugPrint("🔄 Stall recovery: attempting seek-and-play")
+        let currentTime = player.currentTime()
+        
+        player.seek(to: currentTime, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1)) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                self.player.play()
+                debugPrint("✅ Stall recovery: player.play() called")
+            } else {
+                // Seek failed — try a more aggressive recovery: reload current URL
+                debugPrint("⚠️ Stall recovery: seek failed, attempting URL reload")
+                self.reloadCurrentItem(at: CMTimeGetSeconds(currentTime))
+            }
+        }
+    }
+    
+    /// Reload AVPlayerItem from scratch when seek-based recovery fails
+    private func reloadCurrentItem(at positionSeconds: Double) {
+        guard let urlString = playerConfiguration?.url,
+              let url = URL(string: urlString) else { return }
+        
+        observerManager?.removeObservers()
+        let newItem = AVPlayerItem(asset: AVURLAsset(url: url))
+        player.replaceCurrentItem(with: newItem)
+        player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
+        playerController?.setPlayerItem(newItem)
+        observerManager?.addObservers(for: newItem)
+        
+        // Seek to where we left off once ready
+        if positionSeconds > 0 {
+            playerController?.setPendingPlayPosition(positionSeconds)
+            playerController?.pendingPlay = true
+        } else {
+            player.play()
+        }
+    }
+
+    private func loadInitialMediaSource() {
+        guard let playerConfiguration else { return }
+        guard let sourceURL = URL(string: playerConfiguration.url) else { return }
+
+        let canShare = !playerConfiguration.playVideoFromAsset &&
+            !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        setShareEnabled(canShare)
+        loadMediaPlayer(asset: AVURLAsset(url: sourceURL))
     }
     
     private func loadMediaPlayer(asset: AVURLAsset) {
@@ -566,6 +675,9 @@ class PlayerView: UIView {
     }
     
     deinit {
+        stallRecoveryTimer?.invalidate()
+        stallRecoveryTimer = nil
+        NotificationCenter.default.removeObserver(self)
         controlsCoordinator?.invalidateTimers()
         observerManager?.dispose()
         gestureHandler?.removeGestures()
@@ -622,10 +734,17 @@ extension PlayerView: PlayerObserverDelegate {
             guard let self = self else { return }
             switch status {
             case .playing:
+                // ✅ Player resumed — cancel any pending recovery timer
+                self.stallRecoveryTimer?.invalidate()
+                self.stallRecoveryTimer = nil
                 self.controlsCoordinator?.hideLoadingIndicator()
                 self.playButton.alpha = self.skipBackwardButton.alpha
+                // ✅ ALWAYS keep gestures enabled — never lock user out
                 self.gestureHandler?.enableGesture = true
+                self.controlsCoordinator?.resetControlsTimer()
             case .paused:
+                self.stallRecoveryTimer?.invalidate()
+                self.stallRecoveryTimer = nil
                 self.controlsCoordinator?.hideLoadingIndicator()
                 self.playButton.alpha = self.skipBackwardButton.alpha
                 self.gestureHandler?.enableGesture = true
@@ -633,7 +752,11 @@ extension PlayerView: PlayerObserverDelegate {
             case .waitingToPlayAtSpecifiedRate:
                 self.controlsCoordinator?.showLoadingIndicator()
                 self.playButton.alpha = 0.0
-                self.gestureHandler?.enableGesture = false
+                // ✅ DO NOT disable gestures — user must be able to exit at any time
+                // gestureHandler?.enableGesture = false  ← was causing player lockout
+                self.controlsCoordinator?.showControls()  // Show controls so user can see loading
+                // Start stall recovery timer — try to recover after 8 seconds
+                self.scheduleStallRecovery()
             @unknown default:
                 break
             }
@@ -651,9 +774,11 @@ extension PlayerView: PlayerObserverDelegate {
     }
     
     func observerManagerDidStall(_ manager: PlayerObserverManager) {
-        // Show loading indicator when playback stalls
         DispatchQueue.main.async { [weak self] in
-            self?.controlsCoordinator?.showLoadingIndicator()
+            guard let self = self else { return }
+            self.controlsCoordinator?.showLoadingIndicator()
+            self.controlsCoordinator?.showControls()  // Keep controls visible during stall
+            self.scheduleStallRecovery()
         }
     }
     

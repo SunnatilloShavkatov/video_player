@@ -108,9 +108,9 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
         view.backgroundColor = .clear
         tableView.contentInsetAdjustmentBehavior = .never
         if UIDevice.current.userInterfaceIdiom == .phone {
-            menuHeight = 140
+            menuHeight = max(CGFloat(settingModel.count * 48 + 24), 140)
         }else {
-            menuHeight = 300
+            menuHeight = max(CGFloat(settingModel.count * 48 + 24), 300)
         }
         
         view.addSubview(backdropView)
@@ -185,16 +185,18 @@ extension SettingVC: UITableViewDataSource, UITableViewDelegate {
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if (indexPath.row == 0) {
-            self.dismiss(animated: true) {
+        guard indexPath.row < settingModel.count else { return }
+
+        let selectedSetting = settingModel[indexPath.row]
+        guard selectedSetting.isEnabled else { return }
+
+        self.dismiss(animated: true) {
+            switch selectedSetting.action {
+            case .quality:
                 self.delegate?.qualityBottomSheet()
-            }
-        } else if(indexPath.row == 1) {
-            self.dismiss(animated: true) {
+            case .speed:
                 self.speedDelegate?.speedBottomSheet()
-            }
-        } else {
-            self.dismiss(animated: true) {
+            case .subtitle:
                 self.subtitleDelegate?.subtitleBottomSheet()
             }
         }
@@ -243,4 +245,3 @@ extension SettingVC: UIViewControllerTransitioningDelegate, UIViewControllerAnim
         }
     }
 }
-

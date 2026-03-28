@@ -16,8 +16,25 @@ struct QualityVariant {
 }
 
 class HlsParser {
+
+    static func isLikelyHls(url: String) -> Bool {
+        let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUrl.isEmpty else { return false }
+
+        if let parsedURL = URL(string: trimmedUrl),
+           parsedURL.pathExtension.lowercased() == "m3u8" {
+            return true
+        }
+
+        return trimmedUrl.lowercased().contains(".m3u8")
+    }
     
     static func parseHlsMasterPlaylist(url: String, completion: @escaping ([QualityVariant]) -> Void) {
+        guard isLikelyHls(url: url) else {
+            completion([])
+            return
+        }
+
         guard let masterUrl = URL(string: url) else {
             completion([])
             return

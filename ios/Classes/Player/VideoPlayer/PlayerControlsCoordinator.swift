@@ -131,6 +131,8 @@ final class PlayerControlsCoordinator {
         UIView.animate(withDuration: 0.3) { [weak self] in
             self?.topView?.alpha = 0.0
             self?.bottomView?.alpha = 0.0
+            // The gesture recognizers are attached to PlayerView itself, so the
+            // overlay can fade out without breaking tap-to-show behavior.
             self?.overlayView?.alpha = 0.0
         }
     }

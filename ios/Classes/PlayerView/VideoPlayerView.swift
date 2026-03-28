@@ -9,8 +9,11 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     private var videoView: UIView
     private var videoViewController: VideoViewController
     private var _methodChannel: FlutterMethodChannel
+    private weak var containerViewController: UIViewController?
+    private var isAttachedToParent = false
     
     func view() -> UIView {
+        attachVideoViewControllerIfNeeded()
         return videoView
     }
     
@@ -29,18 +32,9 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         let gravity = videoGravity(s: sourceType ?? "")
         let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", gravity: gravity)
         self.videoViewController = viewController
-        self.videoView.addSubview(videoViewController.view)
-        
-        // Add Auto Layout constraints to center and fill parent view
-        videoViewController.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            videoViewController.view.topAnchor.constraint(equalTo: videoView.topAnchor),
-            videoViewController.view.leadingAnchor.constraint(equalTo: videoView.leadingAnchor),
-            videoViewController.view.trailingAnchor.constraint(equalTo: videoView.trailingAnchor),
-            videoViewController.view.bottomAnchor.constraint(equalTo: videoView.bottomAnchor)
-        ])
         
         super.init()
+        attachVideoViewControllerIfNeeded()
         // Use weak self to prevent retain cycle
         _methodChannel.setMethodCallHandler { [weak self] (call, result) in
             guard let self = self else {
@@ -54,7 +48,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     deinit {
         // Properly cleanup video view controller and resources
         self._methodChannel.setMethodCallHandler(nil)
-        self.videoViewController.view.removeFromSuperview()
+        detachVideoViewControllerIfNeeded()
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -87,9 +81,13 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             let videoPath: String? = args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
             if let path = videoPath, !path.isEmpty {
+                self.videoViewController.assets = ""
                 self.videoViewController.url = path
-                self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
-                result(nil)
+                if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
+                    result(error)
+                } else {
+                    result(nil)
+                }
             } else {
                 result(FlutterError(code: "INVALID_URL", message: "URL cannot be empty", details: nil))
             }
@@ -105,9 +103,13 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             let videoPath: String? = args["assets"] as? String ?? args["url"] as? String
             let sourceType: String? = args["resizeMode"] as? String
             if let path = videoPath, !path.isEmpty {
+                self.videoViewController.url = ""
                 self.videoViewController.assets = path
-                self.videoViewController.playVideo(gravity: videoGravity(s: sourceType))
-                result(nil)
+                if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
+                    result(error)
+                } else {
+                    result(nil)
+                }
             } else {
                 result(FlutterError(code: "INVALID_ASSET", message: "Asset path cannot be empty", details: nil))
             }
@@ -149,6 +151,52 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         } else {
             result(FlutterError(code: "INVALID_ARGUMENT", message: "seconds parameter is required", details: nil))
         }
+    }
+
+    private func attachVideoViewControllerIfNeeded() {
+        guard !isAttachedToParent else { return }
+        guard let parentViewController = resolveHostViewController() else { return }
+
+        containerViewController = parentViewController
+        parentViewController.addChild(videoViewController)
+        videoView.addSubview(videoViewController.view)
+
+        videoViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            videoViewController.view.topAnchor.constraint(equalTo: videoView.topAnchor),
+            videoViewController.view.leadingAnchor.constraint(equalTo: videoView.leadingAnchor),
+            videoViewController.view.trailingAnchor.constraint(equalTo: videoView.trailingAnchor),
+            videoViewController.view.bottomAnchor.constraint(equalTo: videoView.bottomAnchor)
+        ])
+
+        videoViewController.didMove(toParent: parentViewController)
+        isAttachedToParent = true
+    }
+
+    private func detachVideoViewControllerIfNeeded() {
+        guard isAttachedToParent else {
+            videoViewController.view.removeFromSuperview()
+            return
+        }
+
+        videoViewController.willMove(toParent: nil)
+        videoViewController.view.removeFromSuperview()
+        videoViewController.removeFromParent()
+        containerViewController = nil
+        isAttachedToParent = false
+    }
+
+    private func resolveHostViewController() -> UIViewController? {
+        if let flutterViewController = SwiftVideoPlayerPlugin.viewController {
+            return flutterViewController
+        }
+
+        return UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .windows
+            .first(where: { $0.isKeyWindow })?
+            .rootViewController
     }
 }
 

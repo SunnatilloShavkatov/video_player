@@ -4,6 +4,12 @@
 - **Android**: Simplified fullscreen reconnect retry flow so temporary network loss resumes through a lighter `prepare() + play()` path instead of a more aggressive recovery state machine.
 - **Android**: Changed fullscreen replay behavior to be explicit and user-driven after playback ends, avoiding immediate auto-replay jumps back to `0` seconds.
 - **Android**: Improved fullscreen playback error handling with a dedicated no-internet message when the device is offline.
+- **iOS**: Scoped fullscreen playback results to the active session and unified dismiss handling, preventing duplicate or lost results when the native player closes.
+- **iOS**: Fixed fullscreen and embedded asset source resolution by resolving Flutter asset keys to local file URLs before creating `AVPlayerItem`s.
+- **iOS**: Tightened fullscreen settings and quality logic so HLS parsing only runs for HLS sources, subtitle actions only appear when tracks exist, and MP4 streams skip unnecessary playlist parsing.
+- **iOS**: Attached and detached embedded player controllers with proper child view controller containment during platform-view lifecycle changes.
+- **iOS**: Improved player cleanup and stall recovery around observer teardown, app foregrounding, and network restoration to reduce stuck playback states during fullscreen playback.
+- **iOS**: Restored fullscreen controls auto-hide behavior by fading the shared overlay layer again, fixing playback buttons and the portrait title remaining visible after controls should hide.
 
 ### Added
 - **Android**: Added localized fullscreen retry/no-internet error messages for English, Uzbek, and Russian users.

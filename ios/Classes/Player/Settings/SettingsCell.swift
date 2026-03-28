@@ -16,6 +16,11 @@ class SettingCell: UITableViewCell {
             leftIcon.image = model?.leftIcon
             leftTitle.text = model?.title ?? ""
             configureLabel.text = model?.configureLabel ?? ""
+            let isEnabled = model?.isEnabled ?? true
+            leftTitle.textColor = isEnabled ? .white : UIColor(rgb: 0xff9D9D9D)
+            configureLabel.textColor = isEnabled ? UIColor(rgb: 0xff9D9D9D) : UIColor(rgb: 0xff6C6C6C)
+            rightIcon.alpha = isEnabled ? 1.0 : 0.35
+            contentView.alpha = isEnabled ? 1.0 : 0.6
         }
     }
     var containerStack: UIStackView = {
@@ -143,4 +148,3 @@ class SettingCell: UITableViewCell {
         rightStack.addArrangedSubviews(configureLabel,rightIcon)
     }
 }
-

@@ -3,12 +3,86 @@ import AVFoundation
 import Flutter
 import UIKit
 
-public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate, VideoPlayerDelegate {
-    private var flutterResult: FlutterResult?
+private final class PlaybackSession {
+    private let resolutionQueue = DispatchQueue(label: "uz.shs.video_player.playback_session")
+    private let responder: FlutterResult
+    private var isResolved = false
+
+    init(responder: @escaping FlutterResult) {
+        self.responder = responder
+    }
+
+    var resolved: Bool {
+        resolutionQueue.sync { isResolved }
+    }
+
+    func resolve(with payload: [Int]) {
+        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
+            guard !isResolved else { return nil }
+            isResolved = true
+            return responder
+        }
+
+        guard let responderToCall else { return }
+        if Thread.isMainThread {
+            responderToCall(payload)
+        } else {
+            DispatchQueue.main.async {
+                responderToCall(payload)
+            }
+        }
+    }
+
+    func resolve(error: FlutterError) {
+        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
+            guard !isResolved else { return nil }
+            isResolved = true
+            return responder
+        }
+
+        guard let responderToCall else { return }
+        if Thread.isMainThread {
+            responderToCall(error)
+        } else {
+            DispatchQueue.main.async {
+                responderToCall(error)
+            }
+        }
+    }
+
+    func cancel() {
+        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
+            guard !isResolved else { return nil }
+            isResolved = true
+            return responder
+        }
+
+        guard let responderToCall else { return }
+        if Thread.isMainThread {
+            responderToCall(nil)
+        } else {
+            DispatchQueue.main.async {
+                responderToCall(nil)
+            }
+        }
+    }
+}
+
+struct VideoSourceResolutionFailure: Error {
+    let code: String
+    let message: String
+}
+
+public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
     private static var channel: FlutterMethodChannel?
     public private(set) static var viewController: FlutterViewController?
+    private var registrar: FlutterPluginRegistrar?
+    private var activePlaybackSession: PlaybackSession?
+    private weak var activePlayerViewController: VideoPlayerViewController?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
+        let instance = SwiftVideoPlayerPlugin()
+        instance.registrar = registrar
         if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController as? FlutterViewController {
             viewController = rootViewController
         } else if let windowScene = UIApplication.shared.connectedScenes
@@ -18,7 +92,6 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCy
             viewController = flutterController
         }
         channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger())
-        let instance = SwiftVideoPlayerPlugin()
         if let channel = channel {
             registrar.addMethodCallDelegate(instance, channel: channel)
         }
@@ -47,18 +120,89 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCy
         }
         SwiftVideoPlayerPlugin.viewController = flutterController
     }
+
+    private func cleanupOrphanedSessionIfNeeded() {
+        if activePlayerViewController == nil, let session = activePlaybackSession {
+            if session.resolved {
+                activePlaybackSession = nil
+            } else {
+                session.cancel()
+                activePlaybackSession = nil
+            }
+        }
+    }
+
+    private func bindPlaybackLifecycle(
+        to viewController: VideoPlayerViewController,
+        session: PlaybackSession
+    ) {
+        viewController.onPlaybackFinished = { [weak self, weak viewController] payload in
+            session.resolve(with: payload)
+            if self?.activePlayerViewController === viewController {
+                self?.activePlaybackSession = nil
+            }
+        }
+
+        viewController.onDidDismiss = { [weak self, weak viewController] in
+            if self?.activePlayerViewController === viewController {
+                self?.activePlayerViewController = nil
+            }
+            if self?.activePlaybackSession?.resolved == true {
+                self?.activePlaybackSession = nil
+            }
+        }
+    }
+
+    private func resolvePlaybackSource(
+        for configuration: PlayerConfiguration
+    ) -> Result<PlayerConfiguration, VideoSourceResolutionFailure> {
+        var resolvedConfiguration = configuration
+
+        if configuration.playVideoFromAsset {
+            guard let assetPath = configuration.assetPath?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !assetPath.isEmpty else {
+                return .failure(VideoSourceResolutionFailure(code: "INVALID_ASSET", message: "Asset path is missing"))
+            }
+
+            guard let registrar else {
+                return .failure(VideoSourceResolutionFailure(code: "NO_REGISTRAR", message: "Flutter registrar unavailable for asset lookup"))
+            }
+
+            let lookupKey = registrar.lookupKey(forAsset: assetPath)
+            guard let assetFilePath = Bundle.main.path(forResource: lookupKey, ofType: nil) else {
+                return .failure(VideoSourceResolutionFailure(code: "ASSET_NOT_FOUND", message: "Asset not found: \(assetPath)"))
+            }
+
+            resolvedConfiguration.url = URL(fileURLWithPath: assetFilePath).absoluteString
+            return .success(resolvedConfiguration)
+        }
+
+        let trimmedUrl = configuration.url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl) else {
+            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL"))
+        }
+
+        resolvedConfiguration.url = remoteURL.absoluteString
+        return .success(resolvedConfiguration)
+    }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        flutterResult = result
+        cleanupOrphanedSessionIfNeeded()
+
         switch call.method {
         case "close":
-            guard let presenter = SwiftVideoPlayerPlugin.viewController else {
-                result(FlutterError(code: "NO_VIEW_CONTROLLER", message: "No FlutterViewController available to dismiss", details: nil))
+            if let activePlayerViewController {
+                activePlayerViewController.requestClose {
+                    result(nil)
+                }
+            } else {
+                result(nil)
+            }
+        case "playVideo":
+            guard activePlayerViewController == nil else {
+                result(FlutterError(code: "PLAYER_ALREADY_ACTIVE", message: "A video player is already active", details: nil))
                 return
             }
-            presenter.dismiss(animated: true)
-            result(nil)
-        case "playVideo":
             guard let presenter = SwiftVideoPlayerPlugin.viewController else {
                 result(FlutterError(code: "NO_VIEW_CONTROLLER", message: "No FlutterViewController available to present video", details: nil))
                 return
@@ -70,25 +214,30 @@ public class SwiftVideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCy
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid player configuration", details: nil))
                 return
             }
-            guard URL(string: playerConfiguration.url) != nil else {
-                result(FlutterError(code: "INVALID_URL", message: "Invalid video URL", details: nil))
+
+            let resolvedConfiguration: PlayerConfiguration
+            switch resolvePlaybackSource(for: playerConfiguration) {
+            case .success(let configuration):
+                resolvedConfiguration = configuration
+            case .failure(let error):
+                result(FlutterError(code: error.code, message: error.message, details: nil))
                 return
             }
+
             let vc = VideoPlayerViewController()
-            vc.delegate = self
             vc.modalPresentationStyle = .fullScreen
-            vc.playerConfiguration = playerConfiguration
-            vc.speedLabelText = playerConfiguration.speedText
-            vc.qualityLabelText = playerConfiguration.qualityText
-            vc.selectedQualityText = playerConfiguration.autoText
+            vc.playerConfiguration = resolvedConfiguration
+            vc.speedLabelText = resolvedConfiguration.speedText
+            vc.qualityLabelText = resolvedConfiguration.qualityText
+            vc.selectedQualityText = resolvedConfiguration.autoText
+            let session = PlaybackSession(responder: result)
+            activePlaybackSession = session
+            activePlayerViewController = vc
+            bindPlaybackLifecycle(to: vc, session: session)
             presenter.present(vc, animated: true, completion: nil)
             return
         default:
             result(FlutterMethodNotImplemented)
         }
-    }
-    
-    func getDuration(duration: [Int]) {
-        flutterResult?(duration)
     }
 }
