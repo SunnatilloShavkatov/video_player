@@ -62,11 +62,13 @@ class VideoViewController: UIViewController {
     private var isDisposed = false
     private let disposalQueue = DispatchQueue(label: "com.video.disposal")
 
-    init(registrar: FlutterPluginRegistrar? = nil,
-         methodChannel: FlutterMethodChannel,
-         assets: String,
-         url: String,
-         gravity: AVLayerVideoGravity) {
+    init(
+        registrar: FlutterPluginRegistrar? = nil,
+        methodChannel: FlutterMethodChannel,
+        assets: String,
+        url: String,
+        gravity: AVLayerVideoGravity
+    ) {
         self.registrar = registrar
         self.methodChannel = methodChannel
         self.assets = assets
@@ -91,7 +93,7 @@ class VideoViewController: UIViewController {
             videoView.topAnchor.constraint(equalTo: view.topAnchor),
             videoView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             videoView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            videoView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            videoView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
         _ = playVideo(gravity: gravity)
@@ -100,12 +102,13 @@ class VideoViewController: UIViewController {
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
 
-        coordinator.animate(alongsideTransition: { [weak self] _ in
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            self?.updatePlayerLayerFrame()
-            CATransaction.commit()
-        }, completion: nil)
+        coordinator.animate(
+            alongsideTransition: { [weak self] _ in
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                self?.updatePlayerLayerFrame()
+                CATransaction.commit()
+            }, completion: nil)
     }
 
     override func viewDidLayoutSubviews() {
@@ -194,7 +197,10 @@ class VideoViewController: UIViewController {
     // MARK: - Observer Management (Centralized)
 
     private func startObservingPlayerIfNeeded() {
-        assert(Thread.isMainThread, "Observer setup must be on main thread")
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.startObservingPlayerIfNeeded() }
+            return
+        }
 
         guard !isDisposed else { return }
         guard let item = player.currentItem else { return }
@@ -238,7 +244,10 @@ class VideoViewController: UIViewController {
     }
 
     private func stopObservingPlayerIfNeeded() {
-        assert(Thread.isMainThread, "Observer teardown must be on main thread")
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.stopObservingPlayerIfNeeded() }
+            return
+        }
 
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
@@ -251,6 +260,7 @@ class VideoViewController: UIViewController {
             do {
                 player.removeObserver(self, forKeyPath: #keyPath(AVPlayer.timeControlStatus), context: &VideoViewController.playerContext)
             } catch {
+                debugPrint("⚠️ [VideoViewController] Failed to remove timeControlStatus observer: \(error)")
             }
             isObservingTimeControl = false
         }
@@ -265,6 +275,7 @@ class VideoViewController: UIViewController {
             do {
                 item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.duration), context: &VideoViewController.playerItemContext)
             } catch {
+                debugPrint("⚠️ [VideoViewController] Failed to remove duration observer: \(error)")
             }
             isObservingDuration = false
         }
@@ -273,6 +284,7 @@ class VideoViewController: UIViewController {
             do {
                 item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &VideoViewController.playerItemContext)
             } catch {
+                debugPrint("⚠️ [VideoViewController] Failed to remove status observer: \(error)")
             }
             isObservingStatus = false
         }
@@ -280,10 +292,12 @@ class VideoViewController: UIViewController {
         currentPlayerItem = nil
     }
 
-    override func observeValue(forKeyPath keyPath: String?,
-                               of object: Any?,
-                               change: [NSKeyValueChangeKey : Any]?,
-                               context: UnsafeMutableRawPointer?) {
+    override func observeValue(
+        forKeyPath keyPath: String?,
+        of object: Any?,
+        change: [NSKeyValueChangeKey: Any]?,
+        context: UnsafeMutableRawPointer?
+    ) {
 
         // ✅ CRITICAL: Check STATIC context to prevent exclusivity violations
         if context == &VideoViewController.playerItemContext {
@@ -298,7 +312,7 @@ class VideoViewController: UIViewController {
     private func handlePlayerItemObservation(
         keyPath: String?,
         object: Any?,
-        change: [NSKeyValueChangeKey : Any]?
+        change: [NSKeyValueChangeKey: Any]?
     ) {
         guard !isDisposed, isObservingDuration || isObservingStatus else { return }
 
@@ -339,7 +353,7 @@ class VideoViewController: UIViewController {
 
     private func handlePlayerObservation(
         keyPath: String?,
-        change: [NSKeyValueChangeKey : Any]?
+        change: [NSKeyValueChangeKey: Any]?
     ) {
         guard !isDisposed, isObservingTimeControl else { return }
 

@@ -3,8 +3,6 @@ package uz.shs.video_player
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -75,7 +73,6 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-        runnable?.let { handler.removeCallbacks(it) }
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -135,6 +132,4 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         return true
     }
 
-    private val handler = Handler(Looper.getMainLooper())
-    private var runnable: Runnable? = null
 }

@@ -1,3 +1,19 @@
+## [3.0.5] - 2026-03-30
+
+### Fixed
+- **Android**: Added try-catch around `PlayerController.release()` to prevent rare crashes during player cleanup.
+- **Android**: Removed unused `Handler`/`Runnable` dead code from `VideoPlayerPlugin`.
+- **iOS**: Replaced `assert(Thread.isMainThread)` with `guard`-based main thread dispatch in `PlayerObserverManager` and `VideoViewController` — thread safety now enforced in Release builds, not just Debug.
+- **iOS**: Added `[weak self]` captures and `view.window != nil` guard to all `asyncAfter` bottom sheet presentations, preventing "view not in window hierarchy" crashes on force dismiss.
+- **iOS**: `disablePreventScreenshot()` is now called in `deinit` before releasing `ScreenProtectorKit`, ensuring screen protection is always disabled even on force dealloc.
+- **iOS**: HLS parser now uses a 15-second request timeout and returns a cancellable `URLSessionDataTask`; the task is cancelled in `deinit` to stop in-flight network requests when the player is deallocated.
+- **iOS**: Added `isNetworkMonitoringSetup` flag to prevent `NetworkMonitor` from registering duplicate callbacks when `loadMedia` is called multiple times.
+- **iOS**: Added `guard` checks on `ScreenProtectorKit` layer sublayer access to prevent nil crashes on unexpected layer structure changes.
+- **iOS**: Empty KVO observer removal `catch {}` blocks now log a `debugPrint` warning instead of silently swallowing errors.
+- **Dart**: `_setupMethodHandler()` is now guarded with `_isMethodHandlerSetup` flag, preventing duplicate method channel handler registration when both `setEventListener` and `onDurationReady` are called.
+- **Dart**: `logMessage` now logs errors in Release builds (when `error != null`), not only in Debug mode.
+- **Dart**: Factory constructors `PlayerConfiguration.remote()` and `PlayerConfiguration.asset()` now throw `ArgumentError` in all build modes instead of debug-only `assert`.
+
 ## [3.0.4] - 2026-03-16
 
 ### Fixed

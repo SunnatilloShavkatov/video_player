@@ -35,6 +35,7 @@ class PlayerView: UIView {
     
     // Stall recovery
     private var stallRecoveryTimer: Timer?
+    private var isNetworkMonitoringSetup = false
     
     // MARK: - Core Properties
     private var player = AVPlayer()
@@ -232,13 +233,16 @@ class PlayerView: UIView {
         loadInitialMediaSource()
         
         // Start network monitoring — auto-recover when connection is restored
-        NetworkMonitor.shared.startMonitoring()
-        NetworkMonitor.shared.onNetworkStatusChange = { [weak self] isConnected in
-            guard let self = self, isConnected else { return }
-            // Network restored — attempt stall recovery if player is stuck
-            if self.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
-                debugPrint("🌐 Network restored — triggering stall recovery")
-                self.scheduleStallRecovery()
+        if !isNetworkMonitoringSetup {
+            isNetworkMonitoringSetup = true
+            NetworkMonitor.shared.startMonitoring()
+            NetworkMonitor.shared.onNetworkStatusChange = { [weak self] isConnected in
+                guard let self = self, isConnected else { return }
+                // Network restored — attempt stall recovery if player is stuck
+                if self.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                    debugPrint("🌐 Network restored — triggering stall recovery")
+                    self.scheduleStallRecovery()
+                }
             }
         }
     }

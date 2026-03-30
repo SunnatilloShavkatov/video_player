@@ -52,7 +52,10 @@ final class PlayerObserverManager: NSObject {
     /// Add all observers (KVO + NotificationCenter + time observer)
     /// MUST be called on main thread
     func addObservers(for playerItem: AVPlayerItem) {
-        assert(Thread.isMainThread, "addObservers must be called on main thread")
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.addObservers(for: playerItem) }
+            return
+        }
         
         // Prevent duplicate observers
         guard !observingMediaPlayer else {

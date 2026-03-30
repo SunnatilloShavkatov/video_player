@@ -200,6 +200,7 @@ final class VideoPlayerViewController {
 
   final MethodChannel _channel;
   bool _isDisposed = false;
+  bool _isMethodHandlerSetup = false;
 
   void _checkNotDisposed() {
     if (_isDisposed) {
@@ -483,6 +484,10 @@ final class VideoPlayerViewController {
   ///
   /// All callbacks check disposal state before executing to prevent use-after-dispose errors.
   void _setupMethodHandler() {
+    if (_isMethodHandlerSetup) {
+      return;
+    }
+    _isMethodHandlerSetup = true;
     _channel.setMethodCallHandler((call) async {
       // Ignore all callbacks if disposed
       if (_isDisposed) {
@@ -576,6 +581,7 @@ final class VideoPlayerViewController {
       return;
     }
     _isDisposed = true;
+    _isMethodHandlerSetup = false;
     _channel.setMethodCallHandler(null);
     await _positionController?.close();
     _positionController = null;

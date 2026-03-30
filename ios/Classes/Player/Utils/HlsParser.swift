@@ -29,32 +29,39 @@ class HlsParser {
         return trimmedUrl.lowercased().contains(".m3u8")
     }
     
-    static func parseHlsMasterPlaylist(url: String, completion: @escaping ([QualityVariant]) -> Void) {
+    @discardableResult
+    static func parseHlsMasterPlaylist(url: String, completion: @escaping ([QualityVariant]) -> Void) -> URLSessionDataTask? {
         guard isLikelyHls(url: url) else {
             completion([])
-            return
+            return nil
         }
 
         guard let masterUrl = URL(string: url) else {
             completion([])
-            return
+            return nil
         }
-        
-        let task = URLSession.shared.dataTask(with: masterUrl) { data, response, error in
+
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 15
+        let session = URLSession(configuration: config)
+
+        let task = session.dataTask(with: masterUrl) { data, response, error in
             guard let data = data, error == nil else {
                 completion([])
                 return
             }
-            
+
             guard let playlistString = String(data: data, encoding: .utf8) else {
                 completion([])
                 return
             }
-            
+
             let variants = parsePlaylistContent(playlistString: playlistString, baseURL: masterUrl)
             completion(variants)
         }
         task.resume()
+        return task
     }
     
     private static func parsePlaylistContent(playlistString: String, baseURL: URL) -> [QualityVariant] {

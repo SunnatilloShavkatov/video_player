@@ -38,6 +38,10 @@ class PlayerConfiguration {
   ///
   /// This constructor requires all parameters to be specified. Use this only when
   /// you need full control over all configuration options.
+  /// **Note on validation:** This `const` constructor uses `assert` which is
+  /// only enforced in debug builds. For production-safe validation, prefer
+  /// [PlayerConfiguration.remote] or [PlayerConfiguration.asset] factory
+  /// constructors, which throw [ArgumentError] in all build modes.
   const PlayerConfiguration({
     required this.videoUrl,
     required this.title,
@@ -95,7 +99,9 @@ class PlayerConfiguration {
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
   }) {
-    assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
+    if (startPositionSeconds < 0) {
+      throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
+    }
     return PlayerConfiguration(
       videoUrl: videoUrl,
       title: title,
@@ -144,8 +150,12 @@ class PlayerConfiguration {
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
   }) {
-    assert(startPositionSeconds >= 0, 'startPositionSeconds must be non-negative');
-    assert(assetPath.isNotEmpty, 'assetPath cannot be empty');
+    if (startPositionSeconds < 0) {
+      throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
+    }
+    if (assetPath.isEmpty) {
+      throw ArgumentError.value(assetPath, 'assetPath', 'cannot be empty');
+    }
     return PlayerConfiguration(
       videoUrl: '',
       title: title,

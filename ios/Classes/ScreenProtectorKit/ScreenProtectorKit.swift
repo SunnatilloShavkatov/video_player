@@ -43,9 +43,11 @@ public class ScreenProtectorKit {
             screenPrevent.centerXAnchor.constraint(equalTo: w.centerXAnchor).isActive = true
             w.layer.superlayer?.addSublayer(screenPrevent.layer)
             if #available(iOS 17.0, *) {
-                screenPrevent.layer.sublayers?.last?.addSublayer(w.layer)
+                guard let targetLayer = screenPrevent.layer.sublayers?.last else { return }
+                targetLayer.addSublayer(w.layer)
             } else {
-                screenPrevent.layer.sublayers?.first?.addSublayer(w.layer)
+                guard let targetLayer = screenPrevent.layer.sublayers?.first else { return }
+                targetLayer.addSublayer(w.layer)
             }
         }
     }

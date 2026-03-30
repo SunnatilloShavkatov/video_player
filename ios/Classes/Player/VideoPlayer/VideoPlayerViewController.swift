@@ -35,6 +35,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     var subtitleDelegate: SubtitleDelegate!
     var playerConfiguration: PlayerConfiguration!
     private var availableQualities: [QualityVariant] = []
+    private var hlsParseTask: URLSessionDataTask?
     private var playerRate: Float = 1.0
     private var selectedSpeedText = "1.0x"
     var selectedQualityText = "Auto"
@@ -49,8 +50,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     private var canShareContent: Bool {
-        !playerConfiguration.playVideoFromAsset &&
-            !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !playerConfiguration.playVideoFromAsset && !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var hasSubtitleSelection: Bool {
@@ -111,7 +111,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         if let window = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .flatMap({ $0.windows })
-            .first(where: { $0.isKeyWindow }) {
+            .first(where: { $0.isKeyWindow })
+        {
             screenProtectorKit = ScreenProtectorKit(window: window)
             screenProtectorKit?.configurePreventionScreenshot()
             screenProtectorKit?.enabledPreventScreenshot()
@@ -156,8 +157,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     deinit {
+        hlsParseTask?.cancel()
+        hlsParseTask = nil
         pipPossibleObservation?.invalidate()
         pipPossibleObservation = nil
+        screenProtectorKit?.disablePreventScreenshot()
         screenProtectorKit = nil
     }
 
@@ -274,8 +278,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         screenProtectorKit?.disablePreventScreenshot()
 
         if UIDevice.current.userInterfaceIdiom != .pad,
-           let orientation = self.view.window?.windowScene?.interfaceOrientation,
-           orientation.isLandscape {
+            let orientation = self.view.window?.windowScene?.interfaceOrientation,
+            orientation.isLandscape
+        {
             changeOrientation()
         }
 
@@ -331,9 +336,10 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             // Build quality list (same as showQualityBottomSheet)
             var qualities = ["Auto"]
             if !availableQualities.isEmpty {
-                qualities.append(contentsOf: availableQualities.map {
-                    $0.displayName
-                })
+                qualities.append(
+                    contentsOf: availableQualities.map {
+                        $0.displayName
+                    })
             }
 
             guard index < qualities.count else {
@@ -381,7 +387,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         bottomSheetVC.bottomSheetType = .subtitle
         bottomSheetVC.selectedIndex = subtitles.firstIndex(of: selectedSubtitle) ?? 0
         bottomSheetVC.cellDelegate = self
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil else { return }
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }
@@ -402,7 +409,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
 
         // Background parsing doesn't affect video playback
-        HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
+        hlsParseTask = HlsParser.parseHlsMasterPlaylist(url: videoUrl) { [weak self] variants in
             guard let self = self else {
                 return
             }
@@ -422,9 +429,10 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         // Build quality list from parsed variants
         var listOfQuality = ["Auto"]
         if !availableQualities.isEmpty {
-            listOfQuality.append(contentsOf: availableQualities.map {
-                $0.displayName
-            })
+            listOfQuality.append(
+                contentsOf: availableQualities.map {
+                    $0.displayName
+                })
         }
 
         let bottomSheetVC = BottomSheetViewController()
@@ -434,7 +442,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         bottomSheetVC.cellDelegate = self
         bottomSheetVC.bottomSheetType = .quality
         bottomSheetVC.selectedIndex = listOfQuality.firstIndex(of: selectedQualityText) ?? 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil else { return }
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }
@@ -447,7 +456,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         bottomSheetVC.cellDelegate = self
         bottomSheetVC.bottomSheetType = .speed
         bottomSheetVC.selectedIndex = speedList.firstIndex(of: "\(self.playerRate)") ?? 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil else { return }
             self.present(bottomSheetVC, animated: false, completion: nil)
         }
     }

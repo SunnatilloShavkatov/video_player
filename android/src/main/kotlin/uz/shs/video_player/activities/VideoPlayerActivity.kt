@@ -913,7 +913,6 @@ class VideoPlayerActivity : AppCompatActivity(),
                     if (fromQuality) {
                         handleQualitySelection(position)
                     } else {
-                        currentSpeed = l[position]
                         currentSpeed = "${l[position]}"
                         playerController.setPlaybackSpeed(currentSpeed.replace("x", "").toFloat())
                     }

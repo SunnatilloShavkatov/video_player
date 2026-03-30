@@ -245,10 +245,10 @@ class PlayerController(
      */
     fun release() {
         player?.let {
-            it.removeListener(playerListener)
-            it.stop()
-            it.clearVideoSurface()
-            it.release()
+            try { it.removeListener(playerListener) } catch (_: Exception) {}
+            try { it.stop() } catch (_: Exception) {}
+            try { it.clearVideoSurface() } catch (_: Exception) {}
+            try { it.release() } catch (_: Exception) {}
         }
         player = null
         waitingForNetworkRecovery = false
