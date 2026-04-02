@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'video_player'
-  s.version          = '3.0.4'
+  s.version          = '3.0.5'
   s.summary          = 'A Flutter video player plugin with native iOS and Android playback.'
   s.description      = <<-DESC
 A comprehensive Flutter video player plugin that supports fullscreen and embedded playback
