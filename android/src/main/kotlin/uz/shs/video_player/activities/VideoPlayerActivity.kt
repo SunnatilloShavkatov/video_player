@@ -204,11 +204,6 @@ class VideoPlayerActivity : AppCompatActivity(),
             WindowInsetsCompat.CONSUMED
         }
 
-        // Initialize Binding
-        initializePlayerViews()
-
-        playerView = binding.exoPlayerView
-
         try {
             @Suppress("DEPRECATION")
             playerConfiguration = intent.getSerializableExtra(extraArgument) as PlayerConfiguration
@@ -218,6 +213,11 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
         titleText = playerConfiguration.title
         url = playerConfiguration.videoUrl
+
+        // Initialize Binding
+        initializePlayerViews()
+
+        playerView = binding.exoPlayerView
         currentQuality = "Auto"
 
         mPlaybackState = PlaybackState.PLAYING
@@ -474,8 +474,7 @@ class VideoPlayerActivity : AppCompatActivity(),
         // Initial setup
         brightnessSeekbar.isEnabled = false
         volumeSeekBar.isEnabled = false
-        title.text = titleText
-        title1.text = titleText
+        applyTitleState(resources.configuration.orientation)
 
         // Touch Listener
         binding.exoPlayerView.setOnTouchListener { _, motionEvent ->
@@ -489,6 +488,19 @@ class VideoPlayerActivity : AppCompatActivity(),
                 }
             }
             return@setOnTouchListener true
+        }
+    }
+
+    private fun applyTitleState(orientation: Int) {
+        title.text = titleText
+        title1.text = titleText
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            title.visibility = View.VISIBLE
+            title1.visibility = View.GONE
+        } else {
+            title.visibility = View.INVISIBLE
+            title1.visibility = View.VISIBLE
         }
     }
 
@@ -720,12 +732,10 @@ class VideoPlayerActivity : AppCompatActivity(),
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         currentOrientation = newConfig.orientation
+        applyTitleState(newConfig.orientation)
+
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setFullScreen()
-            title.text = title1.text
-            title.visibility = View.VISIBLE
-            title1.text = ""
-            title1.visibility = View.GONE
             zoom.visibility = View.VISIBLE
             when (currentBottomSheet) {
                 BottomSheet.SETTINGS -> {
@@ -739,10 +749,6 @@ class VideoPlayerActivity : AppCompatActivity(),
             }
         } else {
             cutFullScreen()
-            title1.text = title.text
-            title1.visibility = View.VISIBLE
-            title.text = ""
-            title.visibility = View.INVISIBLE
             zoom.visibility = View.GONE
             playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             when (currentBottomSheet) {
