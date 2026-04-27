@@ -1,3 +1,8 @@
+## [3.0.6] - 2026-04-27
+
+### Changed
+- **Android**: Updated AndroidX Media3 (ExoPlayer) from `1.9.3` to `1.10.0`.
+
 ## [3.0.5] - 2026-03-30
 
 ### Fixed

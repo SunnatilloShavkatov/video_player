@@ -6,7 +6,7 @@ A comprehensive Flutter video player plugin with native iOS and Android implemen
 provides advanced video playback capabilities and iOS screen protection features.
 
 **Package:** uz.shs.video_player
-**Version:** 3.0.2
+**Version:** 3.0.6
 **Repository:** https://github.com/SunnatilloShavkatov/video_player
 
 ## Architecture
@@ -68,12 +68,12 @@ video_player/
 
 ## Recent Changes
 
-### Latest Fixes
+### Latest Changes
 
+- **3.0.6**: Updated AndroidX Media3 (ExoPlayer) from 1.9.3 to 1.10.0
+- **3.0.5**: Fixed Android/iOS stability issues, thread safety, HLS parser improvements
 - **4b816c6**: Fixed video player crash error
-- **ac17665**: Fixed video player crash error (additional fix)
 - **3be5ef9**: Fixed EGLSurfaceTexture issue
-- **ebab22f**: Added UISceneDelegate migration
 
 ## Development Guidelines
 
