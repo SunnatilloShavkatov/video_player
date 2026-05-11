@@ -59,8 +59,7 @@ class _MainPageState extends State<MainPage> {
     try {
       final playbackTimes = await VideoPlayer.instance.playVideo(
         playerConfig: const PlayerConfiguration(
-          videoUrl:
-              'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
+          videoUrl: 'https://englifypublicvideos.hel1.your-objectstorage.com/public/englify-intro-video2/master.m3u8',
           movieShareLink: 'https://uzd.iiii.io/movie/7963?type=premier',
           qualityText: 'Quality',
           speedText: 'Speed',
