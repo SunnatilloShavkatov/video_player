@@ -1,28 +1,9 @@
 plugins {
     id("com.android.library")
-    id("kotlin-android")
 }
 
 group = "uz.shs.video_player"
 version = "1.0-SNAPSHOT"
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.13.1")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
 
 android {
     namespace = "uz.shs.video_player"
