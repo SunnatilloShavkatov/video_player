@@ -31,3 +31,4 @@ build/
 /example/
 .vscode
 /.claude/
+/ios/video_player/.swiftpm/xcode/

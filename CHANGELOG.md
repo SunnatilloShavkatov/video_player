@@ -1,3 +1,15 @@
+## [3.1.0] - 2026-05-19
+
+### Changed
+- **iOS**: Migrated iOS native code to Swift Package Manager (SPM). `ios/video_player/` package added with `Package.swift`.
+- **iOS**: Source files moved from `ios/Classes/` to `ios/video_player/Sources/video_player/` — standard SPM layout.
+- **iOS**: `Bundle(for: SwiftVideoPlayerPlugin.self)` replaced with `Bundle.module` for SPM resource loading; CocoaPods path preserved via `#if SWIFT_PACKAGE` conditional.
+- **iOS**: Added missing `import UIKit` and `import Flutter` to `TitleLabel.swift`, `Colors.swift`, `IconButton.swift`, `PlayerView.swift`, and `VideoViewController.swift` — required for SPM explicit module imports.
+- **iOS**: `pluginClass` changed from `VideoPlayerPlugin` (ObjC bridge) to `SwiftVideoPlayerPlugin` — ObjC bridge excluded from SPM target.
+- **iOS**: SnapKit dependency upgraded from `~> 4.0` (CocoaPods) to `>= 5.0.0` (SPM).
+- **Example**: Removed CocoaPods integration from example app (`Podfile` deleted, `pod deintegrate` applied, xcconfig Pods includes removed). Example app now builds exclusively via SPM.
+- **Android**: Updated version reference to `3.1.0`.
+
 ## [3.0.6] - 2026-04-27
 
 ### Changed
