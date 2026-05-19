@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 class TitleLabel :UILabel {
     override init(frame: CGRect) {

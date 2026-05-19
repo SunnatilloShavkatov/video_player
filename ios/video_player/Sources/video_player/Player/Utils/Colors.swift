@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 struct Colors {
     static let primary = UIColor(hex: "#00A4FF")

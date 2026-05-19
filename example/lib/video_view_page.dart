@@ -63,8 +63,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       children: [
         Align(
           child: VideoPlayerView(
-            url:
-                'https://df5ralxb7y7wh.cloudfront.net/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8',
+            url: 'https://englifypublicvideos.hel1.your-objectstorage.com/public/englify-intro-video2/master.m3u8',
             onVideoViewCreated: _onVideoViewCreated,
           ),
         ),

@@ -9,6 +9,7 @@
 import AVFoundation
 import AVKit
 import MediaPlayer
+import UIKit
 
 protocol PlayerViewDelegate: NSObjectProtocol {
     func close(duration: [Int])
