@@ -1,3 +1,13 @@
+## [3.1.1] - 2026-06-08
+
+### Fixed
+- **Android**: Fixed `IllegalArgumentException` crash in `PlayerController.initialize()` caused by calling `seekTo()` before `prepare()` on Media3 1.10.x. Initial seek position is now passed via `setMediaSource(source, startPositionMs)`.
+- **Android**: Updated AndroidX Media3 (ExoPlayer) from `1.10.0` to `1.10.1`.
+
+### Changed
+- **iOS**: Removed `SnapKit` dependency from `video_player.podspec` — now resolved exclusively via SPM `Package.swift`.
+- **iOS**: Enabled Swift Package Manager support (`flutter config --enable-swift-package-manager`).
+
 ## [3.1.0] - 2026-05-19
 
 ### Changed

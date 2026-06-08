@@ -69,11 +69,11 @@ class PlayerController(
             .build()
 
         // Initialize ExoPlayer
+        val startPositionMs = (lastPositionSeconds * 1000).coerceAtLeast(0)
         player = ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .build().apply {
-            setMediaSource(mediaSource)
-            seekTo(lastPositionSeconds * 1000) // Convert seconds to milliseconds
+            setMediaSource(mediaSource, startPositionMs)
             prepare()
             addListener(playerListener)
             playWhenReady = true
