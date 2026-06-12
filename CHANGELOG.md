@@ -1,3 +1,12 @@
+## [3.2.0] - 2026-06-12
+
+### Added
+- **All platforms**: New `isScreenshotEnabled` field in `PlayerConfiguration` (also available in `PlayerConfiguration.remote` and `PlayerConfiguration.asset` factory constructors). Defaults to `false` — screenshots and screen recording are blocked during playback (Android `FLAG_SECURE`, iOS ScreenProtectorKit), matching previous behavior. Set `isScreenshotEnabled: true` to allow screen capture.
+
+### Changed
+- **Android**: `PlayerConfiguration` is now parsed before window setup in `VideoPlayerActivity.onCreate()` so `FLAG_SECURE` can be applied conditionally while still preceding `setContentView` (MTK EGL crash fix preserved).
+- **iOS**: ScreenProtectorKit is only initialized when screen capture is disabled, avoiding startup overhead when `isScreenshotEnabled: true`.
+
 ## [3.1.1] - 2026-06-08
 
 ### Fixed

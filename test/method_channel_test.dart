@@ -11,24 +11,21 @@ void main() {
     const channelName = 'video_player';
 
     setUp(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         null,
       );
     });
 
     tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         null,
       );
     });
 
     test('playVideo returns expected result', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         (MethodCall call) async {
           if (call.method == 'playVideo') {
@@ -48,8 +45,7 @@ void main() {
     });
 
     test('playVideo handles null result', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         (MethodCall call) async {
           if (call.method == 'playVideo') {
@@ -67,8 +63,7 @@ void main() {
     });
 
     test('playVideo handles platform exception gracefully', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         (MethodCall call) async {
           if (call.method == 'playVideo') {
@@ -86,8 +81,7 @@ void main() {
     });
 
     test('close completes without error', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         (MethodCall call) async {
           if (call.method == 'close') {
@@ -97,15 +91,11 @@ void main() {
         },
       );
 
-      await expectLater(
-        methodChannel.close(),
-        completes,
-      );
+      await expectLater(methodChannel.close(), completes);
     });
 
     test('close handles platform exception gracefully', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),
         (MethodCall call) async {
           if (call.method == 'close') {
@@ -115,10 +105,7 @@ void main() {
         },
       );
 
-      await expectLater(
-        methodChannel.close(),
-        completes,
-      );
+      await expectLater(methodChannel.close(), completes);
     });
   });
 }

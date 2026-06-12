@@ -17,8 +17,9 @@ struct PlayerConfiguration{
     var qualityText: String
     var movieShareLink: String
     var playVideoFromAsset: Bool
+    var isScreenshotEnabled: Bool
 
-    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false) {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -28,6 +29,7 @@ struct PlayerConfiguration{
         self.qualityText = qualityText
         self.movieShareLink = movieShareLink
         self.playVideoFromAsset = playVideoFromAsset
+        self.isScreenshotEnabled = isScreenshotEnabled
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
@@ -43,6 +45,7 @@ struct PlayerConfiguration{
         }
 
         let assetPath = map["assetPath"] as? String
+        let isScreenshotEnabled = map["isScreenshotEnabled"] as? Bool ?? false
 
         return PlayerConfiguration(
             qualityText: qualityText,
@@ -53,7 +56,8 @@ struct PlayerConfiguration{
             assetPath: assetPath,
             autoText: autoText,
             url: videoUrl,
-            movieShareLink: movieShareLink
+            movieShareLink: movieShareLink,
+            isScreenshotEnabled: isScreenshotEnabled
         )
     }
 }

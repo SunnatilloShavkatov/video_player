@@ -98,8 +98,7 @@ final class VideoPlayer {
   /// }
   /// ```
   Future<PlaybackResult> playVideo({required PlayerConfiguration playerConfig}) {
-    if (!playerConfig.playVideoFromAsset &&
-        UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
+    if (!playerConfig.playVideoFromAsset && UrlValidator.instance.isNotValidHttpsUrl(playerConfig.videoUrl)) {
       throw ArgumentError.value(
         playerConfig.videoUrl,
         'playerConfig.videoUrl',

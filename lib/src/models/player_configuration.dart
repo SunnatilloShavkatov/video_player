@@ -52,6 +52,7 @@ class PlayerConfiguration {
     required this.lastPosition,
     required this.movieShareLink,
     required this.playVideoFromAsset,
+    this.isScreenshotEnabled = false,
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -98,6 +99,7 @@ class PlayerConfiguration {
     String speedText = 'Speed',
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
+    bool isScreenshotEnabled = false,
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -112,6 +114,7 @@ class PlayerConfiguration {
       playVideoFromAsset: false,
       movieShareLink: movieShareLink,
       lastPosition: startPositionSeconds,
+      isScreenshotEnabled: isScreenshotEnabled,
     );
   }
 
@@ -149,6 +152,7 @@ class PlayerConfiguration {
     String speedText = 'Speed',
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
+    bool isScreenshotEnabled = false,
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -166,6 +170,7 @@ class PlayerConfiguration {
       playVideoFromAsset: true,
       qualityText: qualityText,
       lastPosition: startPositionSeconds,
+      isScreenshotEnabled: isScreenshotEnabled,
     );
   }
 
@@ -246,6 +251,15 @@ class PlayerConfiguration {
   /// When `false`, the player loads video from [videoUrl].
   final bool playVideoFromAsset;
 
+  /// Whether taking screenshots and screen recording is allowed during playback.
+  ///
+  /// When `false` (default), the native player blocks screen capture:
+  /// - Android: `FLAG_SECURE` is applied to the player window
+  /// - iOS: ScreenProtectorKit screenshot prevention is enabled
+  ///
+  /// Set to `true` to allow screenshots and screen recording.
+  final bool isScreenshotEnabled;
+
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -262,6 +276,7 @@ class PlayerConfiguration {
     'lastPosition': lastPosition, // Already in seconds
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
+    'isScreenshotEnabled': isScreenshotEnabled,
   };
 
   @override
@@ -275,6 +290,7 @@ class PlayerConfiguration {
       'playVideoFromAsset: $playVideoFromAsset, '
       'assetPath: $assetPath, '
       'autoText: $autoText, '
-      'movieShareLink: $movieShareLink '
+      'movieShareLink: $movieShareLink, '
+      'isScreenshotEnabled: $isScreenshotEnabled '
       '}';
 }

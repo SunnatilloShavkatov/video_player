@@ -108,7 +108,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         // Only enable screen protection if explicitly requested
         // This avoids 10-50ms startup jank and fragile layer manipulation
 
-        if let window = UIApplication.shared.connectedScenes
+        if !playerConfiguration.isScreenshotEnabled,
+           let window = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .flatMap({ $0.windows })
             .first(where: { $0.isKeyWindow })

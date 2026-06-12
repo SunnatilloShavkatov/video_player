@@ -31,19 +31,14 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
 
       // Platform returns [lastPositionSeconds, durationSeconds] as integers (in SECONDS)
       if (result.length != 2) {
-        return PlaybackFailed(
-          error: 'Invalid platform response: expected 2 elements, got ${result.length}',
-        );
+        return PlaybackFailed(error: 'Invalid platform response: expected 2 elements, got ${result.length}');
       }
 
       final lastPositionSeconds = (result[0] ?? 0) as int;
       final durationSeconds = (result[1] ?? 1) as int;
 
       // Return as-is (platform already provides seconds)
-      return PlaybackCompleted(
-        lastPositionSeconds: lastPositionSeconds,
-        durationSeconds: durationSeconds,
-      );
+      return PlaybackCompleted(lastPositionSeconds: lastPositionSeconds, durationSeconds: durationSeconds);
     } on PlatformException catch (error, stackTrace) {
       logMessage('playVideo failed with PlatformException', error: error, stackTrace: stackTrace);
       return PlaybackFailed(error: error, stackTrace: stackTrace);

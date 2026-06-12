@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.shs.video_player"
-version = "1.0-SNAPSHOT"
+version = "3.2.0"
 
 android {
     namespace = "uz.shs.video_player"

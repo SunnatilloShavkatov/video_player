@@ -177,10 +177,19 @@ class VideoPlayerActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         currentInstance = WeakReference(this)
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+        try {
+            @Suppress("DEPRECATION")
+            playerConfiguration = intent.getSerializableExtra(extraArgument) as PlayerConfiguration
+        } catch (e: Exception) {
+            finish()
+            return
+        }
         // Critical MTK EglMakeCurrent Crash Fix:
         // FLAG_SECURE and Window properties MUST be set BEFORE setContentView.
         // Doing it after introduces a race condition on SurfaceView's EGL context creation.
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (!playerConfiguration.isScreenshotEnabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
         @Suppress("DEPRECATION")
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             window.statusBarColor = Color.BLACK
@@ -204,13 +213,6 @@ class VideoPlayerActivity : AppCompatActivity(),
             WindowInsetsCompat.CONSUMED
         }
 
-        try {
-            @Suppress("DEPRECATION")
-            playerConfiguration = intent.getSerializableExtra(extraArgument) as PlayerConfiguration
-        } catch (e: Exception) {
-            finish()
-            return
-        }
         titleText = playerConfiguration.title
         url = playerConfiguration.videoUrl
 

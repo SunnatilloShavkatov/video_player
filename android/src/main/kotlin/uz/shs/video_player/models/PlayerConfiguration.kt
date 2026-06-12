@@ -13,4 +13,5 @@ data class PlayerConfiguration(
     @SerializedName("lastPosition") val lastPosition: Long,
     @SerializedName("movieShareLink") val movieShareLink: String,
     @SerializedName("playVideoFromAsset") val playVideoFromAsset: Boolean,
+    @SerializedName("isScreenshotEnabled") val isScreenshotEnabled: Boolean = false,
 ) : Serializable
