@@ -191,9 +191,12 @@ class VideoPlayerActivity : AppCompatActivity(),
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
         @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            window.statusBarColor = Color.BLACK
-            window.navigationBarColor = Color.BLACK
+        window.statusBarColor = Color.BLACK
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = Color.BLACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            window.isNavigationBarContrastEnforced = false
         }
 
         // Initialize Binding
@@ -774,6 +777,11 @@ class VideoPlayerActivity : AppCompatActivity(),
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        window.navigationBarColor = Color.BLACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            window.isNavigationBarContrastEnforced = false
+        }
     }
 
     private fun cutFullScreen() {
@@ -781,6 +789,11 @@ class VideoPlayerActivity : AppCompatActivity(),
         WindowInsetsControllerCompat(window, findViewById(R.id.player_activity)).show(
             WindowInsetsCompat.Type.systemBars()
         )
+        window.navigationBarColor = Color.BLACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            window.isNavigationBarContrastEnforced = false
+        }
     }
 
     private var currentBottomSheet = BottomSheet.NONE

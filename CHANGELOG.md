@@ -1,3 +1,8 @@
+## [3.2.1] - 2026-06-20
+
+### Fixed
+- **Android**: Fixed white scrim overlay on system navigation bar in portrait mode on Android 15+ (API 35+, edge-to-edge enforced). `navigationBarColor` setter became a no-op under mandatory edge-to-edge, so the system's auto contrast scrim showed through. Now explicitly disabled via `window.isNavigationBarContrastEnforced = false` in `onCreate()`, `setFullScreen()`, and `cutFullScreen()`.
+
 ## [3.2.0] - 2026-06-12
 
 ### Added
