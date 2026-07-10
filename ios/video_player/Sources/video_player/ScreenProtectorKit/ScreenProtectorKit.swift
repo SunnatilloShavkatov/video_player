@@ -11,8 +11,20 @@ import UIKit
 /// Provides comprehensive screen protection features for video content.
 public class ScreenProtectorKit {
     
+    // Shared across all instances and never removed from the window: each player open
+    // would otherwise add a fresh UITextField that stays in the window forever (leak).
+    // The field must never deallocate — its dealloc walks a layer tree mangled by the
+    // window-layer reparenting below and crashes in -[UITextField dealloc] on iOS 17+.
+    private static let sharedScreenPrevent = UITextField()
+
+    // The layer surgery below must run at most once per app lifetime. Re-running it
+    // while w.layer already sits inside the field's canvas layer makes addSubview
+    // create a CALayer cycle, and Core Animation throws an NSException from
+    // CA::Layer::ensure_transaction_recursively (SIGABRT).
+    private static var isInstalled = false
+
     private var window: UIWindow?
-    private var screenPrevent = UITextField()
+    private var screenPrevent: UITextField { Self.sharedScreenPrevent }
     private var screenshotObserve: NSObjectProtocol?
     private var screenRecordObserve: NSObjectProtocol?
     
@@ -35,21 +47,46 @@ public class ScreenProtectorKit {
     /// }
     /// ```
     public func configurePreventionScreenshot() {
-        guard let w = window else { return }
-        
-        if !w.subviews.contains(screenPrevent) {
-            w.addSubview(screenPrevent)
-            screenPrevent.centerYAnchor.constraint(equalTo: w.centerYAnchor).isActive = true
-            screenPrevent.centerXAnchor.constraint(equalTo: w.centerXAnchor).isActive = true
-            w.layer.superlayer?.addSublayer(screenPrevent.layer)
-            if #available(iOS 17.0, *) {
-                guard let targetLayer = screenPrevent.layer.sublayers?.last else { return }
-                targetLayer.addSublayer(w.layer)
-            } else {
-                guard let targetLayer = screenPrevent.layer.sublayers?.first else { return }
-                targetLayer.addSublayer(w.layer)
-            }
+        guard let w = window, !Self.isInstalled else { return }
+
+        // Secure BEFORE capturing the canvas layer: setting isSecureTextEntry later
+        // replaces the field's internal canvas view (iOS 17+), freeing the view whose
+        // layer would then still host w.layer.
+        screenPrevent.isSecureTextEntry = true
+
+        w.addSubview(screenPrevent)
+        Self.isInstalled = true
+        screenPrevent.centerYAnchor.constraint(equalTo: w.centerYAnchor).isActive = true
+        screenPrevent.centerXAnchor.constraint(equalTo: w.centerXAnchor).isActive = true
+        w.layer.superlayer?.addSublayer(screenPrevent.layer)
+        if #available(iOS 17.0, *) {
+            guard let targetLayer = screenPrevent.layer.sublayers?.last else { return }
+            targetLayer.addSublayer(w.layer)
+        } else {
+            guard let targetLayer = screenPrevent.layer.sublayers?.first else { return }
+            targetLayer.addSublayer(w.layer)
         }
+    }
+
+    // Toggling isSecureTextEntry replaces the field's internal canvas view (iOS 17+).
+    // While installed, w.layer lives inside that canvas layer, so detach it around the
+    // toggle and re-attach to the freshly created canvas — otherwise the window layer
+    // is left inside a freed layer (dangling delegate) or off screen (black window).
+    private func setSecureTextEntry(_ secure: Bool) {
+        guard screenPrevent.isSecureTextEntry != secure else { return }
+        guard Self.isInstalled, let w = window else {
+            screenPrevent.isSecureTextEntry = secure
+            return
+        }
+        w.layer.removeFromSuperlayer()
+        screenPrevent.isSecureTextEntry = secure
+        let targetLayer: CALayer?
+        if #available(iOS 17.0, *) {
+            targetLayer = screenPrevent.layer.sublayers?.last
+        } else {
+            targetLayer = screenPrevent.layer.sublayers?.first
+        }
+        targetLayer?.addSublayer(w.layer)
     }
     
     /// Enable screenshot prevention by making the text field secure
@@ -61,7 +98,7 @@ public class ScreenProtectorKit {
     /// }
     /// ```
     public func enabledPreventScreenshot() {
-        screenPrevent.isSecureTextEntry = true
+        setSecureTextEntry(true)
     }
     
     /// Disable screenshot prevention
@@ -73,7 +110,7 @@ public class ScreenProtectorKit {
     /// }
     /// ```
     public func disablePreventScreenshot() {
-        screenPrevent.isSecureTextEntry = false
+        setSecureTextEntry(false)
     }
     
     /// Remove a specific observer

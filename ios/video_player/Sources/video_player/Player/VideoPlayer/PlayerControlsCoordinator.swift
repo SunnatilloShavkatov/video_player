@@ -30,6 +30,8 @@ final class PlayerControlsCoordinator {
 
     // State
     private var controlsVisible = true
+    // While true (e.g. during a network stall) controls stay visible: no auto-hide
+    private var autoHideSuspended = false
     
     // MARK: - Initialization
     
@@ -147,11 +149,31 @@ final class PlayerControlsCoordinator {
     
     func resetControlsTimer() {
         controlsTimer?.invalidate()
+        guard !autoHideSuspended else {
+            controlsTimer = nil
+            return
+        }
         controlsTimer = Timer.scheduledTimer(
             withTimeInterval: 5.0,
             repeats: false
         ) { [weak self] _ in
             self?.hideControls()
+        }
+    }
+
+    /// Keep controls on screen indefinitely (used while playback is stalled)
+    func suspendAutoHide() {
+        autoHideSuspended = true
+        controlsTimer?.invalidate()
+        controlsTimer = nil
+    }
+
+    /// Restore normal auto-hide behavior after playback resumes
+    func resumeAutoHide() {
+        guard autoHideSuspended else { return }
+        autoHideSuspended = false
+        if controlsVisible {
+            resetControlsTimer()
         }
     }
     

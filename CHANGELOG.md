@@ -1,3 +1,10 @@
+## [3.2.2] - 2026-07-10
+
+### Fixed
+- **iOS**: Fixed memory leaks and a `-[UITextField dealloc]` crash on iOS 17+ by utilizing a static shared `UITextField` instance for screen protection, and resolved black screen rendering issues during secure state toggles by temporarily detaching the root `UIWindow` layer around `isSecureTextEntry` updates.
+- **iOS**: Removed the strict 5-second buffer size limitation (`preferredForwardBufferDuration = 0`) to allow dynamic buffering based on network quality, resolving video freezes during long playback.
+- **iOS**: Suspended the control panel auto-hide mechanism during playback stalls and buffering states, keeping the controls (including the close button) visible on the screen.
+
 ## [3.2.1] - 2026-06-20
 
 ### Fixed

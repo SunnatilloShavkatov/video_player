@@ -255,7 +255,8 @@ class PlayerView: UIView {
         let newItem = AVPlayerItem(asset: AVURLAsset(url: videoURL))
         player.replaceCurrentItem(with: newItem)
         player.seek(to: CMTime.zero)
-        player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
+        // 0 = automatic: AVPlayer sizes the forward buffer based on network conditions
+        player.currentItem?.preferredForwardBufferDuration = 0
         player.automaticallyWaitsToMinimizeStalling = true
         observerManager?.addObservers(for: newItem)
         playerController?.setPlayerItem(newItem)
@@ -443,7 +444,8 @@ class PlayerView: UIView {
         observerManager?.removeObservers()
         let newItem = AVPlayerItem(asset: AVURLAsset(url: url))
         player.replaceCurrentItem(with: newItem)
-        player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
+        // 0 = automatic: AVPlayer sizes the forward buffer based on network conditions
+        player.currentItem?.preferredForwardBufferDuration = 0
         playerController?.setPlayerItem(newItem)
         observerManager?.addObservers(for: newItem)
         
@@ -474,7 +476,8 @@ class PlayerView: UIView {
         player.automaticallyWaitsToMinimizeStalling = true
         let newItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: newItem)
-        player.currentItem?.preferredForwardBufferDuration = TimeInterval(5)
+        // 0 = automatic: AVPlayer sizes the forward buffer based on network conditions
+        player.currentItem?.preferredForwardBufferDuration = 0
         playerController?.setPlayerItem(newItem)
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = bounds
@@ -746,6 +749,7 @@ extension PlayerView: PlayerObserverDelegate {
                 self.playButton.alpha = self.skipBackwardButton.alpha
                 // ✅ ALWAYS keep gestures enabled — never lock user out
                 self.gestureHandler?.enableGesture = true
+                self.controlsCoordinator?.resumeAutoHide()
                 self.controlsCoordinator?.resetControlsTimer()
             case .paused:
                 self.stallRecoveryTimer?.invalidate()
@@ -760,6 +764,7 @@ extension PlayerView: PlayerObserverDelegate {
                 // ✅ DO NOT disable gestures — user must be able to exit at any time
                 // gestureHandler?.enableGesture = false  ← was causing player lockout
                 self.controlsCoordinator?.showControls()  // Show controls so user can see loading
+                self.controlsCoordinator?.suspendAutoHide()  // Keep them visible until playback resumes
                 // Start stall recovery timer — try to recover after 8 seconds
                 self.scheduleStallRecovery()
             @unknown default:
@@ -783,6 +788,7 @@ extension PlayerView: PlayerObserverDelegate {
             guard let self = self else { return }
             self.controlsCoordinator?.showLoadingIndicator()
             self.controlsCoordinator?.showControls()  // Keep controls visible during stall
+            self.controlsCoordinator?.suspendAutoHide()
             self.scheduleStallRecovery()
         }
     }

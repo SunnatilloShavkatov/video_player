@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'video_player'
-  s.version          = '3.2.1'
+  s.version          = '3.2.2'
   s.summary          = 'A Flutter video player plugin with native iOS and Android playback.'
   s.description      = <<-DESC
 A comprehensive Flutter video player plugin that supports fullscreen and embedded playback
@@ -15,7 +15,7 @@ and iOS screen protection features.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Sunnatillo Shavkatov' => 'sunnatilloshavkatov@gmail.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'video_player/Sources/video_player/**/*'
+  s.source_files = 'video_player/Sources/video_player/**/*.{swift,h,m}'
   s.dependency 'Flutter'
   s.dependency 'SnapKit', '~> 4.0'
   s.resources = 'video_player/Sources/video_player/Assets/*'
