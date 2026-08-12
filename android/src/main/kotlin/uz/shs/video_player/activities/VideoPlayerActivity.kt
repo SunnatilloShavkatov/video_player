@@ -410,10 +410,20 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun startPlaybackSafely() {
-        // ✅ Initialize PlayerController instead of direct ExoPlayer
-        playerController = PlayerController(this, this)
-        playerController.initialize(url, playerConfiguration.lastPosition)
-        playerController.attachToView(playerView)
+        try {
+            // ✅ Initialize PlayerController instead of direct ExoPlayer
+            playerController = PlayerController(this, this)
+            playerController.initialize(url, playerConfiguration.lastPosition)
+            playerController.attachToView(playerView)
+        } catch (error: Exception) {
+            android.util.Log.e("VideoPlayer", "Failed to start playback: ${error.message}", error)
+            pendingErrorToastMessage = getString(R.string.video_player_error_retry)
+            onPlaybackStateChanged(PlaybackState.ERROR)
+        } catch (error: OutOfMemoryError) {
+            android.util.Log.e("VideoPlayer", "Failed to start playback (OOM): ${error.message}", error)
+            pendingErrorToastMessage = getString(R.string.video_player_error_retry)
+            onPlaybackStateChanged(PlaybackState.ERROR)
+        }
     }
 
     private var lastClicked1: Long = -1L

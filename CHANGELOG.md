@@ -1,3 +1,8 @@
+## [3.2.3] - 2026-08-12
+
+### Fixed
+- **Android**: Fixed fatal crash on video open when `PlayerController.initialize()` throws synchronously (malformed manifest URL, ExoPlayer/codec init failure, or OOM on low-end devices). `startPlaybackSafely()` now wraps initialization in try/catch and routes failures through the existing `PlaybackState.ERROR` UI path instead of crashing the whole app process.
+
 ## [3.2.2] - 2026-07-10
 
 ### Fixed
