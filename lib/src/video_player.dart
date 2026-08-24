@@ -43,7 +43,7 @@ export 'package:video_player/src/models/player_configuration.dart';
 /// }
 /// ```
 final class VideoPlayer {
-  const VideoPlayer._();
+  const new _();
 
   /// Returns the singleton instance of [VideoPlayer].
   ///

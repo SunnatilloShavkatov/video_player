@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "uz.shs.video_player_example"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "uz.shs.video_player_example"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         multiDexEnabled = true
         versionCode = flutter.versionCode
         versionName = flutter.versionName

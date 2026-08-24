@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_example/video_view_page.dart';
 
@@ -13,7 +12,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -41,7 +40,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  const new({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();

@@ -3,11 +3,11 @@ plugins {
 }
 
 group = "uz.shs.video_player"
-version = "3.2.3"
+version = "3.3.0"
 
 android {
     namespace = "uz.shs.video_player"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
@@ -39,7 +39,7 @@ android {
 
 dependencies {
     // Media3
-    val media3Version = "1.10.1"
+    val media3Version = "1.11.0"
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")

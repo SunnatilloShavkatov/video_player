@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:video_player/src/utils/log_message.dart';
 import 'package:video_player/src/utils/url_validator.dart';
 
@@ -28,7 +28,7 @@ enum ResizeMode {
   /// Similar to fill, but ensures the entire video area is visible.
   zoom('zoom');
 
-  const ResizeMode(this.value);
+  new(this.value);
 
   /// Platform-stable serialization value.
   ///
@@ -79,7 +79,7 @@ enum PlayerStatus {
   /// Playback cannot continue due to an error condition.
   error('error');
 
-  const PlayerStatus(this.value);
+  new(this.value);
 
   /// Platform-stable serialization value.
   ///
@@ -98,12 +98,7 @@ enum PlayerStatus {
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
-  const VideoPlayerView({
-    super.key,
-    required this.url,
-    required this.onVideoViewCreated,
-    this.resizeMode = ResizeMode.fit,
-  });
+  const new({super.key, required this.url, required this.onVideoViewCreated, this.resizeMode = ResizeMode.fit});
 
   /// Platform view type name for video player
   static const String _viewType = 'plugins.video/video_player_view';
@@ -115,9 +110,7 @@ class VideoPlayerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
-      return const Center(
-        child: Text('Error: Invalid URL format. Must be HTTPS URL', style: TextStyle(color: Colors.white)),
-      );
+      return const Center(child: Text('Error: Invalid URL format. Must be HTTPS URL'));
     }
 
     switch (defaultTargetPlatform) {
@@ -191,7 +184,7 @@ class VideoPlayerView extends StatelessWidget {
 /// }
 /// ```
 final class VideoPlayerViewController {
-  VideoPlayerViewController._(int id) : _channel = MethodChannel('$_channelPrefix$id') {
+  new _(int id) : _channel = MethodChannel('$_channelPrefix$id') {
     _setupMethodHandler();
   }
 

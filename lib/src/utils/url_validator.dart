@@ -1,5 +1,5 @@
 final class UrlValidator {
-  const UrlValidator._();
+  const new _();
 
   static const UrlValidator instance = UrlValidator._();
 

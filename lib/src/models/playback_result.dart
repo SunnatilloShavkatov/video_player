@@ -28,7 +28,7 @@ import 'package:flutter/services.dart';
 /// ```
 @immutable
 sealed class PlaybackResult {
-  const PlaybackResult();
+  const new();
 }
 
 /// Playback completed successfully and the user closed the video player.
@@ -58,7 +58,7 @@ sealed class PlaybackResult {
 /// }
 /// ```
 final class PlaybackCompleted extends PlaybackResult {
-  const PlaybackCompleted({required this.lastPositionSeconds, required this.durationSeconds})
+  const new({required this.lastPositionSeconds, required this.durationSeconds})
     : assert(lastPositionSeconds >= 0, 'lastPositionSeconds must be non-negative'),
       assert(durationSeconds >= 0, 'durationSeconds must be non-negative');
 
@@ -117,7 +117,7 @@ final class PlaybackCompleted extends PlaybackResult {
 /// }
 /// ```
 final class PlaybackCancelled extends PlaybackResult {
-  const PlaybackCancelled();
+  const new();
 
   @override
   String toString() => 'PlaybackCancelled()';
@@ -163,7 +163,7 @@ final class PlaybackCancelled extends PlaybackResult {
 /// }
 /// ```
 final class PlaybackFailed extends PlaybackResult {
-  const PlaybackFailed({required this.error, this.stackTrace});
+  const new({required this.error, this.stackTrace});
 
   /// The error that caused playback to fail.
   ///

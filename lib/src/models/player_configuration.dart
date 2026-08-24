@@ -42,7 +42,7 @@ class PlayerConfiguration {
   /// only enforced in debug builds. For production-safe validation, prefer
   /// [PlayerConfiguration.remote] or [PlayerConfiguration.asset] factory
   /// constructors, which throw [ArgumentError] in all build modes.
-  const PlayerConfiguration({
+  const new({
     required this.videoUrl,
     required this.title,
     required this.autoText,
@@ -91,7 +91,7 @@ class PlayerConfiguration {
   ///   movieShareLink: 'https://example.com/share/video-123',
   /// );
   ///
-  factory PlayerConfiguration.remote({
+  factory remote({
     required String videoUrl,
     required String title,
     String movieShareLink = '',
@@ -145,7 +145,7 @@ class PlayerConfiguration {
   ///   assets:
   ///     - assets/videos/intro.mp4
   /// ```
-  factory PlayerConfiguration.asset({
+  factory asset({
     required String assetPath,
     required String title,
     String autoText = 'Auto',

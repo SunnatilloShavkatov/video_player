@@ -1,3 +1,11 @@
+## [3.3.0] - 2026-08-24
+
+### Changed
+- **Dart/Flutter**: Raised minimum SDK constraints to Dart `>=3.13.0` and Flutter `>=3.47.0`.
+- **Android**: Upgraded Gradle to `9.3.1`, Android Gradle Plugin to `9.1.0`, Kotlin to `2.4.0`, and `compileSdk` to `37`.
+- **Android**: Bumped AndroidX Media3 (ExoPlayer) from `1.10.1` to `1.11.0`.
+- Updated `analysis_lints` dev dependency to `^1.1.0`.
+
 ## [3.2.3] - 2026-08-12
 
 ### Fixed
