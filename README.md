@@ -1,7 +1,7 @@
 # Video Player
 
-A comprehensive Flutter video player plugin with advanced features including video playback and
-screen protection.
+A comprehensive Flutter video player plugin with native Android (ExoPlayer), iOS (AVPlayer), and macOS (AVPlayer) 
+implementations. Features include video playback, HLS streaming, speed/quality controls, embedded views, and screen protection.
 
 > **⚠️ Version 3.0.0 Breaking Changes**: If you're upgrading from v2.x, please see
 > the [Migration Guide](#migration-from-v2x-to-v30) below.
@@ -24,8 +24,9 @@ screen protection.
 
 ### Platform Support
 
-- **iOS**: Full native implementation with AVPlayer and AVKit
-- **Android**: Native Android implementation
+- **iOS**: Full native implementation with AVPlayer and AVKit (iOS 15.0+)
+- **macOS**: Full native implementation with AVPlayer and AVKit (macOS 10.15+)
+- **Android**: Native Android implementation with ExoPlayer (API 26+)
 - **Flutter integration**: Seamless integration with Flutter widgets
 
 ### Android Error Messages
@@ -62,6 +63,17 @@ platform :ios, '15.0'
 
 This plugin validates remote URLs and rejects non-HTTPS streams. No extra ATS override is required
 for normal HTTPS playback.
+
+### macOS Setup
+
+1. In your `macos/Runner/DebugProfile.entitlements` and `macos/Runner/Release.entitlements`, make sure network client entitlement is enabled for streaming:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+2. Minimum macOS version is 10.15 (macOS 11.0+ recommended in `macos/Podfile`).
 
 ### Android Setup
 

@@ -5,24 +5,20 @@
 Pod::Spec.new do |s|
   s.name             = 'video_player'
   s.version          = '3.4.0'
-  s.summary          = 'A Flutter video player plugin with native Android, iOS, and macOS playback.'
+  s.summary          = 'A Flutter video player plugin with native macOS, iOS, and Android playback.'
   s.description      = <<-DESC
 A comprehensive Flutter video player plugin that supports fullscreen and embedded playback
-from HTTPS URLs and Flutter assets, with quality selection, speed control, Picture-in-Picture,
-and iOS screen protection features across Android, iOS, and macOS.
+from HTTPS URLs and Flutter assets across Android, iOS, and macOS.
                        DESC
   s.homepage         = 'https://github.com/SunnatilloShavkatov/video_player'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Sunnatillo Shavkatov' => 'sunnatilloshavkatov@gmail.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'video_player/Sources/video_player/**/*.{swift,h,m}'
-  s.dependency 'Flutter'
-  s.dependency 'SnapKit', '~> 4.0'
-  s.resources = 'video_player/Sources/video_player/Assets/*'
-  s.static_framework = true
+  s.source_files     = 'video_player/Sources/video_player/**/*.{swift,h,m}'
+  s.resources        = 'video_player/Sources/video_player/Assets/*'
+  s.dependency 'FlutterMacOS'
 
-  s.platform = :ios, '15.0'
-  # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  s.platform = :osx, '10.15'
+  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.swift_version = '5.0'
 end

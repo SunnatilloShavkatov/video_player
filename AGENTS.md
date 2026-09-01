@@ -1,20 +1,20 @@
 # AI Agent Development Guide
 
 ## Project Type
-Flutter plugin with native iOS (Swift) and Android (Kotlin) implementations. This is **not** a Flutter app - it's a reusable package that requires native platform code changes to be tested in the example app.
+Flutter plugin with native iOS (Swift), macOS (Swift), and Android (Kotlin) implementations. This is **not** a Flutter app - it's a reusable package that requires native platform code changes to be tested in the example app.
 
 ## Architecture Overview
 
 ### Three-Layer Communication Pattern
 ```
 Flutter (Dart)  ←→  Method Channel  ←→  Native (Swift/Kotlin)
-lib/src/        ←→  "video_player"  ←→  ios/Classes/ or android/src/
+lib/src/        ←→  "video_player"  ←→  ios/, macos/, or android/src/
 ```
 
 **Critical Flow:** All features require implementing across THREE layers:
 1. `lib/src/video_player_platform_interface.dart` - Define abstract method
 2. `lib/src/video_player_method_channel.dart` - Implement method channel call
-3. Native platforms - Handle in `SwiftVideoPlayerPlugin.swift` (iOS) and `VideoPlayerPlugin.kt` (Android)
+3. Native platforms - Handle in `SwiftVideoPlayerPlugin.swift` (iOS), `VideoPlayerPlugin.swift` (macOS), and `VideoPlayerPlugin.kt` (Android)
 
 ### Two Player Modes
 1. **Full-screen player** - Native activity/view controller launched via `playVideo()`, returns `PlaybackResult`. iOS keeps a single active `PlaybackSession` in `SwiftVideoPlayerPlugin.swift`; Android keeps one pending `resultMethod` in `VideoPlayerPlugin.kt` until `VideoPlayerActivity` finishes.
@@ -141,6 +141,9 @@ Users install via git ref, not pub.dev (see README.md).
 - `ios/Classes/Player/VideoPlayer/VideoPlayerViewController.swift` - iOS full-screen player
 - `ios/Classes/Player/VideoPlayer/PlayerObserverManager.swift` - iOS AVPlayer observer lifecycle and stall/error callbacks
 - `ios/Classes/PlayerView/VideoViewController.swift` - iOS embedded player controller
+- `macos/Classes/VideoPlayerPlugin.swift` - macOS method channel and platform view handler
+- `macos/Classes/Player/VideoPlayerWindowController.swift` - macOS full-screen / windowed video player
+- `macos/Classes/PlayerView/VideoPlayerPlatformView.swift` - macOS embedded player view
 - `android/src/main/kotlin/.../VideoPlayerPlugin.kt` - Android method channel handler  
 - `android/src/main/kotlin/.../activities/VideoPlayerActivity.kt` - Android full-screen player
 - `android/src/main/kotlin/.../player/PlayerController.kt` - Android Media3 player wrapper, retry logic, and quality handling
@@ -148,8 +151,9 @@ Users install via git ref, not pub.dev (see README.md).
 
 ## Dependencies
 - iOS: SnapKit (~> 4.0) for Auto Layout
+- macOS: FlutterMacOS, AVKit, AppKit
 - Android: androidx.media3 (ExoPlayer) for playback engine, Gson for config deserialization
 - Flutter: plugin_platform_interface ^2.1.8
 
-Minimum: iOS 15.0+, Android API 26+, Flutter 3.41.0+, Dart 3.11.0+
+Minimum: iOS 15.0+, macOS 10.15+, Android API 26+, Flutter 3.41.0+, Dart 3.11.0+
 

@@ -31,3 +31,5 @@ build/
 .vscode
 /.claude/
 /ios/video_player/.swiftpm/xcode/
+# CocoaPods lockfile of the example app — churns with every Flutter engine bump.
+example/macos/Podfile.lock

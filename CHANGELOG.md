@@ -1,3 +1,12 @@
+## [3.4.0] - 2026-09-01
+
+### Added
+- **macOS**: Added full native macOS platform support using AVKit and AVPlayer.
+  - Custom in-window fullscreen video player overlay (`VideoPlayerOverlayView`) with native top bar, center controls (play/pause, 10s rewind/forward), seek slider, speed settings (0.5x–2.0x), and keyboard navigation (Space, Arrows, Esc, F).
+  - Embedded platform view support via `AppKitView` (`VideoPlayerView` widget) with per-view controller method channels (`setUrl`, `setAssets`, `play`, `pause`, `mute`, `unmute`, `getDuration`, `seekTo`) and stream events.
+  - Swift Package Manager (SPM) and CocoaPods dual-compatibility support for macOS.
+- **Android, iOS, macOS**: Unified multi-platform support across Android (API 26+), iOS (15.0+), and macOS (10.15+).
+
 ## [3.3.0] - 2026-08-24
 
 ### Changed

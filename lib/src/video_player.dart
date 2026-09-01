@@ -17,6 +17,7 @@ export 'package:video_player/src/models/player_configuration.dart';
 ///
 /// **Platform Support:**
 /// - iOS 15.0+
+/// - macOS 10.15+
 /// - Android API 26+
 ///
 /// **Supported Video Formats:**
@@ -73,6 +74,7 @@ final class VideoPlayer {
   ///
   /// **Platform-Specific Behavior:**
   /// - **iOS**: Uses AVPlayer with native controls, supports Picture-in-Picture
+  /// - **macOS**: Uses AVPlayer and AVPlayerView with native controls and Picture-in-Picture
   /// - **Android**: Uses ExoPlayer with custom controls, supports Picture-in-Picture on Android 8.0+
   ///
   /// **Example:**
@@ -116,6 +118,7 @@ final class VideoPlayer {
   ///
   /// **Platform-Specific Behavior:**
   /// - **iOS**: Dismisses the presented VideoPlayerViewController
+  /// - **macOS**: Closes the active video player window
   /// - **Android**: Finishes the VideoPlayerActivity
   ///
   /// **Example:**

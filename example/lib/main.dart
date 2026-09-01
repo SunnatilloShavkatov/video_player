@@ -88,6 +88,7 @@ class _MainPageState extends State<MainPage> {
       padding: const EdgeInsets.all(16),
       children: [
         ElevatedButton(onPressed: playVideo, child: const Text('Play Video')),
+        const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () async {
             await Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) => const VideoPlayerPage()));
