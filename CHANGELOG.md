@@ -1,3 +1,14 @@
+## [3.4.1] - 2026-09-01
+
+### Fixed
+- **macOS**: Fixed invalid video URL handling in fullscreen overlay player (`VideoPlayerOverlayView`) to trigger `onPlaybackFailed` with `INVALID_URL` error code and message instead of failing silently.
+- **macOS**: Resolved potential memory leaks and hanging Dart futures on player dismissal or deallocation by delivering completion events on main thread without capturing `self` and releasing callbacks after resolution.
+- **macOS**: Fixed thread safety and potential deadlocks during `VideoPlayerPlatformView` cleanup.
+- **macOS**: Added finite check `seconds(from:)` to prevent potential crashes on `NaN` or infinite playback time/duration values.
+
+### Documentation
+- **macOS**: Clarified `isScreenshotEnabled` in `PlayerConfiguration` and `README.md` noting that screen capture protection is ignored on macOS.
+
 ## [3.4.0] - 2026-09-01
 
 ### Added

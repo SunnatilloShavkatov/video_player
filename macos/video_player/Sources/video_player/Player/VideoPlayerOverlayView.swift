@@ -14,10 +14,15 @@ class VideoPlayerOverlayView: NSView {
 
     var playerConfiguration: PlayerConfiguration
     var onPlaybackFinished: (([Int]) -> Void)?
+    var onPlaybackFailed: ((String, String) -> Void)?
     var onDidDismiss: (() -> Void)?
 
-    private var isResolved = false
+    private var _isResolved = false
     private let resolutionQueue = DispatchQueue(label: "uz.shs.video_player.macos_overlay_session")
+
+    private var isResolved: Bool {
+        resolutionQueue.sync { _isResolved }
+    }
 
     // UI Containers
     private let videoContainer = NSView()
@@ -65,6 +70,11 @@ class VideoPlayerOverlayView: NSView {
         setupVideoLayer()
         setupUI()
         setupTracking()
+    }
+
+    /// Starts playback. Call it after `onPlaybackFinished`, `onPlaybackFailed` and `onDidDismiss`
+    /// are assigned, otherwise an immediate failure would have nowhere to go.
+    func start() {
         setupPlayback()
     }
 
@@ -304,7 +314,10 @@ class VideoPlayerOverlayView: NSView {
     // MARK: - Playback Handling
 
     private func setupPlayback() {
-        guard let url = URL(string: playerConfiguration.url) else { return }
+        guard let url = URL(string: playerConfiguration.url) else {
+            failPlayback(code: "INVALID_URL", message: "Invalid video URL: \(playerConfiguration.url)")
+            return
+        }
 
         loadingIndicator.startAnimation(nil)
 
@@ -580,21 +593,15 @@ class VideoPlayerOverlayView: NSView {
     }
 
     private func finishPlaybackIfNeeded() {
-        let shouldResolve = resolutionQueue.sync { () -> Bool in
-            guard !isResolved else { return false }
-            isResolved = true
-            return true
-        }
-
-        guard shouldResolve else { return }
+        guard claimResolution() else { return }
 
         autoHideTimer?.invalidate()
         autoHideTimer = nil
 
-        var lastPositionSeconds = Int(CMTimeGetSeconds(player.currentTime()))
+        var lastPositionSeconds = seconds(from: CMTimeGetSeconds(player.currentTime()))
         if lastPositionSeconds < 0 { lastPositionSeconds = 0 }
 
-        var durationSeconds = Int(totalDuration)
+        var durationSeconds = seconds(from: totalDuration)
         if durationSeconds <= 0 {
             durationSeconds = max(lastPositionSeconds, 1)
         }
@@ -607,9 +614,66 @@ class VideoPlayerOverlayView: NSView {
         player.replaceCurrentItem(with: nil)
 
         let payload = [lastPositionSeconds, durationSeconds]
-        DispatchQueue.main.async { [weak self] in
-            self?.onPlaybackFinished?(payload)
-            self?.onDidDismiss?()
+        let finished = onPlaybackFinished
+        let dismissed = onDidDismiss
+        clearCallbacks()
+
+        deliverOnMain {
+            finished?(payload)
+            dismissed?()
+        }
+    }
+
+    private func failPlayback(code: String, message: String) {
+        guard claimResolution() else { return }
+
+        autoHideTimer?.invalidate()
+        autoHideTimer = nil
+
+        player.pause()
+        if let observer = timeObserver {
+            player.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        player.replaceCurrentItem(with: nil)
+
+        let failed = onPlaybackFailed
+        let dismissed = onDidDismiss
+        clearCallbacks()
+
+        removeFromSuperview()
+        deliverOnMain {
+            failed?(code, message)
+            dismissed?()
+        }
+    }
+
+    private func claimResolution() -> Bool {
+        resolutionQueue.sync { () -> Bool in
+            guard !_isResolved else { return false }
+            _isResolved = true
+            return true
+        }
+    }
+
+    private func clearCallbacks() {
+        onPlaybackFinished = nil
+        onPlaybackFailed = nil
+        onDidDismiss = nil
+    }
+
+    private func seconds(from value: Double) -> Int {
+        guard value.isFinite else { return 0 }
+        return Int(value)
+    }
+
+    /// Delivers the result without capturing `self`: the resolution also happens from `deinit`,
+    /// where a captured reference would be nil once the block ran and the Dart future would hang.
+    private func deliverOnMain(_ work: @escaping () -> Void) {
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.async(execute: work)
         }
     }
 

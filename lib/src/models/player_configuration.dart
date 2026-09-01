@@ -256,6 +256,7 @@ class PlayerConfiguration {
   /// When `false` (default), the native player blocks screen capture:
   /// - Android: `FLAG_SECURE` is applied to the player window
   /// - iOS: ScreenProtectorKit screenshot prevention is enabled
+  /// - macOS: ignored, screen capture is never blocked
   ///
   /// Set to `true` to allow screenshots and screen recording.
   final bool isScreenshotEnabled;

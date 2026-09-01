@@ -72,6 +72,11 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin {
                 self?.activePlayerOverlay = nil
             }
 
+            overlayView.onPlaybackFailed = { [weak self] code, message in
+                result(FlutterError(code: code, message: message, details: nil))
+                self?.activePlayerOverlay = nil
+            }
+
             overlayView.onDidDismiss = { [weak self] in
                 self?.activePlayerOverlay = nil
             }
@@ -92,6 +97,9 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin {
             }
 
             hostView.window?.makeFirstResponder(overlayView)
+
+            // Playback starts last: an immediate failure has to find the callbacks in place.
+            overlayView.start()
 
         default:
             result(FlutterMethodNotImplemented)

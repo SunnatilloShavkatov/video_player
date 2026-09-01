@@ -18,7 +18,7 @@ implementations. Features include video playback, HLS streaming, speed/quality c
 
 ### Screen Protection (iOS)
 
-- **Screenshot prevention**: Prevent screenshots during video playback
+- **Screenshot prevention**: Prevent screenshots during video playback (Android and iOS only, ignored on macOS)
 - **Screen recording detection**: Detect and handle screen recording attempts
 - **Secure playback**: Enhanced content protection for sensitive videos
 

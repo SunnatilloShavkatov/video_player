@@ -44,8 +44,12 @@ class VideoPlayerPlatformView: NSView {
     }
 
     private weak var currentPlayerItem: AVPlayerItem?
-    private var isDisposed = false
+    private var _isDisposed = false
     private let disposalQueue = DispatchQueue(label: "uz.shs.video_player.macos_disposal")
+
+    private var isDisposed: Bool {
+        disposalQueue.sync { _isDisposed }
+    }
 
     init(
         viewId: Int64,
@@ -477,29 +481,19 @@ class VideoPlayerPlatformView: NSView {
 
     private func cleanup() {
         let shouldCleanup = disposalQueue.sync { () -> Bool in
-            guard !isDisposed else { return false }
-            isDisposed = true
+            guard !_isDisposed else { return false }
+            _isDisposed = true
             return true
         }
 
         guard shouldCleanup else { return }
 
-        let teardown = {
-            self.methodChannel.setMethodCallHandler(nil)
-            self.player.pause()
-            self.stopObservingPlayerIfNeeded()
-            self.player.replaceCurrentItem(with: nil)
-            if let layer = self.playerLayer {
-                layer.removeFromSuperlayer()
-            }
-            self.playerLayer = nil
-            self.currentPlayerItem = nil
-        }
-
-        if Thread.isMainThread {
-            teardown()
-        } else {
-            DispatchQueue.main.sync(execute: teardown)
-        }
+        methodChannel.setMethodCallHandler(nil)
+        player.pause()
+        stopObservingPlayerIfNeeded()
+        player.replaceCurrentItem(with: nil)
+        playerLayer?.removeFromSuperlayer()
+        playerLayer = nil
+        currentPlayerItem = nil
     }
 }
