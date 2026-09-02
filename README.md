@@ -488,9 +488,10 @@ try {
 ## Requirements
 
 - **iOS**: 15.0+
-- **Android**: 26+
-- **Flutter**: 3.41.0+
-- **Dart**: 3.11.0+
+- **macOS**: 10.15+
+- **Android**: API 26+
+- **Flutter**: 3.47.0+
+- **Dart**: 3.13.0+
 
 ## Dependencies.
 

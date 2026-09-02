@@ -1,23 +1,15 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:video_player_example/main.dart';
 
 void main() {
-  testWidgets('Verify Platform version', (tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('Renders Video Player example main page', (tester) async {
     await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
 
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate((widget) => widget is Text && widget.data!.startsWith('Running on:')),
-      findsOneWidget,
-    );
+    expect(find.text('Video Player Plugin'), findsOneWidget);
+    expect(find.text('Play Fullscreen Video'), findsOneWidget);
+    expect(find.text('Open Embedded View Demo'), findsOneWidget);
+    expect(find.byType(FilledButton), findsNWidgets(2));
   });
 }

@@ -1,0 +1,33 @@
+#if os(iOS)
+//
+//  TitleLabel.swift
+//  Pods
+//
+//  Created by Sunnatillo Shavkatov on 22/10/22.
+//
+
+import Foundation
+import UIKit
+
+class TitleLabel :UILabel {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+    
+    private func setup() {
+        self.textColor = .red
+        self.textColor = .white
+        self.textAlignment = .center
+        self.numberOfLines = 2
+        self.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        self.isHidden = true
+    }
+}
+
+#endif

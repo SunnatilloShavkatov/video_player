@@ -1,3 +1,12 @@
+## [3.4.2] - 2026-09-02
+
+### Changed
+- **Darwin (iOS & macOS)**: Consolidated `ios/` and `macos/` plugin folders into a unified `darwin/` directory with `sharedDarwinSource: true` in `pubspec.yaml`, shared `video_player.podspec`, and shared SPM `Package.swift`.
+- **iOS**: Renamed iOS plugin class from `SwiftVideoPlayerPlugin` to `VideoPlayerPlugin` for consistent multi-platform plugin naming (`VideoPlayerPlugin` on Android, iOS, macOS).
+- **Example App**: Upgraded example app to `material_ui: ^1.1.0` and Material 3 design, adopting pattern matching for `PlaybackResult` (`PlaybackCompleted`, `PlaybackCancelled`, `PlaybackFailed`).
+- **Tests**: Replaced placeholder example test with robust widget tests verifying UI components and buttons.
+- **Documentation**: Updated `AGENTS.md` and `README.md` to reflect Darwin unified structure and latest SDK requirements.
+
 ## [3.4.1] - 2026-09-01
 
 ### Fixed
