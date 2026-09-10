@@ -1,3 +1,9 @@
+## [3.5.1] - 2026-09-10
+
+### Changed
+- **All platforms**: **Breaking** - `SubtitleTrack.id` is now a `String` instead of an `int`, matching API payloads that return non-numeric subtitle ids. Native models follow (`String` on Android, `String` on iOS/macOS); the iOS decoder still accepts a numeric id from older payloads and converts it. Callers constructing `SubtitleTrack` must quote the id: `id: '227017'`.
+- **Dart**: Removed the unused `SubtitleTrack.fromMap` factory - tracks are built from API models by the host app, and only `toMap()` crosses the platform channel.
+
 ## [3.5.0] - 2026-09-10
 
 ### Added

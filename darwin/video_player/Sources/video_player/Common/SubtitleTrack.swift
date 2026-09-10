@@ -6,13 +6,13 @@
 import Foundation
 
 public struct SubtitleTrack: Equatable {
-    public let id: Int
+    public let id: String
     public let label: String
     public let lang: String
     public let isDefault: Bool
     public let url: String
 
-    public init(id: Int, label: String, lang: String, isDefault: Bool = false, url: String) {
+    public init(id: String, label: String, lang: String, isDefault: Bool = false, url: String) {
         self.id = id
         self.label = label
         self.lang = lang
@@ -21,7 +21,7 @@ public struct SubtitleTrack: Equatable {
     }
 
     public static func fromMap(_ map: [String: Any]) -> SubtitleTrack? {
-        guard let id = (map["id"] as? NSNumber)?.intValue ?? (map["id"] as? Int),
+        guard let id = (map["id"] as? String) ?? (map["id"] as? NSNumber)?.stringValue,
               let label = map["label"] as? String,
               let lang = map["lang"] as? String,
               let url = map["url"] as? String else {
