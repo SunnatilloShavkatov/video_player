@@ -15,4 +15,7 @@ data class PlayerConfiguration(
     @SerializedName("playVideoFromAsset") val playVideoFromAsset: Boolean,
     @SerializedName("isScreenshotEnabled") val isScreenshotEnabled: Boolean = false,
     @SerializedName("subtitles") val subtitles: List<SubtitleTrack> = emptyList(),
+    @SerializedName("subtitleText") val subtitleText: String = "Subtitles",
+    @SerializedName("subtitleSizeText") val subtitleSizeText: String = "Subtitle Size",
+    @SerializedName("subtitleOffText") val subtitleOffText: String = "Off",
 ) : Serializable

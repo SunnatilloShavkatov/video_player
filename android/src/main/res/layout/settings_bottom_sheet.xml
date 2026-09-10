@@ -124,7 +124,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="Subtitles"
+            android:text=""
             android:textColor="@color/white"
             android:textSize="16sp" />
 
@@ -157,9 +157,9 @@
         android:paddingVertical="10dp">
 
         <ImageView
+            android:id="@+id/subtitle_size_icon"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:src="@drawable/ic_crop_fit"
             tools:ignore="ContentDescription" />
 
         <TextView
@@ -167,7 +167,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="Subtitle Size"
+            android:text=""
             android:textColor="@color/white"
             android:textSize="16sp" />
 

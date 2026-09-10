@@ -8,7 +8,13 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -894,9 +900,15 @@ class VideoPlayerActivity : AppCompatActivity(),
         } else {
             subtitleLayout?.visibility = View.VISIBLE
             subtitleSizeLayout?.visibility = View.VISIBLE
+            bottomSheetDialog.findViewById<ImageView>(R.id.subtitle_size_icon)
+                ?.setImageDrawable(createTextSizeIcon())
+            bottomSheetDialog.findViewById<TextView>(R.id.subtitle_settings_text)?.text =
+                playerConfiguration.subtitleText
+            bottomSheetDialog.findViewById<TextView>(R.id.subtitle_size_settings_text)?.text =
+                playerConfiguration.subtitleSizeText
             subtitleText = bottomSheetDialog.findViewById(R.id.subtitle_settings_value_text)
             subtitleSizeText = bottomSheetDialog.findViewById(R.id.subtitle_size_settings_value_text)
-            subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+            subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else playerConfiguration.subtitleOffText
             subtitleSizeText?.text = "$currentSubtitleSizePercent%"
 
             subtitleLayout?.setOnClickListener {
@@ -1021,7 +1033,7 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
 
         currentSubtitleLang = matchingSub?.lang
-        currentSubtitleLabel = if (isSubtitlesEnabled && matchingSub != null) matchingSub.label else "Off"
+        currentSubtitleLabel = if (isSubtitlesEnabled && matchingSub != null) matchingSub.label else playerConfiguration.subtitleOffText
         currentSubtitleSizePercent = prefs.getInt("video_player_subtitle_font_size", 100)
 
         applySubtitleBottomMargin()
@@ -1034,7 +1046,37 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun updateSubtitleSettingsLabel() {
-        subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+        subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else playerConfiguration.subtitleOffText
+    }
+
+    /**
+     * Subtitle size glyph: a small "A" next to a large "A", matching the
+     * `textformat.size` symbol iOS uses for the same row.
+     */
+    private fun createTextSizeIcon(): Drawable {
+        val density = resources.displayMetrics.density
+        val sizePx = (24f * density).toInt()
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        val smallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+            textSize = 12f * density
+        }
+        val largePaint = Paint(smallPaint).apply { textSize = 19f * density }
+
+        val gap = 1.5f * density
+        val smallWidth = smallPaint.measureText("A")
+        val largeWidth = largePaint.measureText("A")
+        val startX = (sizePx - (smallWidth + largeWidth + gap)) / 2f
+        val metrics = largePaint.fontMetrics
+        val baseline = sizePx / 2f - (metrics.ascent + metrics.descent) / 2f
+
+        canvas.drawText("A", startX, baseline, smallPaint)
+        canvas.drawText("A", startX + smallWidth + gap, baseline, largePaint)
+
+        return BitmapDrawable(resources, bitmap)
     }
 
     /**
@@ -1072,19 +1114,20 @@ class VideoPlayerActivity : AppCompatActivity(),
             backBtn?.visibility = View.VISIBLE
         }
         backBtn?.setOnClickListener { bottomSheetDialog.dismiss() }
-        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text = "Subtitles"
+        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text =
+            playerConfiguration.subtitleText
 
         val options = ArrayList<String>()
-        options.add("Off")
+        options.add(playerConfiguration.subtitleOffText)
         playerConfiguration.subtitles.forEach { options.add(it.label) }
 
-        val activeSelection = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+        val activeSelection = if (isSubtitlesEnabled) currentSubtitleLabel else playerConfiguration.subtitleOffText
         val listView = bottomSheetDialog.findViewById<ListView>(R.id.quality_speed_listview)
         val adapter = QualitySpeedAdapter(activeSelection, this, options, object : QualitySpeedAdapter.OnClickListener {
             override fun onClick(position: Int) {
                 if (position == 0) {
                     isSubtitlesEnabled = false
-                    currentSubtitleLabel = "Off"
+                    currentSubtitleLabel = playerConfiguration.subtitleOffText
                     prefs.edit().putBoolean("video_player_subtitles_enabled", false).apply()
                     playerController.setSubtitlesEnabled(false)
                 } else {
@@ -1127,7 +1170,8 @@ class VideoPlayerActivity : AppCompatActivity(),
             backBtn?.visibility = View.VISIBLE
         }
         backBtn?.setOnClickListener { bottomSheetDialog.dismiss() }
-        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text = "Subtitle Size"
+        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text =
+            playerConfiguration.subtitleSizeText
 
         val activeSelection = "$currentSubtitleSizePercent%"
         val listView = bottomSheetDialog.findViewById<ListView>(R.id.quality_speed_listview)

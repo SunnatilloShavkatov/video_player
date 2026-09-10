@@ -356,9 +356,9 @@ class PlayerView: UIView {
     }
     
     func setSubtitleCurrentItem() -> [String] {
-        if let subs = playerConfiguration?.subtitles, !subs.isEmpty {
-            var list = ["None"]
-            list.append(contentsOf: subs.map(\.label))
+        if let config = playerConfiguration, !config.subtitles.isEmpty {
+            var list = [config.subtitleOffText]
+            list.append(contentsOf: config.subtitles.map(\.label))
             return list
         }
         var subtitles = player.currentItem?.tracks(type: .subtitle) ?? ["None"]

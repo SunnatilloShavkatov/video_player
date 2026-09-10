@@ -19,8 +19,11 @@ struct PlayerConfiguration{
     var playVideoFromAsset: Bool
     var isScreenshotEnabled: Bool
     var subtitles: [SubtitleTrack]
+    var subtitleText: String
+    var subtitleSizeText: String
+    var subtitleOffText: String
 
-    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false, subtitles: [SubtitleTrack] = []) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false, subtitles: [SubtitleTrack] = [], subtitleText: String = "Subtitles", subtitleSizeText: String = "Subtitle Size", subtitleOffText: String = "Off") {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -32,6 +35,9 @@ struct PlayerConfiguration{
         self.playVideoFromAsset = playVideoFromAsset
         self.isScreenshotEnabled = isScreenshotEnabled
         self.subtitles = subtitles
+        self.subtitleText = subtitleText
+        self.subtitleSizeText = subtitleSizeText
+        self.subtitleOffText = subtitleOffText
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
@@ -49,6 +55,9 @@ struct PlayerConfiguration{
         let assetPath = map["assetPath"] as? String
         let isScreenshotEnabled = map["isScreenshotEnabled"] as? Bool ?? false
         let subtitles = (map["subtitles"] as? [[String: Any]])?.compactMap { SubtitleTrack.fromMap($0) } ?? []
+        let subtitleText = map["subtitleText"] as? String ?? "Subtitles"
+        let subtitleSizeText = map["subtitleSizeText"] as? String ?? "Subtitle Size"
+        let subtitleOffText = map["subtitleOffText"] as? String ?? "Off"
 
         return PlayerConfiguration(
             qualityText: qualityText,
@@ -61,7 +70,10 @@ struct PlayerConfiguration{
             url: videoUrl,
             movieShareLink: movieShareLink,
             isScreenshotEnabled: isScreenshotEnabled,
-            subtitles: subtitles
+            subtitles: subtitles,
+            subtitleText: subtitleText,
+            subtitleSizeText: subtitleSizeText,
+            subtitleOffText: subtitleOffText
         )
     }
 }

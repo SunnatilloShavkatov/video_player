@@ -45,17 +45,20 @@ class PlayerConfiguration {
   /// [PlayerConfiguration.remote] or [PlayerConfiguration.asset] factory
   /// constructors, which throw [ArgumentError] in all build modes.
   const new({
-    required this.videoUrl,
     required this.title,
+    required this.videoUrl,
     required this.autoText,
     required this.assetPath,
     required this.speedText,
     required this.qualityText,
-    required this.lastPosition,
-    required this.movieShareLink,
-    required this.playVideoFromAsset,
-    this.isScreenshotEnabled = false,
     this.subtitles = const [],
+    required this.lastPosition,
+    required this.subtitleText,
+    required this.movieShareLink,
+    required this.subtitleOffText,
+    required this.subtitleSizeText,
+    this.isScreenshotEnabled = false,
+    required this.playVideoFromAsset,
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -71,6 +74,9 @@ class PlayerConfiguration {
   /// - [qualityText]: Label for quality selection (default: 'Quality')
   /// - [speedText]: Label for speed selection (default: 'Speed')
   /// - [autoText]: Label for auto quality option (default: 'Auto')
+  /// - [subtitleText]: Label for the subtitle row (default: 'Subtitles')
+  /// - [subtitleSizeText]: Label for the subtitle size row (default: 'Subtitle Size')
+  /// - [subtitleOffText]: Label for the "subtitles disabled" option (default: 'Off')
   ///
   /// **Example:**
   /// ```
@@ -104,6 +110,9 @@ class PlayerConfiguration {
     String qualityText = 'Quality',
     bool isScreenshotEnabled = false,
     List<SubtitleTrack> subtitles = const [],
+    String subtitleText = 'Subtitles',
+    String subtitleSizeText = 'Subtitle Size',
+    String subtitleOffText = 'Off',
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -120,6 +129,9 @@ class PlayerConfiguration {
       lastPosition: startPositionSeconds,
       isScreenshotEnabled: isScreenshotEnabled,
       subtitles: subtitles,
+      subtitleText: subtitleText,
+      subtitleSizeText: subtitleSizeText,
+      subtitleOffText: subtitleOffText,
     );
   }
 
@@ -135,6 +147,9 @@ class PlayerConfiguration {
   /// - [qualityText]: Label for quality selection (default: 'Quality')
   /// - [speedText]: Label for speed selection (default: 'Speed')
   /// - [autoText]: Label for auto quality option (default: 'Auto')
+  /// - [subtitleText]: Label for the subtitle row (default: 'Subtitles')
+  /// - [subtitleSizeText]: Label for the subtitle size row (default: 'Subtitle Size')
+  /// - [subtitleOffText]: Label for the "subtitles disabled" option (default: 'Off')
   /// - [subtitles]: Optional list of subtitle tracks
   ///
   /// **Example:**
@@ -160,6 +175,9 @@ class PlayerConfiguration {
     String qualityText = 'Quality',
     bool isScreenshotEnabled = false,
     List<SubtitleTrack> subtitles = const [],
+    String subtitleText = 'Subtitles',
+    String subtitleSizeText = 'Subtitle Size',
+    String subtitleOffText = 'Off',
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -179,6 +197,9 @@ class PlayerConfiguration {
       lastPosition: startPositionSeconds,
       isScreenshotEnabled: isScreenshotEnabled,
       subtitles: subtitles,
+      subtitleText: subtitleText,
+      subtitleSizeText: subtitleSizeText,
+      subtitleOffText: subtitleOffText,
     );
   }
 
@@ -274,6 +295,21 @@ class PlayerConfiguration {
   /// Empty list indicates no subtitles are available.
   final List<SubtitleTrack> subtitles;
 
+  /// Label for the subtitle selection row (default: 'Subtitles').
+  ///
+  /// Pass a localized string to match the host app's language.
+  final String subtitleText;
+
+  /// Label for the subtitle font size row (default: 'Subtitle Size').
+  ///
+  /// Pass a localized string to match the host app's language.
+  final String subtitleSizeText;
+
+  /// Label for the "subtitles disabled" option (default: 'Off').
+  ///
+  /// Pass a localized string to match the host app's language.
+  final String subtitleOffText;
+
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -288,7 +324,10 @@ class PlayerConfiguration {
     'speedText': speedText,
     'qualityText': qualityText,
     'lastPosition': lastPosition, // Already in seconds
+    'subtitleText': subtitleText,
     'movieShareLink': movieShareLink,
+    'subtitleOffText': subtitleOffText,
+    'subtitleSizeText': subtitleSizeText,
     'playVideoFromAsset': playVideoFromAsset,
     'isScreenshotEnabled': isScreenshotEnabled,
     'subtitles': subtitles.map((s) => s.toMap()).toList(),
@@ -307,6 +346,9 @@ class PlayerConfiguration {
       'autoText: $autoText, '
       'movieShareLink: $movieShareLink, '
       'isScreenshotEnabled: $isScreenshotEnabled, '
-      'subtitles: $subtitles'
+      'subtitles: $subtitles, '
+      'subtitleText: $subtitleText, '
+      'subtitleSizeText: $subtitleSizeText, '
+      'subtitleOffText: $subtitleOffText'
       '}';
 }

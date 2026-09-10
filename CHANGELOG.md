@@ -1,6 +1,12 @@
 ## [3.5.2] - 2026-09-10
 
+### Added
+- **All platforms**: `subtitleText`, `subtitleSizeText`, and `subtitleOffText` on `PlayerConfiguration` (defaults `'Subtitles'`, `'Subtitle Size'`, `'Off'`), so the subtitle rows, bottom sheet titles, and the "off" option can be localized by the host app the same way `qualityText` / `speedText` / `autoText` already are.
+
 ### Changed
+- **Android**: The subtitle size row now shows a small "A" beside a large "A", matching the `textformat.size` symbol iOS uses, instead of the crop/fit glyph.
+- **iOS**: The subtitle size row keeps the `textformat.size` symbol but renders it white instead of picking up the blue tint colour.
+- **iOS**: The Subtitle and Subtitle Size rows are shown only when the configuration carries subtitle tracks. They previously also appeared for a stream whose HLS manifest happened to declare its own text tracks, even with an empty `subtitles` list. (Android already gated both rows this way.)
 - **Android, iOS**: Subtitle cues now sit a fixed 8dp/8pt above the bottom edge of the video frame on both platforms. iOS previously used a 16pt margin; Android let Media3 place cues flush with the bottom of the video. Android now sets `setBottomPaddingFraction(0f)` plus an explicit 8dp bottom padding on the `SubtitleView`, iOS pins the cue label with `SubtitleOverlayView.bottomMargin`.
 
 ## [3.5.1] - 2026-09-10

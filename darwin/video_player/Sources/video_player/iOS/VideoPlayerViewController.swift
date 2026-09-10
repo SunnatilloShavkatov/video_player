@@ -61,8 +61,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         !playerConfiguration.playVideoFromAsset && !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Subtitle controls exist only for sidecar tracks supplied in the configuration.
+    /// A manifest that happens to declare its own text tracks must not surface the
+    /// Subtitle rows on its own.
     private var hasSubtitleSelection: Bool {
-        playerView.hasSubtitleTracks()
+        !playerConfiguration.subtitles.isEmpty
     }
 
     init() {
@@ -166,7 +169,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.setSubtitleFontSizePercent(fontSizePercent)
 
         currentSubtitleTrack = matchingSub
-        selectedSubtitle = (isSubtitlesEnabled && matchingSub != nil) ? matchingSub!.label : "None"
+        selectedSubtitle = (isSubtitlesEnabled && matchingSub != nil) ? matchingSub!.label : playerConfiguration.subtitleOffText
         playerView.setSubtitleButtonEnabled(isSubtitlesEnabled)
         if isSubtitlesEnabled && matchingSub != nil {
             playerView.loadSubtitleTrack(matchingSub)
@@ -423,7 +426,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
                 if index == 0 {
                     isSubtitlesEnabled = false
                     UserDefaults.standard.set(false, forKey: kSubtitlesEnabled)
-                    selectedSubtitle = "None"
+                    selectedSubtitle = playerConfiguration.subtitleOffText
                     playerView.setSubtitleButtonEnabled(false)
                     playerView.loadSubtitleTrack(nil)
                 } else {
@@ -462,9 +465,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .overCurrentContext
         bottomSheetVC.items = subtitles
-        bottomSheetVC.labelText = "Subtitle"
+        bottomSheetVC.labelText = playerConfiguration.subtitleText
         bottomSheetVC.bottomSheetType = .subtitle
-        let activeLabel = isSubtitlesEnabled ? selectedSubtitle : "None"
+        let activeLabel = isSubtitlesEnabled ? selectedSubtitle : playerConfiguration.subtitleOffText
         bottomSheetVC.selectedIndex = subtitles.firstIndex(of: activeLabel) ?? 0
         bottomSheetVC.cellDelegate = self
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
@@ -478,7 +481,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         let bottomSheetVC = BottomSheetViewController()
         bottomSheetVC.modalPresentationStyle = .overCurrentContext
         bottomSheetVC.items = subtitleSizeList
-        bottomSheetVC.labelText = "Subtitle Size"
+        bottomSheetVC.labelText = playerConfiguration.subtitleSizeText
         bottomSheetVC.bottomSheetType = .subtitleSize
         bottomSheetVC.selectedIndex = subtitleSizeList.firstIndex(of: selectedSubtitleSize) ?? 2
         bottomSheetVC.cellDelegate = self
@@ -584,20 +587,21 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
 
         if hasSubtitleSelection {
             let subtitleIcon = Svg.ccIcon(enabled: isSubtitlesEnabled) ?? UIImage()
-            let subDisplay = isSubtitlesEnabled ? selectedSubtitle : "Off"
+            let subDisplay = isSubtitlesEnabled ? selectedSubtitle : playerConfiguration.subtitleOffText
             models.append(
                 SettingModel(
                     leftIcon: subtitleIcon,
-                    title: "Subtitle",
+                    title: playerConfiguration.subtitleText,
                     configureLabel: subDisplay,
                     action: .subtitle
                 )
             )
-            let textSizeIcon = UIImage(systemName: "textformat.size") ?? Svg.settings ?? UIImage()
+            let textSizeIcon = UIImage(systemName: "textformat.size")?
+                .withTintColor(.white, renderingMode: .alwaysOriginal) ?? Svg.settings ?? UIImage()
             models.append(
                 SettingModel(
                     leftIcon: textSizeIcon,
-                    title: "Subtitle Size",
+                    title: playerConfiguration.subtitleSizeText,
                     configureLabel: selectedSubtitleSize,
                     action: .subtitleSize
                 )
