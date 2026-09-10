@@ -1,3 +1,8 @@
+## [3.5.2] - 2026-09-10
+
+### Changed
+- **Android, iOS**: Subtitle cues now sit a fixed 8dp/8pt above the bottom edge of the video frame on both platforms. iOS previously used a 16pt margin; Android let Media3 place cues flush with the bottom of the video. Android now sets `setBottomPaddingFraction(0f)` plus an explicit 8dp bottom padding on the `SubtitleView`, iOS pins the cue label with `SubtitleOverlayView.bottomMargin`.
+
 ## [3.5.1] - 2026-09-10
 
 ### Changed

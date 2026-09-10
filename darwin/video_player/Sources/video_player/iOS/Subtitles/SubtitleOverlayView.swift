@@ -93,6 +93,9 @@ public class SubtitleOverlayView: UIView {
         return label
     }()
 
+    /// Distance between the bottom of the cue and the bottom edge of the video.
+    static let bottomMargin: CGFloat = 8.0
+
     private var fontSizePercent: Int = 100
 
     public override init(frame: CGRect) {
@@ -140,13 +143,13 @@ public class SubtitleOverlayView: UIView {
     public func updatePosition(videoRect: CGRect, containerBounds: CGRect) {
         let offset: CGFloat
         if videoRect.width > 0 && videoRect.height > 0 {
-            // Sit just above the bottom edge of the actual video frame.
-            offset = containerBounds.height - videoRect.maxY + 16.0
+            // Sit 8pt above the bottom edge of the actual video frame.
+            offset = containerBounds.height - videoRect.maxY + SubtitleOverlayView.bottomMargin
         } else {
             offset = 48.0
         }
         label.snp.updateConstraints { make in
-            make.bottom.equalToSuperview().offset(-max(16.0, offset))
+            make.bottom.equalToSuperview().offset(-max(SubtitleOverlayView.bottomMargin, offset))
         }
     }
 

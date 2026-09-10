@@ -83,6 +83,7 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     companion object {
         private const val SEEK_INCREMENT_MS = 10000L
+        private const val SUBTITLE_BOTTOM_MARGIN_DP = 8f
         private const val DOUBLE_CLICK_TIMEOUT_MS = 300L
         private const val BRIGHTNESS_MAX = 30
         private const val BRIGHTNESS_DEFAULT = 15
@@ -1023,6 +1024,7 @@ class VideoPlayerActivity : AppCompatActivity(),
         currentSubtitleLabel = if (isSubtitlesEnabled && matchingSub != null) matchingSub.label else "Off"
         currentSubtitleSizePercent = prefs.getInt("video_player_subtitle_font_size", 100)
 
+        applySubtitleBottomMargin()
         applySubtitleFontSize(currentSubtitleSizePercent)
         playerController.setSubtitlesEnabled(isSubtitlesEnabled)
         if (isSubtitlesEnabled && currentSubtitleLang != null) {
@@ -1033,6 +1035,18 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     private fun updateSubtitleSettingsLabel() {
         subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+    }
+
+    /**
+     * Media3 places cues a fraction of the view height above the bottom by default.
+     * Pin them to a fixed 8dp above the bottom of the video frame instead, matching iOS.
+     */
+    private fun applySubtitleBottomMargin() {
+        val bottomPaddingPx = (SUBTITLE_BOTTOM_MARGIN_DP * resources.displayMetrics.density).toInt()
+        playerView.subtitleView?.apply {
+            setBottomPaddingFraction(0f)
+            setPadding(0, 0, 0, bottomPaddingPx)
+        }
     }
 
     private fun applySubtitleFontSize(percent: Int) {

@@ -5,7 +5,7 @@ A comprehensive Flutter video player plugin with native Android (ExoPlayer), iOS
 **Critical Note:** This is a reusable Flutter plugin package (`video_player`), **not** a standalone Flutter app. Native code changes cannot be hot-reloaded and must be tested in the `example/` directory.
 
 - **Package:** `uz.shs.video_player`
-- **Current Version:** `3.5.0`
+- **Current Version:** `3.5.2`
 - **Repository:** `https://github.com/SunnatilloShavkatov/video_player`
 - **Installation:** Users install via git ref, **not** pub.dev (see `README.md`).
 
