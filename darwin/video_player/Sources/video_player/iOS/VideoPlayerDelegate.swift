@@ -20,5 +20,8 @@ protocol SpeedDelegate {
 protocol SubtitleDelegate {
     func subtitleBottomSheet()
 }
+protocol SubtitleSizeDelegate {
+    func subtitleSizeBottomSheet()
+}
 
 #endif

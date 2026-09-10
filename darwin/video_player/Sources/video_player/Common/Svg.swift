@@ -37,6 +37,44 @@ struct Svg {
     static let playSpeed: UIImage? = UIImage(named: "play_speed", in: resourceBundle, compatibleWith: nil)
     static let settings: UIImage? = UIImage(named: "settings", in: resourceBundle, compatibleWith: nil)
     static let share: UIImage? = UIImage(named: "share", in: resourceBundle, compatibleWith: nil)
+
+    /// YouTube-style captions glyph: "CC" inside a rounded box.
+    /// Enabled renders a filled box with knocked-out letters, disabled an outlined
+    /// box - the state reads from the shape, not from colour alone.
+    static func ccIcon(enabled: Bool) -> UIImage? {
+        let size = CGSize(width: 24, height: 24)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { _ in
+            let box = CGRect(x: 2, y: 5, width: 20, height: 14)
+            let path = UIBezierPath(roundedRect: box, cornerRadius: 3.5)
+            let letterColor: UIColor
+            if enabled {
+                UIColor.white.setFill()
+                path.fill()
+                letterColor = .black
+            } else {
+                let stroke = UIColor.white.withAlphaComponent(0.85)
+                stroke.setStroke()
+                path.lineWidth = 1.6
+                path.stroke()
+                letterColor = stroke
+            }
+
+            let text = "CC" as NSString
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 9.5, weight: .heavy),
+                .foregroundColor: letterColor,
+                .kern: -0.5,
+            ]
+            let textSize = text.size(withAttributes: attributes)
+            let origin = CGPoint(
+                x: box.midX - textSize.width / 2.0,
+                y: box.midY - textSize.height / 2.0
+            )
+            text.draw(at: origin, withAttributes: attributes)
+        }
+        return image.withRenderingMode(.alwaysOriginal)
+    }
 }
 
 #elseif os(macOS)

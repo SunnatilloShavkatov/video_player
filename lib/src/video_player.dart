@@ -8,6 +8,7 @@ import 'package:video_player/src/video_player_platform_interface.dart';
 
 export 'package:video_player/src/models/playback_result.dart';
 export 'package:video_player/src/models/player_configuration.dart';
+export 'package:video_player/src/models/subtitle_track.dart';
 
 /// Main video player class that provides streaming video playback functionality.
 ///

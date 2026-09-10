@@ -41,6 +41,13 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var selectedSpeedText = "1.0x"
     var selectedQualityText = "Auto"
     private var selectedSubtitle = "None"
+    private var selectedSubtitleSize = "100%"
+    private var isSubtitlesEnabled: Bool = true
+    private var currentSubtitleTrack: SubtitleTrack?
+    private let kSubtitlesEnabled = "video_player_subtitles_enabled"
+    private let kSelectedSubtitleLang = "video_player_subtitle_lang"
+    private let kSubtitleFontSize = "video_player_subtitle_font_size"
+    private let subtitleSizeList = ["50%", "75%", "100%", "150%", "200%", "300%"]
 
     private lazy var playerView: PlayerView = {
         return PlayerView()
@@ -129,7 +136,41 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         playerView.loadMedia(autoPlay: true, playPosition: TimeInterval(playerConfiguration.lastPosition), area: view.safeAreaLayoutGuide)
         playerView.setShareEnabled(canShareContent)
         setupPictureInPicture()
+        setupInitialSubtitles()
         super.viewWillAppear(animated)
+    }
+
+    private func setupInitialSubtitles() {
+        let subtitles = playerConfiguration.subtitles
+        guard !subtitles.isEmpty else { return }
+
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: kSubtitlesEnabled) != nil {
+            isSubtitlesEnabled = defaults.bool(forKey: kSubtitlesEnabled)
+        } else {
+            isSubtitlesEnabled = true
+        }
+
+        let savedLang = defaults.string(forKey: kSelectedSubtitleLang)
+        let defaultSub = subtitles.first(where: { $0.isDefault }) ?? subtitles.first
+        let matchingSub: SubtitleTrack?
+        if let savedLang = savedLang, let found = subtitles.first(where: { $0.lang == savedLang }) {
+            matchingSub = found
+        } else {
+            matchingSub = defaultSub
+        }
+
+        let savedFontSize = defaults.integer(forKey: kSubtitleFontSize)
+        let fontSizePercent = savedFontSize > 0 ? savedFontSize : 100
+        selectedSubtitleSize = "\(fontSizePercent)%"
+        playerView.setSubtitleFontSizePercent(fontSizePercent)
+
+        currentSubtitleTrack = matchingSub
+        selectedSubtitle = (isSubtitlesEnabled && matchingSub != nil) ? matchingSub!.label : "None"
+        playerView.setSubtitleButtonEnabled(isSubtitlesEnabled)
+        if isSubtitlesEnabled && matchingSub != nil {
+            playerView.loadSubtitleTrack(matchingSub)
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -186,22 +227,30 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
 
 
     func close(duration: [Int]) {
-        requestClose(duration: duration)
-    }
-
-    func share() {
-        guard canShareContent else { return }
-        if let link = NSURL(string: playerConfiguration.movieShareLink) {
-            let objectsToShare = [link] as [Any]
-            let activityVC = UIActivityViewController(activityItems: objectsToShare, applicationActivities: nil)
-            activityVC.excludedActivityTypes = [UIActivity.ActivityType.airDrop, UIActivity.ActivityType.addToReadingList]
-            self.present(activityVC, animated: true, completion: nil)
+        requestClose(duration: duration) { [weak self] in
+            self?.dismiss(animated: true, completion: nil)
         }
     }
 
+    func share() {
+        guard let url = URL(string: playerConfiguration.movieShareLink) else {
+            return
+        }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        present(activityVC, animated: true)
+    }
+
     func changeOrientation() {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let orientation = windowScene.interfaceOrientation
+        if #available(iOS 16.0, *) {
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let orientation = windowScene?.interfaceOrientation
+            if orientation == .portrait {
+                windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: .landscapeRight))
+            } else {
+                windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+            }
+        } else {
+            let orientation = UIDevice.current.orientation
             var value = UIInterfaceOrientation.landscapeRight.rawValue
             if orientation == .landscapeLeft || orientation == .landscapeRight {
                 value = UIInterfaceOrientation.portrait.rawValue
@@ -234,6 +283,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         vc.delegate = self
         vc.speedDelegate = self
         vc.subtitleDelegate = self
+        vc.subtitleSizeDelegate = self
         vc.settingModel = settingModels
         self.present(vc, animated: true, completion: nil)
     }
@@ -369,17 +419,44 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         case .subtitle:
             let subtitles = playerView.setSubtitleCurrentItem()
             guard index < subtitles.count else { return }
-            let selectedSubtitleLabel = subtitles[index]
-            if playerView.getSubtitleTrackIsEmpty(selectedSubtitleLabel: selectedSubtitleLabel) {
-                selectedSubtitle = selectedSubtitleLabel
+            if !playerConfiguration.subtitles.isEmpty {
+                if index == 0 {
+                    isSubtitlesEnabled = false
+                    UserDefaults.standard.set(false, forKey: kSubtitlesEnabled)
+                    selectedSubtitle = "None"
+                    playerView.setSubtitleButtonEnabled(false)
+                    playerView.loadSubtitleTrack(nil)
+                } else {
+                    let track = playerConfiguration.subtitles[index - 1]
+                    isSubtitlesEnabled = true
+                    UserDefaults.standard.set(true, forKey: kSubtitlesEnabled)
+                    UserDefaults.standard.set(track.lang, forKey: kSelectedSubtitleLang)
+                    currentSubtitleTrack = track
+                    selectedSubtitle = track.label
+                    playerView.setSubtitleButtonEnabled(true)
+                    playerView.loadSubtitleTrack(track)
+                }
+            } else {
+                let selectedSubtitleLabel = subtitles[index]
+                if playerView.getSubtitleTrackIsEmpty(selectedSubtitleLabel: selectedSubtitleLabel) {
+                    selectedSubtitle = selectedSubtitleLabel
+                }
             }
+            break
+        case .subtitleSize:
+            guard index < subtitleSizeList.count else { return }
+            let sizeText = subtitleSizeList[index]
+            selectedSubtitleSize = sizeText
+            let percent = Int(sizeText.replacingOccurrences(of: "%", with: "")) ?? 100
+            UserDefaults.standard.set(percent, forKey: kSubtitleFontSize)
+            playerView.setSubtitleFontSizePercent(percent)
             break
         case .audio:
             break
         }
     }
 
-    private func showSubtitleBottomSheet() {
+    func showSubtitleBottomSheet() {
         guard hasSubtitleSelection else { return }
         let subtitles = playerView.setSubtitleCurrentItem()
         let bottomSheetVC = BottomSheetViewController()
@@ -387,7 +464,23 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         bottomSheetVC.items = subtitles
         bottomSheetVC.labelText = "Subtitle"
         bottomSheetVC.bottomSheetType = .subtitle
-        bottomSheetVC.selectedIndex = subtitles.firstIndex(of: selectedSubtitle) ?? 0
+        let activeLabel = isSubtitlesEnabled ? selectedSubtitle : "None"
+        bottomSheetVC.selectedIndex = subtitles.firstIndex(of: activeLabel) ?? 0
+        bottomSheetVC.cellDelegate = self
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil else { return }
+            self.present(bottomSheetVC, animated: false, completion: nil)
+        }
+    }
+
+    func showSubtitleSizeBottomSheet() {
+        guard hasSubtitleSelection else { return }
+        let bottomSheetVC = BottomSheetViewController()
+        bottomSheetVC.modalPresentationStyle = .overCurrentContext
+        bottomSheetVC.items = subtitleSizeList
+        bottomSheetVC.labelText = "Subtitle Size"
+        bottomSheetVC.bottomSheetType = .subtitleSize
+        bottomSheetVC.selectedIndex = subtitleSizeList.firstIndex(of: selectedSubtitleSize) ?? 2
         bottomSheetVC.cellDelegate = self
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             guard let self, self.view.window != nil else { return }
@@ -489,13 +582,24 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             )
         }
 
-        if hasSubtitleSelection, let subtitleIcon = UIImage(systemName: "captions.bubble") {
+        if hasSubtitleSelection {
+            let subtitleIcon = Svg.ccIcon(enabled: isSubtitlesEnabled) ?? UIImage()
+            let subDisplay = isSubtitlesEnabled ? selectedSubtitle : "Off"
             models.append(
                 SettingModel(
                     leftIcon: subtitleIcon,
                     title: "Subtitle",
-                    configureLabel: selectedSubtitle,
+                    configureLabel: subDisplay,
                     action: .subtitle
+                )
+            )
+            let textSizeIcon = UIImage(systemName: "textformat.size") ?? Svg.settings ?? UIImage()
+            models.append(
+                SettingModel(
+                    leftIcon: textSizeIcon,
+                    title: "Subtitle Size",
+                    configureLabel: selectedSubtitleSize,
+                    action: .subtitleSize
                 )
             )
         }
@@ -511,11 +615,13 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             showSpeedBottomSheet()
         case .subtitle:
             showSubtitleBottomSheet()
+        case .subtitleSize:
+            showSubtitleSizeBottomSheet()
         }
     }
 }
 
-extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, SubtitleDelegate {
+extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, SubtitleDelegate, SubtitleSizeDelegate {
     func speedBottomSheet() {
         showSpeedBottomSheet()
     }
@@ -526,6 +632,10 @@ extension VideoPlayerViewController: QualityDelegate, SpeedDelegate, SubtitleDel
 
     func subtitleBottomSheet() {
         showSubtitleBottomSheet()
+    }
+
+    func subtitleSizeBottomSheet() {
+        showSubtitleSizeBottomSheet()
     }
 }
 

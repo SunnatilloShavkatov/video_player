@@ -1,3 +1,21 @@
+## [3.5.0] - 2026-09-10
+
+### Added
+- **All platforms**: Sidecar WebVTT subtitle support. New `SubtitleTrack` model (`id`, `label`, `lang`, `isDefault`, `url`) and a `subtitles` field on `PlayerConfiguration` (also on the `PlayerConfiguration.remote` and `PlayerConfiguration.asset` factory constructors), serialized to native as a list under the `subtitles` key. An empty list means no subtitles and hides every subtitle control.
+- **Android**: Sidecar WebVTT tracks are attached as `MediaItem.SubtitleConfiguration` with `MimeTypes.TEXT_VTT`, language, label, and `C.SELECTION_FLAG_DEFAULT` for the `isDefault` track; rendered through Media3's `SubtitleView`.
+- **iOS**: AVPlayer cannot read a sidecar WebVTT alongside an HLS stream, so subtitles are parsed in-app (`WebVTTParser`) and drawn by a `SubtitleOverlayView` above the video, driven by a dedicated 0.2s periodic time observer. Cue lookup is a binary search over the sorted cue list.
+- **All platforms**: Subtitle selection (off / per language) and subtitle font size (50 / 75 / 100 / 150 / 200 / 300 %) in the settings sheet. Both are persisted (`UserDefaults` on iOS, `SharedPreferences` on Android) and restored across movies and app restarts. The `isDefault` track is preselected and subtitles are on by default on first run.
+
+### Changed
+- **All platforms**: Subtitles are toggled from the settings sheet only — the CC button was removed from the player's top bar.
+- **iOS**: Subtitle cues now draw a background box per line, sized to that line's text, matching the Android and web player look.
+- **All platforms**: Redrew the captions glyph in YouTube style ("CC" in a rounded box). Enabled renders a filled box with knocked-out letters, disabled an outlined box, so the state reads from the shape rather than from colour alone.
+
+### Fixed
+- **Android**: Sidecar subtitles never reached the player. `HlsMediaSource.Factory` ignores `MediaItem.subtitleConfigurations` — only `DefaultMediaSourceFactory` merges the subtitle sources and parses them into `application/x-media3-cues` samples. Subtitle-bearing items now go through `DefaultMediaSourceFactory`; without it Media3 1.11 also throws `IllegalStateException: Legacy decoding is disabled, can't handle text/vtt samples`.
+- **iOS**: Subtitle cues were driven by the shared 0.5s position observer and could lag a cue boundary by up to 500 ms. A dedicated 0.2s observer now drives them, removed on deallocation along with any in-flight subtitle download.
+- **iOS**: The settings sheet clipped its last row. `UITableView.grouped` adds implicit section header/footer space that the sheet height calculation did not account for; header, footer, and top padding are now zeroed and the height is capped at 80 % of the screen with scrolling as a fallback.
+
 ## [3.4.2] - 2026-09-02
 
 ### Changed

@@ -53,6 +53,7 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_ALWAYS
 import androidx.media3.ui.PlayerView.SHOW_BUFFERING_NEVER
+import androidx.media3.ui.SubtitleView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import uz.shs.video_player.R
@@ -140,6 +141,14 @@ class VideoPlayerActivity : AppCompatActivity(),
     private lateinit var audioManager: AudioManager
     private lateinit var gestureDetector: GestureDetector
     private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private var isSubtitlesEnabled: Boolean = true
+    private var currentSubtitleLang: String? = null
+    private var currentSubtitleLabel: String = "Off"
+    private var currentSubtitleSizePercent: Int = 100
+    private var subtitleText: TextView? = null
+    private var subtitleSizeText: TextView? = null
+    private val subtitleSizes = arrayListOf("50%", "75%", "100%", "150%", "200%", "300%")
+    private val prefs by lazy { getSharedPreferences("video_player_prefs", Context.MODE_PRIVATE) }
     private var isSettingsBottomSheetOpened: Boolean = false
     private var isQualitySpeedBottomSheetOpened: Boolean = false
     private val listOfAllOpenedBottomSheets = mutableListOf<BottomSheetDialog>()
@@ -413,8 +422,9 @@ class VideoPlayerActivity : AppCompatActivity(),
         try {
             // ✅ Initialize PlayerController instead of direct ExoPlayer
             playerController = PlayerController(this, this)
-            playerController.initialize(url, playerConfiguration.lastPosition)
+            playerController.initialize(url, playerConfiguration.lastPosition, playerConfiguration.subtitles)
             playerController.attachToView(playerView)
+            setupSubtitles()
         } catch (error: Exception) {
             android.util.Log.e("VideoPlayer", "Failed to start playback: ${error.message}", error)
             pendingErrorToastMessage = getString(R.string.video_player_error_retry)
@@ -874,6 +884,28 @@ class VideoPlayerActivity : AppCompatActivity(),
         speed?.setOnClickListener {
             showQualitySpeedSheet(currentSpeed, ArrayList(speeds), false)
         }
+
+        val subtitleLayout = bottomSheetDialog.findViewById<LinearLayout>(R.id.subtitle)
+        val subtitleSizeLayout = bottomSheetDialog.findViewById<LinearLayout>(R.id.subtitle_size)
+        if (playerConfiguration.subtitles.isEmpty()) {
+            subtitleLayout?.visibility = View.GONE
+            subtitleSizeLayout?.visibility = View.GONE
+        } else {
+            subtitleLayout?.visibility = View.VISIBLE
+            subtitleSizeLayout?.visibility = View.VISIBLE
+            subtitleText = bottomSheetDialog.findViewById(R.id.subtitle_settings_value_text)
+            subtitleSizeText = bottomSheetDialog.findViewById(R.id.subtitle_size_settings_value_text)
+            subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+            subtitleSizeText?.text = "$currentSubtitleSizePercent%"
+
+            subtitleLayout?.setOnClickListener {
+                showSubtitleSelectionSheet()
+            }
+            subtitleSizeLayout?.setOnClickListener {
+                showSubtitleSizeSheet()
+            }
+        }
+
         bottomSheetDialog.show()
         bottomSheetDialog.setOnDismissListener {
             isSettingsBottomSheetOpened = false
@@ -968,6 +1000,137 @@ class VideoPlayerActivity : AppCompatActivity(),
             playerController.applyAutomaticQuality()
         } else {
             playerController.applyManualQuality(selectedQuality)
+        }
+    }
+
+    private fun setupSubtitles() {
+        val subtitles = playerConfiguration.subtitles
+        if (subtitles.isEmpty()) {
+            return
+        }
+
+        isSubtitlesEnabled = prefs.getBoolean("video_player_subtitles_enabled", true)
+        val savedLang = prefs.getString("video_player_subtitle_lang", null)
+        val defaultSub = subtitles.firstOrNull { it.isDefault } ?: subtitles.firstOrNull()
+
+        val matchingSub = if (savedLang != null) {
+            subtitles.firstOrNull { it.lang == savedLang } ?: defaultSub
+        } else {
+            defaultSub
+        }
+
+        currentSubtitleLang = matchingSub?.lang
+        currentSubtitleLabel = if (isSubtitlesEnabled && matchingSub != null) matchingSub.label else "Off"
+        currentSubtitleSizePercent = prefs.getInt("video_player_subtitle_font_size", 100)
+
+        applySubtitleFontSize(currentSubtitleSizePercent)
+        playerController.setSubtitlesEnabled(isSubtitlesEnabled)
+        if (isSubtitlesEnabled && currentSubtitleLang != null) {
+            playerController.selectSubtitleLanguage(currentSubtitleLang)
+        }
+        updateSubtitleSettingsLabel()
+    }
+
+    private fun updateSubtitleSettingsLabel() {
+        subtitleText?.text = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+    }
+
+    private fun applySubtitleFontSize(percent: Int) {
+        currentSubtitleSizePercent = percent
+        val fraction = SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * (percent / 100f)
+        playerView.subtitleView?.setFractionalTextSize(fraction)
+        subtitleSizeText?.text = "$percent%"
+    }
+
+    private fun showSubtitleSelectionSheet() {
+        if (isQualitySpeedBottomSheetOpened) return
+        isQualitySpeedBottomSheetOpened = true
+        currentBottomSheet = BottomSheet.QUALITY_OR_SPEED
+        val bottomSheetDialog = BottomSheetDialog(this, R.style.BottomSheetDialog)
+        listOfAllOpenedBottomSheets.add(bottomSheetDialog)
+        bottomSheetDialog.behavior.isDraggable = false
+        bottomSheetDialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        bottomSheetDialog.setContentView(R.layout.quality_speed_sheet)
+        val backBtn = bottomSheetDialog.findViewById<ImageView>(R.id.quality_speed_sheet_back)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            backBtn?.visibility = View.GONE
+        } else {
+            backBtn?.visibility = View.VISIBLE
+        }
+        backBtn?.setOnClickListener { bottomSheetDialog.dismiss() }
+        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text = "Subtitles"
+
+        val options = ArrayList<String>()
+        options.add("Off")
+        playerConfiguration.subtitles.forEach { options.add(it.label) }
+
+        val activeSelection = if (isSubtitlesEnabled) currentSubtitleLabel else "Off"
+        val listView = bottomSheetDialog.findViewById<ListView>(R.id.quality_speed_listview)
+        val adapter = QualitySpeedAdapter(activeSelection, this, options, object : QualitySpeedAdapter.OnClickListener {
+            override fun onClick(position: Int) {
+                if (position == 0) {
+                    isSubtitlesEnabled = false
+                    currentSubtitleLabel = "Off"
+                    prefs.edit().putBoolean("video_player_subtitles_enabled", false).apply()
+                    playerController.setSubtitlesEnabled(false)
+                } else {
+                    val sub = playerConfiguration.subtitles[position - 1]
+                    isSubtitlesEnabled = true
+                    currentSubtitleLang = sub.lang
+                    currentSubtitleLabel = sub.label
+                    prefs.edit()
+                        .putBoolean("video_player_subtitles_enabled", true)
+                        .putString("video_player_subtitle_lang", sub.lang)
+                        .apply()
+                    playerController.setSubtitlesEnabled(true)
+                    playerController.selectSubtitleLanguage(sub.lang)
+                }
+                updateSubtitleSettingsLabel()
+                bottomSheetDialog.dismiss()
+            }
+        })
+        listView?.adapter = adapter
+        bottomSheetDialog.show()
+        bottomSheetDialog.setOnDismissListener {
+            currentBottomSheet = BottomSheet.SETTINGS
+            isQualitySpeedBottomSheetOpened = false
+        }
+    }
+
+    private fun showSubtitleSizeSheet() {
+        if (isQualitySpeedBottomSheetOpened) return
+        isQualitySpeedBottomSheetOpened = true
+        currentBottomSheet = BottomSheet.QUALITY_OR_SPEED
+        val bottomSheetDialog = BottomSheetDialog(this, R.style.BottomSheetDialog)
+        listOfAllOpenedBottomSheets.add(bottomSheetDialog)
+        bottomSheetDialog.behavior.isDraggable = false
+        bottomSheetDialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        bottomSheetDialog.setContentView(R.layout.quality_speed_sheet)
+        val backBtn = bottomSheetDialog.findViewById<ImageView>(R.id.quality_speed_sheet_back)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            backBtn?.visibility = View.GONE
+        } else {
+            backBtn?.visibility = View.VISIBLE
+        }
+        backBtn?.setOnClickListener { bottomSheetDialog.dismiss() }
+        bottomSheetDialog.findViewById<TextView>(R.id.quality_speed_text)?.text = "Subtitle Size"
+
+        val activeSelection = "$currentSubtitleSizePercent%"
+        val listView = bottomSheetDialog.findViewById<ListView>(R.id.quality_speed_listview)
+        val adapter = QualitySpeedAdapter(activeSelection, this, subtitleSizes, object : QualitySpeedAdapter.OnClickListener {
+            override fun onClick(position: Int) {
+                val sizeStr = subtitleSizes[position].replace("%", "")
+                val percent = sizeStr.toIntOrNull() ?: 100
+                prefs.edit().putInt("video_player_subtitle_font_size", percent).apply()
+                applySubtitleFontSize(percent)
+                bottomSheetDialog.dismiss()
+            }
+        })
+        listView?.adapter = adapter
+        bottomSheetDialog.show()
+        bottomSheetDialog.setOnDismissListener {
+            currentBottomSheet = BottomSheet.SETTINGS
+            isQualitySpeedBottomSheetOpened = false
         }
     }
 

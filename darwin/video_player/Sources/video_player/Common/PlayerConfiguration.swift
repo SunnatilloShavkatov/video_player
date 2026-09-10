@@ -18,8 +18,9 @@ struct PlayerConfiguration{
     var movieShareLink: String
     var playVideoFromAsset: Bool
     var isScreenshotEnabled: Bool
+    var subtitles: [SubtitleTrack]
 
-    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false, subtitles: [SubtitleTrack] = []) {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -30,13 +31,14 @@ struct PlayerConfiguration{
         self.movieShareLink = movieShareLink
         self.playVideoFromAsset = playVideoFromAsset
         self.isScreenshotEnabled = isScreenshotEnabled
+        self.subtitles = subtitles
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
         guard let videoUrl = map["videoUrl"] as? String,
               let qualityText = map["qualityText"] as? String,
               let speedText = map["speedText"] as? String,
-              let lastPosition = map["lastPosition"] as? Int,
+              let lastPosition = (map["lastPosition"] as? NSNumber)?.intValue ?? (map["lastPosition"] as? Int),
               let title = map["title"] as? String,
               let playVideoFromAsset = map["playVideoFromAsset"] as? Bool,
               let autoText = map["autoText"] as? String,
@@ -46,6 +48,7 @@ struct PlayerConfiguration{
 
         let assetPath = map["assetPath"] as? String
         let isScreenshotEnabled = map["isScreenshotEnabled"] as? Bool ?? false
+        let subtitles = (map["subtitles"] as? [[String: Any]])?.compactMap { SubtitleTrack.fromMap($0) } ?? []
 
         return PlayerConfiguration(
             qualityText: qualityText,
@@ -57,7 +60,8 @@ struct PlayerConfiguration{
             autoText: autoText,
             url: videoUrl,
             movieShareLink: movieShareLink,
-            isScreenshotEnabled: isScreenshotEnabled
+            isScreenshotEnabled: isScreenshotEnabled,
+            subtitles: subtitles
         )
     }
 }

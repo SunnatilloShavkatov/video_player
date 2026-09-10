@@ -127,6 +127,13 @@ class PlayerView: UIView {
         button.addTarget(self, action: #selector(settingPressed(_:)), for: .touchUpInside)
         return button
     }()
+    let subtitleOverlayView = SubtitleOverlayView()
+    private var currentCues: [WebVTTCue] = []
+    private var subtitleDownloadTask: URLSessionDataTask?
+    private var subtitleTimeObserver: Any?
+    var isSubtitlesEnabled: Bool = true
+    var currentSubtitleTrack: SubtitleTrack?
+    var currentFontSizePercent: Int = 100
     private lazy var shareButton: IconButton = {
         let button = IconButton()
         if let icon = Svg.share {
@@ -195,9 +202,86 @@ class PlayerView: UIView {
     }
 
     func hasSubtitleTracks() -> Bool {
+        if let subs = playerConfiguration?.subtitles, !subs.isEmpty {
+            return true
+        }
         guard let currentItem = player.currentItem else { return false }
         return !currentItem.tracks(type: .subtitle).isEmpty
     }
+
+    func setSubtitleButtonEnabled(_ enabled: Bool) {
+        isSubtitlesEnabled = enabled
+        if !enabled {
+            subtitleOverlayView.setText(nil)
+        } else if let position = streamPosition {
+            updateSubtitleCue(at: position)
+        }
+    }
+
+    func setSubtitleFontSizePercent(_ percent: Int) {
+        currentFontSizePercent = percent
+        subtitleOverlayView.setFontSizePercent(percent)
+    }
+
+    func loadSubtitleTrack(_ track: SubtitleTrack?) {
+        currentSubtitleTrack = track
+        subtitleDownloadTask?.cancel()
+        subtitleDownloadTask = nil
+        currentCues = []
+        subtitleOverlayView.setText(nil)
+
+        guard let track = track, let url = URL(string: track.url) else {
+            stopSubtitleTimeObserver()
+            return
+        }
+
+        subtitleDownloadTask = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self, let data = data, error == nil,
+                  let content = String(data: data, encoding: .utf8) else {
+                return
+            }
+            let parsedCues = WebVTTParser.parse(vttContent: content)
+            DispatchQueue.main.async {
+                self.currentCues = parsedCues
+                self.startSubtitleTimeObserver()
+                if let position = self.streamPosition {
+                    self.updateSubtitleCue(at: position)
+                }
+            }
+        }
+        subtitleDownloadTask?.resume()
+    }
+
+    // The shared observer manager ticks every 0.5s, which is too coarse for cue
+    // boundaries. Drive subtitles from their own 0.2s observer instead.
+    private func startSubtitleTimeObserver() {
+        guard subtitleTimeObserver == nil else { return }
+        let interval = CMTime(seconds: 0.2, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        subtitleTimeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            guard let self = self else { return }
+            let seconds = CMTimeGetSeconds(time)
+            guard seconds.isFinite, !seconds.isNaN else { return }
+            self.updateSubtitleCue(at: seconds)
+        }
+    }
+
+    private func stopSubtitleTimeObserver() {
+        if let observer = subtitleTimeObserver {
+            player.removeTimeObserver(observer)
+            subtitleTimeObserver = nil
+        }
+    }
+
+    func updateSubtitleCue(at time: TimeInterval) {
+        guard isSubtitlesEnabled, !currentCues.isEmpty else {
+            subtitleOverlayView.setText(nil)
+            return
+        }
+        subtitleOverlayView.updatePosition(videoRect: playerLayer.videoRect, containerBounds: bounds)
+        let cue = WebVTTParser.findCue(in: currentCues, at: time)
+        subtitleOverlayView.setText(cue?.text)
+    }
+
     
     func loadMedia(autoPlay: Bool, playPosition: TimeInterval, area: UILayoutGuide) {
         translatesAutoresizingMaskIntoConstraints = false
@@ -272,6 +356,11 @@ class PlayerView: UIView {
     }
     
     func setSubtitleCurrentItem() -> [String] {
+        if let subs = playerConfiguration?.subtitles, !subs.isEmpty {
+            var list = ["None"]
+            list.append(contentsOf: subs.map(\.label))
+            return list
+        }
         var subtitles = player.currentItem?.tracks(type: .subtitle) ?? ["None"]
         subtitles.insert("None", at: 0)
         return subtitles
@@ -545,6 +634,7 @@ class PlayerView: UIView {
     
     private func addSubviews() {
         addSubview(videoView)
+        addSubview(subtitleOverlayView)
         addSubview(overlayView)
         addSubview(brightnessSlider)
         overlayView.addSubview(topView)
@@ -575,6 +665,9 @@ class PlayerView: UIView {
     }
     
     private func addConstraints(area: UILayoutGuide) {
+        subtitleOverlayView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
         addBottomViewConstraints(area: area)
         addTopViewConstraints(area: area)
         addControlButtonConstraints()
@@ -681,9 +774,16 @@ class PlayerView: UIView {
         if playerLayer.superlayer != nil {
             playerLayer.frame = bounds
         }
+        subtitleOverlayView.updatePosition(videoRect: playerLayer.videoRect, containerBounds: bounds)
     }
     
     deinit {
+        subtitleDownloadTask?.cancel()
+        subtitleDownloadTask = nil
+        if let observer = subtitleTimeObserver {
+            player.removeTimeObserver(observer)
+            subtitleTimeObserver = nil
+        }
         stallRecoveryTimer?.invalidate()
         stallRecoveryTimer = nil
         NotificationCenter.default.removeObserver(self)
@@ -778,6 +878,7 @@ extension PlayerView: PlayerObserverDelegate {
         controlsCoordinator?.updateSlider(currentSeconds: position, durationSeconds: duration)
         controlsCoordinator?.updateCurrentTime(seconds: position)
         playerController?.updatePosition(position)
+        updateSubtitleCue(at: position)
     }
     
     func observerManagerDidFinishPlaying(_ manager: PlayerObserverManager) {

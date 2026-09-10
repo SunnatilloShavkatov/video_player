@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
@@ -11,12 +12,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import uz.shs.video_player.delegates.PlayerControllerDelegate
 import uz.shs.video_player.models.PlaybackState
 import uz.shs.video_player.models.QualityOption
+import uz.shs.video_player.models.SubtitleTrack
 
 /**
  * PlayerController manages ExoPlayer lifecycle and playback operations.
@@ -51,12 +54,12 @@ class PlayerController(
      * @param url Video URL (HLS stream)
      * @param lastPositionSeconds Starting position in seconds
      */
-    fun initialize(url: String, lastPositionSeconds: Long) {
+    fun initialize(url: String, lastPositionSeconds: Long, subtitles: List<SubtitleTrack> = emptyList()) {
         isRemotePlayback = url.startsWith("http://") || url.startsWith("https://")
         playWhenReadyIntent = true
         waitingForNetworkRecovery = false
 
-        val mediaSource = createMediaSource(url)
+        val mediaSource = createMediaSource(url, subtitles)
 
         // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
@@ -156,6 +159,32 @@ class PlayerController(
                 .setMaxVideoSize(option.width, option.height)
                 .setMinVideoSize(option.width, option.height)
                 .build()
+        }
+    }
+
+    fun setSubtitlesEnabled(enabled: Boolean) {
+        player?.let { exoPlayer ->
+            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                .buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !enabled)
+                .build()
+        }
+    }
+
+    fun selectSubtitleLanguage(language: String?) {
+        player?.let { exoPlayer ->
+            if (language.isNullOrEmpty()) {
+                exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                    .build()
+            } else {
+                exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                    .setPreferredTextLanguage(language)
+                    .build()
+            }
         }
     }
 
@@ -338,7 +367,7 @@ class PlayerController(
         return videoTracks.sortedByDescending { it.height }.distinctBy { it.height }
     }
 
-    private fun createMediaSource(url: String): MediaSource {
+    private fun createMediaSource(url: String, subtitles: List<SubtitleTrack> = emptyList()): MediaSource {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
 
         val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -347,13 +376,45 @@ class PlayerController(
             "asset:///flutter_assets/$url".toUri()
         }
 
+        val subtitleConfigs = subtitles.map { sub ->
+            MediaItem.SubtitleConfiguration.Builder(sub.url.toUri())
+                .setMimeType(MimeTypes.TEXT_VTT)
+                .setLanguage(sub.lang)
+                .setLabel(sub.label)
+                .setSelectionFlags(if (sub.isDefault) C.SELECTION_FLAG_DEFAULT else 0)
+                .build()
+        }
+
         val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+        val mediaItem = MediaItem.Builder()
+            .setUri(uri)
+            .apply {
+                if (isHls) {
+                    setMimeType(MimeTypes.APPLICATION_M3U8)
+                }
+                if (subtitleConfigs.isNotEmpty()) {
+                    setSubtitleConfigurations(subtitleConfigs)
+                }
+            }
+            .build()
+
+        // Sidecar subtitles must go through DefaultMediaSourceFactory: it merges the
+        // subtitle sources with the video source AND parses the WebVTT into
+        // application/x-media3-cues samples. HlsMediaSource.Factory ignores
+        // MediaItem.subtitleConfigurations, and a hand-rolled SingleSampleMediaSource
+        // feeds the TextRenderer raw text/vtt, which fails with
+        // "Legacy decoding is disabled" on Media3 1.11.
+        if (subtitleConfigs.isNotEmpty()) {
+            return DefaultMediaSourceFactory(context)
+                .createMediaSource(mediaItem)
+        }
+
         return if (isHls) {
             HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(uri))
+                .createMediaSource(mediaItem)
         } else {
             ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(uri))
+                .createMediaSource(mediaItem)
         }
     }
 }

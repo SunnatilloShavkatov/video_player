@@ -18,6 +18,7 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
     var delegate: QualityDelegate?
     var speedDelegate: SpeedDelegate?
     var subtitleDelegate: SubtitleDelegate?
+    var subtitleSizeDelegate: SubtitleSizeDelegate?
     var speedTitle: String = "1x"
     
     var settingModel = [SettingModel]()
@@ -35,6 +36,14 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
         table.backgroundColor =  Colors.moreColor
         table.isScrollEnabled = false
         table.contentInsetAdjustmentBehavior = .never
+        // .grouped adds implicit section header/footer space, which pushes the last
+        // row past the sheet height calculated from the row count.
+        table.sectionHeaderHeight = 0
+        table.sectionFooterHeight = 0
+        table.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNormalMagnitude))
+        if #available(iOS 15.0, *) {
+            table.sectionHeaderTopPadding = 0
+        }
         let inset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         table.contentInset = inset
         return table
@@ -103,16 +112,26 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
     @objc func cancelTapped() {
         self.dismiss(animated: true, completion: nil)
     }
-    
+
+    private func calculateMenuHeight() -> CGFloat {
+        let bottomInset = max(view.safeAreaInsets.bottom, 28.0)
+        let rowsHeight = CGFloat(settingModel.count) * 48.0
+        let topPadding: CGFloat = 8.0
+        let headerPadding: CGFloat = 20.0
+        let totalHeight = rowsHeight + topPadding + headerPadding + bottomInset
+        let minHeight: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 160 : 320
+        let maxHeight = view.bounds.height * 0.8
+        let height = min(max(totalHeight, minHeight), maxHeight)
+        // Only scroll when the rows genuinely do not fit (e.g. landscape).
+        tableView.isScrollEnabled = totalHeight > maxHeight
+        return height
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
         tableView.contentInsetAdjustmentBehavior = .never
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            menuHeight = max(CGFloat(settingModel.count * 48 + 24), 140)
-        }else {
-            menuHeight = max(CGFloat(settingModel.count * 48 + 24), 300)
-        }
+        menuHeight = calculateMenuHeight()
         
         view.addSubview(backdropView)
         view.addSubview(menuView)
@@ -130,34 +149,29 @@ class SettingVC: UIViewController, UIGestureRecognizerDelegate {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        backView.snp.makeConstraints { make in
+        menuHeight = calculateMenuHeight()
+        let bottomInset = max(view.safeAreaInsets.bottom, 28.0)
+
+        backView.snp.remakeConstraints { make in
             make.edges.equalTo(menuView)
         }
-        mainStack.snp.makeConstraints { make in
-            make.width.equalTo(menuView)
-            make.height.equalTo(menuView)
-            make.top.equalTo(menuView)
+        mainStack.snp.remakeConstraints { make in
             make.edges.equalTo(menuView)
         }
-        
-        contentView.snp.makeConstraints { make in
-            make.width.equalTo(mainStack)
-            make.height.equalTo(mainStack).multipliedBy(1)
+        contentView.snp.remakeConstraints { make in
+            make.edges.equalTo(mainStack)
         }
-        tableView.snp.makeConstraints { make in
+        tableView.snp.remakeConstraints { make in
             make.left.right.equalTo(view.safeAreaLayoutGuide)
-            make.top.equalTo(contentView).offset(-16)
-            make.width.equalTo(contentView).offset(50)
-            make.height.equalTo(menuHeight)
+            make.top.equalTo(contentView).offset(8)
+            make.bottom.equalTo(menuView).offset(-bottomInset)
         }
         
-        
-        menuView.snp.makeConstraints { make in
+        menuView.snp.remakeConstraints { make in
             make.height.equalTo(menuHeight)
             make.bottom.equalToSuperview()
             make.right.left.equalToSuperview().inset(0)
         }
-        
     }
     
     @objc func handleTap() {
@@ -199,6 +213,8 @@ extension SettingVC: UITableViewDataSource, UITableViewDelegate {
                 self.speedDelegate?.speedBottomSheet()
             case .subtitle:
                 self.subtitleDelegate?.subtitleBottomSheet()
+            case .subtitleSize:
+                self.subtitleSizeDelegate?.subtitleSizeBottomSheet()
             }
         }
     }

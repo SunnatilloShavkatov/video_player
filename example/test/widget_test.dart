@@ -9,7 +9,9 @@ void main() {
 
     expect(find.text('Video Player Plugin'), findsOneWidget);
     expect(find.text('Play Fullscreen Video'), findsOneWidget);
+    expect(find.text('Play Karate Kid with Subtitles (Start at 0:50)'), findsOneWidget);
+    expect(find.text('Play Karate Kid with Subtitles (Start at 0:00)'), findsOneWidget);
     expect(find.text('Open Embedded View Demo'), findsOneWidget);
-    expect(find.byType(FilledButton), findsNWidgets(2));
+    expect(find.byType(FilledButton), findsNWidgets(4));
   });
 }

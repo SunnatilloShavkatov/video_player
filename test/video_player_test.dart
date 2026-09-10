@@ -108,5 +108,48 @@ void main() {
       expect((result as PlaybackCompleted).lastPositionSeconds, 0);
       expect(result.durationSeconds, 100);
     });
+
+    test('serializes subtitles correctly in PlayerConfiguration', () {
+      const track = SubtitleTrack(
+        id: 227017,
+        label: 'English',
+        lang: 'en',
+        isDefault: true,
+        url: 'https://example.com/sub.vtt',
+      );
+      final config = PlayerConfiguration.remote(
+        videoUrl: 'https://example.com/video.m3u8',
+        title: 'Karate Kid',
+        subtitles: const [track],
+      );
+
+      final map = config.toMap();
+      expect(map['subtitles'], isA<List<dynamic>>());
+      final subsList = map['subtitles'] as List<dynamic>;
+      expect(subsList.length, 1);
+      final subMap = subsList[0] as Map<String, dynamic>;
+      expect(subMap['id'], 227017);
+      expect(subMap['label'], 'English');
+      expect(subMap['lang'], 'en');
+      expect(subMap['is_default'], true);
+      expect(subMap['url'], 'https://example.com/sub.vtt');
+    });
+
+    test('SubtitleTrack fromMap and toMap roundtrip', () {
+      final map = {
+        'id': 123,
+        'label': 'Uzbek',
+        'lang': 'uz',
+        'is_default': false,
+        'url': 'https://example.com/uz.vtt',
+      };
+      final track = SubtitleTrack.fromMap(map);
+      expect(track.id, 123);
+      expect(track.label, 'Uzbek');
+      expect(track.lang, 'uz');
+      expect(track.isDefault, false);
+      expect(track.url, 'https://example.com/uz.vtt');
+      expect(track.toMap(), map);
+    });
   });
 }

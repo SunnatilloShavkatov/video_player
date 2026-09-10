@@ -1,3 +1,5 @@
+import 'package:video_player/src/models/subtitle_track.dart';
+
 /// Configuration model for video playback in full-screen mode.
 ///
 /// This class contains all settings needed to configure the native video player,
@@ -53,6 +55,7 @@ class PlayerConfiguration {
     required this.movieShareLink,
     required this.playVideoFromAsset,
     this.isScreenshotEnabled = false,
+    this.subtitles = const [],
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -100,6 +103,7 @@ class PlayerConfiguration {
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
     bool isScreenshotEnabled = false,
+    List<SubtitleTrack> subtitles = const [],
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -115,6 +119,7 @@ class PlayerConfiguration {
       movieShareLink: movieShareLink,
       lastPosition: startPositionSeconds,
       isScreenshotEnabled: isScreenshotEnabled,
+      subtitles: subtitles,
     );
   }
 
@@ -130,6 +135,7 @@ class PlayerConfiguration {
   /// - [qualityText]: Label for quality selection (default: 'Quality')
   /// - [speedText]: Label for speed selection (default: 'Speed')
   /// - [autoText]: Label for auto quality option (default: 'Auto')
+  /// - [subtitles]: Optional list of subtitle tracks
   ///
   /// **Example:**
   /// ```
@@ -153,6 +159,7 @@ class PlayerConfiguration {
     int startPositionSeconds = 0,
     String qualityText = 'Quality',
     bool isScreenshotEnabled = false,
+    List<SubtitleTrack> subtitles = const [],
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -171,6 +178,7 @@ class PlayerConfiguration {
       qualityText: qualityText,
       lastPosition: startPositionSeconds,
       isScreenshotEnabled: isScreenshotEnabled,
+      subtitles: subtitles,
     );
   }
 
@@ -261,6 +269,11 @@ class PlayerConfiguration {
   /// Set to `true` to allow screenshots and screen recording.
   final bool isScreenshotEnabled;
 
+  /// List of subtitle tracks available for this video.
+  ///
+  /// Empty list indicates no subtitles are available.
+  final List<SubtitleTrack> subtitles;
+
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -278,6 +291,7 @@ class PlayerConfiguration {
     'movieShareLink': movieShareLink,
     'playVideoFromAsset': playVideoFromAsset,
     'isScreenshotEnabled': isScreenshotEnabled,
+    'subtitles': subtitles.map((s) => s.toMap()).toList(),
   };
 
   @override
@@ -292,6 +306,7 @@ class PlayerConfiguration {
       'assetPath: $assetPath, '
       'autoText: $autoText, '
       'movieShareLink: $movieShareLink, '
-      'isScreenshotEnabled: $isScreenshotEnabled '
+      'isScreenshotEnabled: $isScreenshotEnabled, '
+      'subtitles: $subtitles'
       '}';
 }

@@ -13,6 +13,7 @@ enum SettingAction {
     case quality
     case speed
     case subtitle
+    case subtitleSize
 }
 
 struct SettingModel {

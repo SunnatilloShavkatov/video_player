@@ -48,12 +48,34 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   static const String _sampleVideoUrl =
       'https://englifypublicvideos.hel1.your-objectstorage.com/public/englify-intro-video2/master.m3u8';
+  static const String _karateKidVideoUrl =
+      'https://englifypublicvideos.hel1.your-objectstorage.com/movies/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8';
+  static const String _karateKidSubtitleUrl =
+      'https://d8nrdu71wqkvm.cloudfront.net/1/Y8dVwJMePSsnr7WS7VsrGA04iVcfWnIP.vtt';
 
   void _showSnackBar(String message) {
     if (!mounted) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 3)));
+  }
+
+  void _handlePlaybackResult(PlaybackResult result) {
+    switch (result) {
+      case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
+        if (kDebugMode) {
+          print('Playback completed: $lastPositionSeconds / $durationSeconds sec');
+        }
+        _showSnackBar('Playback finished at ${lastPositionSeconds}s of ${durationSeconds}s');
+      case PlaybackCancelled():
+        if (kDebugMode) {
+          print('Playback cancelled by user');
+        }
+        _showSnackBar('Playback cancelled');
+      case PlaybackFailed(:final error):
+        debugPrint('Playback failed: $error');
+        _showSnackBar('Playback failed: $error');
+    }
   }
 
   Future<void> _playFullscreenVideo() async {
@@ -65,22 +87,36 @@ class _MainPageState extends State<MainPage> {
           movieShareLink: 'https://uzd.iiii.io/movie/7963?type=premier',
         ),
       );
+      _handlePlaybackResult(result);
+    } on ArgumentError catch (e) {
+      debugPrint('Invalid video configuration: $e');
+      _showSnackBar('Invalid video configuration: ${e.message}');
+    } on Exception catch (e) {
+      debugPrint('Unexpected error playing video: $e');
+      _showSnackBar('Unexpected error occurred');
+    }
+  }
 
-      switch (result) {
-        case PlaybackCompleted(:final lastPositionSeconds, :final durationSeconds):
-          if (kDebugMode) {
-            print('Playback completed: $lastPositionSeconds / $durationSeconds sec');
-          }
-          _showSnackBar('Playback finished at ${lastPositionSeconds}s of ${durationSeconds}s');
-        case PlaybackCancelled():
-          if (kDebugMode) {
-            print('Playback cancelled by user');
-          }
-          _showSnackBar('Playback cancelled');
-        case PlaybackFailed(:final error):
-          debugPrint('Playback failed: $error');
-          _showSnackBar('Playback failed: $error');
-      }
+  Future<void> _playVideoWithSubtitles({int startPositionSeconds = 50}) async {
+    try {
+      final result = await VideoPlayer.instance.playVideo(
+        playerConfig: PlayerConfiguration.remote(
+          videoUrl: _karateKidVideoUrl,
+          title: 'The Karate Kid',
+          movieShareLink: 'https://uzd.iiii.io/movie/1?type=premier',
+          startPositionSeconds: startPositionSeconds,
+          subtitles: const [
+            SubtitleTrack(
+              id: 227017,
+              label: 'English',
+              lang: 'en',
+              isDefault: true,
+              url: _karateKidSubtitleUrl,
+            ),
+          ],
+        ),
+      );
+      _handlePlaybackResult(result);
     } on ArgumentError catch (e) {
       debugPrint('Invalid video configuration: $e');
       _showSnackBar('Invalid video configuration: ${e.message}');
@@ -113,7 +149,7 @@ class _MainPageState extends State<MainPage> {
                     Text('Full-Screen Player', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(
-                      'Launches the native full-screen video player (ExoPlayer on Android, AVPlayer on iOS/macOS) with HLS quality selection, playback speed controls, and PiP support.',
+                      'Launches the native full-screen video player (ExoPlayer on Android, AVPlayer on iOS/macOS) with sidecar WebVTT subtitles, HLS quality selection, playback speed controls, and PiP support.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 16),
@@ -121,6 +157,18 @@ class _MainPageState extends State<MainPage> {
                       onPressed: _playFullscreenVideo,
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Play Fullscreen Video'),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: _playVideoWithSubtitles,
+                      icon: const Icon(Icons.closed_caption_rounded),
+                      label: const Text('Play Karate Kid with Subtitles (Start at 0:50)'),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: () => _playVideoWithSubtitles(startPositionSeconds: 0),
+                      icon: const Icon(Icons.replay_rounded),
+                      label: const Text('Play Karate Kid with Subtitles (Start at 0:00)'),
                     ),
                   ],
                 ),

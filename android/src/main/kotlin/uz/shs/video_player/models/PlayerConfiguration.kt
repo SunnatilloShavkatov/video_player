@@ -14,4 +14,5 @@ data class PlayerConfiguration(
     @SerializedName("movieShareLink") val movieShareLink: String,
     @SerializedName("playVideoFromAsset") val playVideoFromAsset: Boolean,
     @SerializedName("isScreenshotEnabled") val isScreenshotEnabled: Boolean = false,
+    @SerializedName("subtitles") val subtitles: List<SubtitleTrack> = emptyList(),
 ) : Serializable

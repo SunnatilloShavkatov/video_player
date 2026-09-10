@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 
 enum BottomSheetType{
-    case quality, speed, subtitle, audio
+    case quality, speed, subtitle, subtitleSize, audio
 }
 
 protocol BottomSheetCellDelegate{
