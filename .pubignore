@@ -32,3 +32,7 @@ build/
 .vscode
 /.claude/
 /ios/video_player/.swiftpm/xcode/
+/example/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+/example/ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved
+/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+/example/macos/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved
