@@ -41,6 +41,8 @@ class PlayerView: UIView {
     
     // MARK: - Core Properties
     private var player = AVPlayer()
+    // Retained here: AVAssetResourceLoader holds its delegate weakly.
+    private var keyLoader: HlsKeyResourceLoader?
     var playerLayer = AVPlayerLayer()
     var playerConfiguration: PlayerConfiguration!
     weak var delegate: PlayerViewDelegate?
@@ -337,7 +339,7 @@ class PlayerView: UIView {
         guard let videoURL = URL(string: url ?? "") else { return }
         observerManager?.removeObservers()
         setTitle(title: title)
-        let newItem = AVPlayerItem(asset: AVURLAsset(url: videoURL))
+        let newItem = AVPlayerItem(asset: makeAsset(url: videoURL))
         player.replaceCurrentItem(with: newItem)
         player.seek(to: CMTime.zero)
         // 0 = automatic: AVPlayer sizes the forward buffer based on network conditions
@@ -532,7 +534,7 @@ class PlayerView: UIView {
               let url = URL(string: urlString) else { return }
         
         observerManager?.removeObservers()
-        let newItem = AVPlayerItem(asset: AVURLAsset(url: url))
+        let newItem = AVPlayerItem(asset: makeAsset(url: url))
         player.replaceCurrentItem(with: newItem)
         // 0 = automatic: AVPlayer sizes the forward buffer based on network conditions
         player.currentItem?.preferredForwardBufferDuration = 0
@@ -555,7 +557,18 @@ class PlayerView: UIView {
         let canShare = !playerConfiguration.playVideoFromAsset &&
             !playerConfiguration.movieShareLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         setShareEnabled(canShare)
-        loadMediaPlayer(asset: AVURLAsset(url: sourceURL))
+        loadMediaPlayer(asset: makeAsset(url: sourceURL))
+    }
+
+    /// Builds the asset, routing AES-128 key requests through `HlsKeyResourceLoader`
+    /// when the configuration carries key request headers.
+    private func makeAsset(url: URL) -> AVURLAsset {
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(
+            url: url,
+            keyHeaders: playerConfiguration?.keyRequestHeaders ?? [:]
+        )
+        keyLoader = loader
+        return asset
     }
     
     private func loadMediaPlayer(asset: AVURLAsset) {

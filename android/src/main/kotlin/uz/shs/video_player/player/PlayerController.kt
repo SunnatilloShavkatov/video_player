@@ -3,6 +3,7 @@ package uz.shs.video_player.player
 import android.content.Context
 import androidx.core.net.toUri
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -14,8 +15,13 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.hls.HlsDataSourceFactory
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.extractor.ExtractorsFactory
+import androidx.media3.extractor.text.DefaultSubtitleParserFactory
+import androidx.media3.extractor.text.SubtitleExtractor
 import uz.shs.video_player.delegates.PlayerControllerDelegate
 import uz.shs.video_player.models.PlaybackState
 import uz.shs.video_player.models.QualityOption
@@ -53,13 +59,19 @@ class PlayerController(
      *
      * @param url Video URL (HLS stream)
      * @param lastPositionSeconds Starting position in seconds
+     * @param keyRequestHeaders Headers added only to HLS AES-128 key requests
      */
-    fun initialize(url: String, lastPositionSeconds: Long, subtitles: List<SubtitleTrack> = emptyList()) {
+    fun initialize(
+        url: String,
+        lastPositionSeconds: Long,
+        subtitles: List<SubtitleTrack> = emptyList(),
+        keyRequestHeaders: Map<String, String> = emptyMap(),
+    ) {
         isRemotePlayback = url.startsWith("http://") || url.startsWith("https://")
         playWhenReadyIntent = true
         waitingForNetworkRecovery = false
 
-        val mediaSource = createMediaSource(url, subtitles)
+        val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders)
 
         // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
@@ -367,7 +379,11 @@ class PlayerController(
         return videoTracks.sortedByDescending { it.height }.distinctBy { it.height }
     }
 
-    private fun createMediaSource(url: String, subtitles: List<SubtitleTrack> = emptyList()): MediaSource {
+    private fun createMediaSource(
+        url: String,
+        subtitles: List<SubtitleTrack> = emptyList(),
+        keyRequestHeaders: Map<String, String> = emptyMap(),
+    ): MediaSource {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
 
         val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -386,6 +402,11 @@ class PlayerController(
         }
 
         val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+
+        if (isHls && keyRequestHeaders.isNotEmpty()) {
+            return createKeyAuthorizedHlsSource(uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders)
+        }
+
         val mediaItem = MediaItem.Builder()
             .setUri(uri)
             .apply {
@@ -416,5 +437,70 @@ class PlayerController(
             ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(mediaItem)
         }
+    }
+
+    /**
+     * HLS source whose AES-128 key requests carry [keyRequestHeaders].
+     *
+     * HlsChunkSource loads keys through a data source created with
+     * [C.DATA_TYPE_DRM], so the headers reach the key endpoint only — playlists
+     * and segments are fetched without them.
+     *
+     * DefaultMediaSourceFactory cannot take an [HlsDataSourceFactory], so sidecar
+     * subtitles are merged here the same way it does internally: a
+     * ProgressiveMediaSource with a [SubtitleExtractor], which emits
+     * application/x-media3-cues samples.
+     */
+    private fun createKeyAuthorizedHlsSource(
+        uri: android.net.Uri,
+        dataSourceFactory: DataSource.Factory,
+        subtitleConfigs: List<MediaItem.SubtitleConfiguration>,
+        keyRequestHeaders: Map<String, String>,
+    ): MediaSource {
+        val keyDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setDefaultRequestProperties(keyRequestHeaders)
+        val hlsDataSourceFactory = HlsDataSourceFactory { dataType ->
+            if (dataType == C.DATA_TYPE_DRM) {
+                keyDataSourceFactory.createDataSource()
+            } else {
+                dataSourceFactory.createDataSource()
+            }
+        }
+        val hlsSource = HlsMediaSource.Factory(hlsDataSourceFactory)
+            .createMediaSource(
+                MediaItem.Builder()
+                    .setUri(uri)
+                    .setMimeType(MimeTypes.APPLICATION_M3U8)
+                    .build()
+            )
+        if (subtitleConfigs.isEmpty()) {
+            return hlsSource
+        }
+
+        val subtitleParserFactory = DefaultSubtitleParserFactory()
+        val subtitleSources = subtitleConfigs.map { config ->
+            val format = Format.Builder()
+                .setSampleMimeType(config.mimeType)
+                .setLanguage(config.language)
+                .setSelectionFlags(config.selectionFlags)
+                .setRoleFlags(config.roleFlags)
+                .setLabel(config.label)
+                .setId(config.id)
+                .build()
+            val extractorsFactory = ExtractorsFactory {
+                arrayOf(SubtitleExtractor(subtitleParserFactory.create(format), format))
+            }
+            ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
+                .enableLazyLoadingWithSingleTrack(
+                    0,
+                    format.buildUpon()
+                        .setSampleMimeType(MimeTypes.APPLICATION_MEDIA3_CUES)
+                        .setCodecs(format.sampleMimeType)
+                        .setCueReplacementBehavior(subtitleParserFactory.getCueReplacementBehavior(format))
+                        .build()
+                )
+                .createMediaSource(MediaItem.fromUri(config.uri.toString()))
+        }
+        return MergingMediaSource(hlsSource, *subtitleSources.toTypedArray())
     }
 }

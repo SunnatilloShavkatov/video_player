@@ -15,6 +15,7 @@ implementations. Features include video playback, HLS streaming, speed/quality c
 - **Playback controls**: Play, pause, seek, and speed control
 - **Fullscreen support**: Native fullscreen video playback experience
 - **Android reconnect retry**: Full-screen remote playback on Android retries after temporary network loss and shows clearer offline error messaging
+- **Encrypted HLS (AES-128)**: Full-screen player can send headers (e.g. `Authorization: Bearer`) with key requests only
 
 ### Screen Protection (iOS)
 
@@ -147,6 +148,29 @@ final result = await VideoPlayer.instance.playVideo(
 );
 ```
 
+#### Encrypted HLS (AES-128) with an authorized key endpoint
+
+When the playlist's `#EXT-X-KEY` points at an endpoint that needs a token, pass the token through
+`keyRequestHeaders`. Keep `videoUrl` as the plain playlist URL: a `?token=` query on the master
+playlist is not forwarded to the key request.
+
+```
+final result = await VideoPlayer.instance.playVideo(
+  playerConfig: PlayerConfiguration.remote(
+    videoUrl: 'https://cdn.example.com/lesson/master.m3u8', // no ?token=
+    title: 'Lesson 1',
+    keyRequestHeaders: {'Authorization': 'Bearer $token'},
+  ),
+);
+```
+
+- The headers are sent **only** with AES key requests. Playlist and segment requests never carry them.
+- The key is fetched when playback starts, so pass a token that is valid at that moment.
+  A rejected key (e.g. HTTP 401) returns `PlaybackFailed`. Open the player again with a fresh token.
+- Header values are never included in `PlayerConfiguration.toString()`.
+- Full-screen player only (Android, iOS, macOS). On iOS/macOS the stream is served through an
+  `AVAssetResourceLoader`, so AirPlay video output may not work for these streams.
+
 ### Embedded Player
 
 Inline video playback within your Flutter UI:
@@ -262,6 +286,7 @@ PlayerConfiguration.remote({
   String qualityText = 'Quality',     // UI label (optional)
   String speedText = 'Speed',         // UI label (optional)
   String autoText = 'Auto',           // UI label (optional)
+  Map<String, String> keyRequestHeaders = const {}, // AES key request headers (optional)
 })
 ```
 
@@ -289,6 +314,7 @@ PlayerConfiguration.asset({
 - `autoText`: Label for automatic quality option
 - `playVideoFromAsset`: Whether to play from app assets
 - `assetPath`: Asset file path (when `playVideoFromAsset` is true)
+- `keyRequestHeaders`: Headers sent only with HLS AES-128 key requests (default: empty)
 
 ### PlaybackResult
 

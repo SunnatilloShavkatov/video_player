@@ -429,7 +429,12 @@ class VideoPlayerActivity : AppCompatActivity(),
         try {
             // ✅ Initialize PlayerController instead of direct ExoPlayer
             playerController = PlayerController(this, this)
-            playerController.initialize(url, playerConfiguration.lastPosition, playerConfiguration.subtitles)
+            playerController.initialize(
+                url,
+                playerConfiguration.lastPosition,
+                playerConfiguration.subtitles,
+                playerConfiguration.keyRequestHeaders.orEmpty(),
+            )
             playerController.attachToView(playerView)
             setupSubtitles()
         } catch (error: Exception) {

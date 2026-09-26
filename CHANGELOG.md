@@ -1,3 +1,10 @@
+## [3.5.4] - 2026-09-26
+
+### Added
+- **All platforms (full-screen)**: `keyRequestHeaders` on `PlayerConfiguration` and `PlayerConfiguration.remote`, a `Map<String, String>` defaulting to `{}` and serialized under the `keyRequestHeaders` key. The headers go only with HLS AES-128 key requests (`#EXT-X-KEY` URI), never with playlist or segment requests. This lets encrypted streams whose key endpoint needs `Authorization: Bearer <token>` play. `toString()` prints header names only, never their values.
+- **Android**: For HLS with key headers, `HlsMediaSource` uses a custom `HlsDataSourceFactory`, which gives the key loader (`C.DATA_TYPE_DRM`) a `DefaultHttpDataSource` carrying the headers. With sidecar subtitles, the source is merged by hand using the same `SubtitleExtractor` route `DefaultMediaSourceFactory` takes. Playback without headers is unchanged.
+- **iOS, macOS**: New `HlsKeyResourceLoader`. It serves playlists through `AVAssetResourceLoader` under a custom scheme and rewrites key URIs so the loader fetches keys over https with the headers. Segments stay on plain https. Keys are cached in memory for the session. A rejected key fails the item, which surfaces as `PlaybackFailed`.
+
 ## [3.5.3] - 2026-09-10
 
 ### Changed

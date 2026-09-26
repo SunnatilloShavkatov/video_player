@@ -59,6 +59,7 @@ class PlayerConfiguration {
     required this.subtitleSizeText,
     this.isScreenshotEnabled = false,
     required this.playVideoFromAsset,
+    this.keyRequestHeaders = const {},
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -77,6 +78,8 @@ class PlayerConfiguration {
   /// - [subtitleText]: Label for the subtitle row (default: 'Subtitles')
   /// - [subtitleSizeText]: Label for the subtitle size row (default: 'Subtitle Size')
   /// - [subtitleOffText]: Label for the "subtitles disabled" option (default: 'Off')
+  /// - [keyRequestHeaders]: HTTP headers sent only with HLS AES-128 key requests
+  ///   (default: empty). See [keyRequestHeaders].
   ///
   /// **Example:**
   /// ```
@@ -113,6 +116,7 @@ class PlayerConfiguration {
     String subtitleText = 'Subtitles',
     String subtitleSizeText = 'Subtitle Size',
     String subtitleOffText = 'Off',
+    Map<String, String> keyRequestHeaders = const {},
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -132,6 +136,7 @@ class PlayerConfiguration {
       subtitleText: subtitleText,
       subtitleSizeText: subtitleSizeText,
       subtitleOffText: subtitleOffText,
+      keyRequestHeaders: keyRequestHeaders,
     );
   }
 
@@ -310,6 +315,22 @@ class PlayerConfiguration {
   /// Pass a localized string to match the host app's language.
   final String subtitleOffText;
 
+  /// HTTP headers sent **only** with HLS AES-128 key requests (the `URI` of
+  /// `#EXT-X-KEY`). Playlist and segment requests never carry them.
+  ///
+  /// Use this for encrypted HLS whose key endpoint requires authorization:
+  /// ```
+  /// PlayerConfiguration.remote(
+  ///   videoUrl: 'https://cdn.example.com/lesson/master.m3u8',
+  ///   title: 'Lesson',
+  ///   keyRequestHeaders: {'Authorization': 'Bearer $token'},
+  /// );
+  /// ```
+  ///
+  /// The key is fetched once when playback starts, so pass a token that is
+  /// valid at that moment. Header values are never included in [toString].
+  final Map<String, String> keyRequestHeaders;
+
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -331,6 +352,7 @@ class PlayerConfiguration {
     'playVideoFromAsset': playVideoFromAsset,
     'isScreenshotEnabled': isScreenshotEnabled,
     'subtitles': subtitles.map((s) => s.toMap()).toList(),
+    'keyRequestHeaders': keyRequestHeaders,
   };
 
   @override
@@ -349,6 +371,7 @@ class PlayerConfiguration {
       'subtitles: $subtitles, '
       'subtitleText: $subtitleText, '
       'subtitleSizeText: $subtitleSizeText, '
-      'subtitleOffText: $subtitleOffText'
+      'subtitleOffText: $subtitleOffText, '
+      'keyRequestHeaders: ${keyRequestHeaders.keys.toList()}'
       '}';
 }

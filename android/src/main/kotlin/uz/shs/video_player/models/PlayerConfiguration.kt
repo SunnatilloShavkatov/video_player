@@ -18,4 +18,5 @@ data class PlayerConfiguration(
     @SerializedName("subtitleText") val subtitleText: String = "Subtitles",
     @SerializedName("subtitleSizeText") val subtitleSizeText: String = "Subtitle Size",
     @SerializedName("subtitleOffText") val subtitleOffText: String = "Off",
+    @SerializedName("keyRequestHeaders") val keyRequestHeaders: Map<String, String>? = emptyMap(),
 ) : Serializable

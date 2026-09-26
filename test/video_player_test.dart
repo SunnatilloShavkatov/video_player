@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player/video_player.dart';
@@ -145,6 +147,39 @@ void main() {
       expect(subMap['lang'], 'en');
       expect(subMap['is_default'], true);
       expect(subMap['url'], 'https://example.com/sub.vtt');
+    });
+
+    test('keyRequestHeaders defaults to empty map', () {
+      final config = PlayerConfiguration.remote(videoUrl: 'https://example.com/video.m3u8', title: 'Test');
+
+      expect(config.keyRequestHeaders, isEmpty);
+      expect(config.toMap()['keyRequestHeaders'], <String, String>{});
+    });
+
+    test('sends keyRequestHeaders to the platform without leaking values in toString', () async {
+      String? sentConfig;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel(channelName),
+        (call) async {
+          if (call.method == 'playVideo') {
+            sentConfig = (call.arguments as Map<Object?, Object?>)['playerConfigJsonString'] as String?;
+            return [0, 0];
+          }
+          return null;
+        },
+      );
+      final config = PlayerConfiguration.remote(
+        videoUrl: 'https://example.com/master.m3u8',
+        title: 'Lesson',
+        keyRequestHeaders: const {'Authorization': 'Bearer secret-token'},
+      );
+
+      await VideoPlayer.instance.playVideo(playerConfig: config);
+
+      final decoded = jsonDecode(sentConfig!) as Map<String, dynamic>;
+      expect(decoded['keyRequestHeaders'], {'Authorization': 'Bearer secret-token'});
+      expect(config.toString(), contains('Authorization'));
+      expect(config.toString(), isNot(contains('secret-token')));
     });
   });
 }

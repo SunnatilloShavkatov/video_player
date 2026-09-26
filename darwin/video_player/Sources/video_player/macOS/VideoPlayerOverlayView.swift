@@ -12,6 +12,8 @@ import Foundation
 class VideoPlayerOverlayView: NSView {
     private let player = AVPlayer()
     private var playerLayer: AVPlayerLayer!
+    // Retained here: AVAssetResourceLoader holds its delegate weakly.
+    private var keyLoader: HlsKeyResourceLoader?
 
     var playerConfiguration: PlayerConfiguration
     var onPlaybackFinished: (([Int]) -> Void)?
@@ -322,7 +324,8 @@ class VideoPlayerOverlayView: NSView {
 
         loadingIndicator.startAnimation(nil)
 
-        let asset = AVURLAsset(url: url)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: url, keyHeaders: playerConfiguration.keyRequestHeaders)
+        keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: playerItem)
 
