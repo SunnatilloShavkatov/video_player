@@ -16,7 +16,6 @@ import androidx.media3.common.Player
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
@@ -26,6 +25,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 import uz.shs.video_player.models.VideoViewModel
+import uz.shs.video_player.player.hlsMediaSourceFactory
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -136,7 +136,7 @@ class VideoPlayerView internal constructor(
             val mediaSource: MediaSource =
                 if (url.startsWith("http://") || url.startsWith("https://")) {
                     if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
-                        HlsMediaSource.Factory(dataSourceFactory)
+                        hlsMediaSourceFactory(dataSourceFactory, viewModel.getKeyRequestHeaders())
                             .createMediaSource(MediaItem.fromUri(uri))
                     } else {
                         ProgressiveMediaSource.Factory(dataSourceFactory)
@@ -251,7 +251,7 @@ class VideoPlayerView internal constructor(
 
             val mediaSource: MediaSource =
                 if (url.contains(".m3u8") || url.contains("hls", ignoreCase = true)) {
-                    HlsMediaSource.Factory(dataSourceFactory)
+                    hlsMediaSourceFactory(dataSourceFactory, args.getKeyRequestHeaders())
                         .createMediaSource(MediaItem.fromUri(uri))
                 } else {
                     ProgressiveMediaSource.Factory(dataSourceFactory)

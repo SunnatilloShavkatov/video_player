@@ -52,6 +52,62 @@ class _MainPageState extends State<MainPage> {
       'https://englifypublicvideos.hel1.your-objectstorage.com/movies/elementary_unit_1_the_karate_kid/TRKyawvyNXdOIoLVloLmytyIRSOmgbuUUTqXGMX1.m3u8';
   static const String _karateKidSubtitleUrl =
       'https://d8nrdu71wqkvm.cloudfront.net/1/Y8dVwJMePSsnr7WS7VsrGA04iVcfWnIP.vtt';
+  static const String _encryptedVideoUrl =
+      'https://d8nrdu71wqkvm.cloudfront.net/transcoded/8pcxxjszsbuhtcdpneytkyqsrbi9ktqampjuquu8trzgzitk0lgbhhb6zrw5kb16/10ffd9c0-3cd8-44a8-896c-d0076e538b9a.m3u8';
+
+  // Encrypted HLS demo: the token is typed in at runtime and kept in memory only.
+  final _encryptedUrlController = TextEditingController(text: _encryptedVideoUrl);
+  final _tokenController = TextEditingController();
+
+  @override
+  void dispose() {
+    _encryptedUrlController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  /// Returns null (and shows a message) when the URL or token field is empty.
+  ({String url, Map<String, String> headers})? _encryptedSource() {
+    final url = _encryptedUrlController.text.trim();
+    final token = _tokenController.text.trim();
+    if (url.isEmpty || token.isEmpty) {
+      _showSnackBar('Enter the playlist URL and a fresh token');
+      return null;
+    }
+    return (url: url, headers: {'Authorization': 'Bearer $token'});
+  }
+
+  Future<void> _playEncryptedFullscreen() async {
+    final source = _encryptedSource();
+    if (source == null) {
+      return;
+    }
+    try {
+      final result = await VideoPlayer.instance.playVideo(
+        playerConfig: PlayerConfiguration.remote(
+          videoUrl: source.url,
+          title: 'Encrypted Lesson',
+          keyRequestHeaders: source.headers,
+        ),
+      );
+      _handlePlaybackResult(result);
+    } on ArgumentError catch (e) {
+      debugPrint('Invalid video configuration: $e');
+      _showSnackBar('Invalid video configuration: ${e.message}');
+    }
+  }
+
+  Future<void> _openEncryptedEmbedded() async {
+    final source = _encryptedSource();
+    if (source == null) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => VideoPlayerPage(url: source.url, keyRequestHeaders: source.headers),
+      ),
+    );
+  }
 
   void _showSnackBar(String message) {
     if (!mounted) {
@@ -106,13 +162,7 @@ class _MainPageState extends State<MainPage> {
           movieShareLink: 'https://uzd.iiii.io/movie/1?type=premier',
           startPositionSeconds: startPositionSeconds,
           subtitles: const [
-            SubtitleTrack(
-              id: '227017',
-              label: 'English',
-              lang: 'en',
-              isDefault: true,
-              url: _karateKidSubtitleUrl,
-            ),
+            SubtitleTrack(id: '227017', label: 'English', lang: 'en', isDefault: true, url: _karateKidSubtitleUrl),
           ],
         ),
       );
@@ -195,12 +245,63 @@ class _MainPageState extends State<MainPage> {
                     const SizedBox(height: 16),
                     FilledButton.tonalIcon(
                       onPressed: () async {
-                        await Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute<void>(builder: (context) => const VideoPlayerPage()));
+                        await Navigator.of(context)
+                            .push(MaterialPageRoute<void>(builder: (context) => const VideoPlayerPage()));
                       },
                       icon: const Icon(Icons.video_library_rounded),
                       label: const Text('Open Embedded View Demo'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Encrypted HLS (AES-128)', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Plays a stream whose key endpoint needs a token. The token goes only to the '
+                      'AES key request as "Authorization: Bearer <token>". Do not add ?token= to the URL.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _encryptedUrlController,
+                      keyboardType: TextInputType.url,
+                      decoration: const InputDecoration(
+                        labelText: 'Playlist URL (hls_path)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _tokenController,
+                      obscureText: true,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: const InputDecoration(labelText: 'Key token (JWT)', border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _playEncryptedFullscreen,
+                      icon: const Icon(Icons.lock_rounded),
+                      label: const Text('Play Encrypted Full-Screen'),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: _openEncryptedEmbedded,
+                      icon: const Icon(Icons.lock_outline_rounded),
+                      label: const Text('Open Encrypted Embedded View'),
                     ),
                   ],
                 ),

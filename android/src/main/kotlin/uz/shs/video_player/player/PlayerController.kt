@@ -17,7 +17,6 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import androidx.media3.exoplayer.hls.HlsDataSourceFactory
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.text.DefaultSubtitleParserFactory
@@ -440,13 +439,10 @@ class PlayerController(
     }
 
     /**
-     * HLS source whose AES-128 key requests carry [keyRequestHeaders].
+     * HLS source whose AES-128 key requests carry [keyRequestHeaders]
+     * (see [hlsMediaSourceFactory]).
      *
-     * HlsChunkSource loads keys through a data source created with
-     * [C.DATA_TYPE_DRM], so the headers reach the key endpoint only — playlists
-     * and segments are fetched without them.
-     *
-     * DefaultMediaSourceFactory cannot take an [HlsDataSourceFactory], so sidecar
+     * DefaultMediaSourceFactory cannot take an HlsDataSourceFactory, so sidecar
      * subtitles are merged here the same way it does internally: a
      * ProgressiveMediaSource with a [SubtitleExtractor], which emits
      * application/x-media3-cues samples.
@@ -457,16 +453,7 @@ class PlayerController(
         subtitleConfigs: List<MediaItem.SubtitleConfiguration>,
         keyRequestHeaders: Map<String, String>,
     ): MediaSource {
-        val keyDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setDefaultRequestProperties(keyRequestHeaders)
-        val hlsDataSourceFactory = HlsDataSourceFactory { dataType ->
-            if (dataType == C.DATA_TYPE_DRM) {
-                keyDataSourceFactory.createDataSource()
-            } else {
-                dataSourceFactory.createDataSource()
-            }
-        }
-        val hlsSource = HlsMediaSource.Factory(hlsDataSourceFactory)
+        val hlsSource = hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders)
             .createMediaSource(
                 MediaItem.Builder()
                     .setUri(uri)

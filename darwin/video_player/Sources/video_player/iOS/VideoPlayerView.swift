@@ -31,7 +31,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         let assets: String? = args?["assets"] as? String
         let sourceType: String? = args?["resizeMode"] as? String
         let gravity = videoGravity(s: sourceType ?? "")
-        let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", gravity: gravity)
+        let keyRequestHeaders = args?["keyRequestHeaders"] as? [String: String] ?? [:]
+        let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", keyRequestHeaders: keyRequestHeaders, gravity: gravity)
         self.videoViewController = viewController
         
         super.init()
@@ -84,6 +85,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             if let path = videoPath, !path.isEmpty {
                 self.videoViewController.assets = ""
                 self.videoViewController.url = path
+                self.videoViewController.keyRequestHeaders = args["keyRequestHeaders"] as? [String: String] ?? [:]
                 if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
                     result(error)
                 } else {
@@ -106,6 +108,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
             if let path = videoPath, !path.isEmpty {
                 self.videoViewController.url = ""
                 self.videoViewController.assets = path
+                self.videoViewController.keyRequestHeaders = [:]
                 if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
                     result(error)
                 } else {

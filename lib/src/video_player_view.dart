@@ -98,7 +98,13 @@ enum PlayerStatus {
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 class VideoPlayerView extends StatelessWidget {
-  const new({super.key, required this.url, required this.onVideoViewCreated, this.resizeMode = ResizeMode.fit});
+  const new({
+    super.key,
+    required this.url,
+    required this.onVideoViewCreated,
+    this.resizeMode = ResizeMode.fit,
+    this.keyRequestHeaders = const {},
+  });
 
   /// Platform view type name for video player
   static const String _viewType = 'plugins.video/video_player_view';
@@ -106,6 +112,17 @@ class VideoPlayerView extends StatelessWidget {
   final String url;
   final ResizeMode resizeMode;
   final FlutterVideoPlayerViewCreatedCallback onVideoViewCreated;
+
+  /// HTTP headers sent **only** with HLS AES-128 key requests (the `URI` of
+  /// `#EXT-X-KEY`), e.g. `{'Authorization': 'Bearer $token'}`. Playlist and
+  /// segment requests never carry them.
+  final Map<String, String> keyRequestHeaders;
+
+  Map<String, dynamic> get _creationParams => <String, dynamic>{
+    'url': url,
+    'resizeMode': resizeMode.value,
+    'keyRequestHeaders': keyRequestHeaders,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +136,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.value},
+          creationParams: _creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -128,7 +145,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.value},
+          creationParams: _creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -137,7 +154,7 @@ class VideoPlayerView extends StatelessWidget {
           viewType: _viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: <String, dynamic>{'url': url, 'resizeMode': resizeMode.value},
+          creationParams: _creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
@@ -213,6 +230,8 @@ final class VideoPlayerViewController {
   /// **Parameters:**
   /// - [url]: New HTTPS URL to play (required)
   /// - [resizeMode]: How the new video should fit in the view (default: [ResizeMode.fit])
+  /// - [keyRequestHeaders]: Headers sent only with HLS AES-128 key requests
+  ///   (default: none). See [VideoPlayerView.keyRequestHeaders].
   ///
   /// **Example:**
   /// ```
@@ -223,10 +242,18 @@ final class VideoPlayerViewController {
   /// ```
   ///
   /// **Note:** This replaces the current video and resets playback position to 0.
-  Future<void> setUrl({required String url, ResizeMode resizeMode = ResizeMode.fit}) async {
+  Future<void> setUrl({
+    required String url,
+    ResizeMode resizeMode = ResizeMode.fit,
+    Map<String, String> keyRequestHeaders = const {},
+  }) async {
     try {
       _checkNotDisposed();
-      await _channel.invokeMethod('setUrl', {'url': url, 'resizeMode': resizeMode.value});
+      await _channel.invokeMethod('setUrl', {
+        'url': url,
+        'resizeMode': resizeMode.value,
+        'keyRequestHeaders': keyRequestHeaders,
+      });
     } catch (e, s) {
       logMessage('setUrl failed', error: e, stackTrace: s);
     }

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.shs.video_player"
-version = "3.5.4"
+version = "3.5.5"
 
 android {
     namespace = "uz.shs.video_player"

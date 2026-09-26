@@ -23,11 +23,15 @@ class VideoViewController: UIViewController {
 
     var assets: String = ""
     var url: String = ""
+    /// Headers sent only with HLS AES-128 key requests (see HlsKeyResourceLoader).
+    var keyRequestHeaders: [String: String] = [:]
     var gravity: AVLayerVideoGravity
 
     // ✅ FIXED: Reusable player, not lazy (prevents multiple instances)
     private let player = AVPlayer()
     private var playerLayer: AVPlayerLayer?
+    // Retained here: AVAssetResourceLoader holds its delegate weakly.
+    private var keyLoader: HlsKeyResourceLoader?
 
     private lazy var videoView: UIView = {
         let view = UIView()
@@ -69,12 +73,14 @@ class VideoViewController: UIViewController {
         methodChannel: FlutterMethodChannel,
         assets: String,
         url: String,
+        keyRequestHeaders: [String: String] = [:],
         gravity: AVLayerVideoGravity
     ) {
         self.registrar = registrar
         self.methodChannel = methodChannel
         self.assets = assets
         self.url = url
+        self.keyRequestHeaders = keyRequestHeaders
         self.gravity = gravity
         super.init(nibName: nil, bundle: nil)
 
@@ -161,7 +167,8 @@ class VideoViewController: UIViewController {
             playerLayer?.videoGravity = gravity
         }
 
-        let asset = AVURLAsset(url: videoURL)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders)
+        keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
 
         player.replaceCurrentItem(with: playerItem)

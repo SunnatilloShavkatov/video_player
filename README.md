@@ -15,7 +15,7 @@ implementations. Features include video playback, HLS streaming, speed/quality c
 - **Playback controls**: Play, pause, seek, and speed control
 - **Fullscreen support**: Native fullscreen video playback experience
 - **Android reconnect retry**: Full-screen remote playback on Android retries after temporary network loss and shows clearer offline error messaging
-- **Encrypted HLS (AES-128)**: Full-screen player can send headers (e.g. `Authorization: Bearer`) with key requests only
+- **Encrypted HLS (AES-128)**: Full-screen and embedded players can send headers (e.g. `Authorization: Bearer`) with key requests only
 
 ### Screen Protection (iOS)
 
@@ -168,8 +168,10 @@ final result = await VideoPlayer.instance.playVideo(
 - The key is fetched when playback starts, so pass a token that is valid at that moment.
   A rejected key (e.g. HTTP 401) returns `PlaybackFailed`. Open the player again with a fresh token.
 - Header values are never included in `PlayerConfiguration.toString()`.
-- Full-screen player only (Android, iOS, macOS). On iOS/macOS the stream is served through an
+- Works on Android, iOS and macOS, in the full-screen player and in the embedded player
+  (see [Embedded Player](#embedded-player)). On iOS/macOS the stream is served through an
   `AVAssetResourceLoader`, so AirPlay video output may not work for these streams.
+- To try it without writing code, see the "Encrypted HLS" card in the [Example App](#example-app).
 
 ### Embedded Player
 
@@ -217,6 +219,24 @@ class _VideoWidgetState extends State<VideoWidget> {
   }
 }
 ```
+
+**Encrypted HLS:** pass `keyRequestHeaders` to the widget, and again to `setUrl` when switching
+videos. Headers from the widget are not reused by `setUrl`.
+
+```
+VideoPlayerView(
+  url: 'https://cdn.example.com/lesson/master.m3u8', // no ?token=
+  keyRequestHeaders: {'Authorization': 'Bearer $token'},
+  onVideoViewCreated: (controller) => controller.play(),
+)
+
+await controller.setUrl(
+  url: 'https://cdn.example.com/lesson-2/master.m3u8',
+  keyRequestHeaders: {'Authorization': 'Bearer $token2'},
+);
+```
+
+A rejected key puts the player into `PlayerStatus.error`.
 
 ### Playback Control API
 
@@ -510,6 +530,50 @@ try {
 - [ ] Verify position tracking accuracy
 
 **Estimated migration time:** 15-60 minutes depending on app size.
+
+## Example App
+
+The [`example/`](example) app demos every player mode. Run it on a device, simulator or desktop:
+
+```bash
+cd example
+flutter run
+```
+
+After changing native (Swift/Kotlin) code, run `flutter clean` first: native changes don't hot-reload.
+
+The home screen has three cards:
+
+| Card | What it shows | Source |
+|------|---------------|--------|
+| **Full-Screen Player** | Native full-screen player with quality and speed selection, PiP, sidecar WebVTT subtitles and a resume position | [`example/lib/main.dart`](example/lib/main.dart) |
+| **Embedded Platform View** | `VideoPlayerView` inside the Flutter UI with custom play/pause, mute, rotate and seek-bar controls | [`example/lib/video_view_page.dart`](example/lib/video_view_page.dart) |
+| **Encrypted HLS (AES-128)** | A stream whose key endpoint needs a token, played full-screen or embedded through `keyRequestHeaders` | [`example/lib/main.dart`](example/lib/main.dart) |
+
+### Trying the encrypted HLS demo
+
+1. Get the playlist URL (`hls_path`) and a **fresh** key token from your backend. Tokens are short-lived.
+2. In the **Encrypted HLS (AES-128)** card, enter the playlist URL **without** `?token=`, and paste
+   the token into **Key token (JWT)**.
+3. Tap **Play Encrypted Full-Screen** or **Open Encrypted Embedded View**.
+
+The app sends the token as `Authorization: Bearer <token>`, and only with the AES key request.
+The token field is obscured and the value is kept in memory only: it is never saved or committed.
+A missing or expired token makes the full-screen player return `PlaybackFailed`, and the embedded
+page shows an error message (`PlayerStatus.error`).
+
+`VideoPlayerPage` in the example takes `url` and `keyRequestHeaders`, so you can reuse it as a starting point:
+
+```
+Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (_) => VideoPlayerPage(
+      url: hlsPath,
+      keyRequestHeaders: {'Authorization': 'Bearer $token'},
+    ),
+  ),
+);
+```
 
 ## Requirements
 

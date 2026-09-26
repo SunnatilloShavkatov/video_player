@@ -1,3 +1,11 @@
+## [3.5.5] - 2026-09-26
+
+### Added
+- **All platforms (embedded)**: `keyRequestHeaders` on `VideoPlayerView` (sent in the creation params) and on `VideoPlayerViewController.setUrl`, so the embedded player can play encrypted HLS too. The headers go only with AES-128 key requests. Each `setUrl` call carries its own headers, and `setAssets` clears them. A rejected key shows up as `PlayerStatus.error` on `statusStream`.
+- **Android**: `hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders)` helper in `player/KeyAuthorizedHls.kt`, shared by the full-screen `PlayerController` and the embedded `VideoPlayerView`.
+- **iOS, macOS**: The embedded `VideoViewController` (iOS) and `VideoPlayerPlatformView` (macOS) load assets through `HlsKeyResourceLoader`, like the full-screen players.
+- **Example**: "Encrypted HLS (AES-128)" card with playlist URL and token fields. It opens the stream in the full-screen player or the embedded view. The token is typed in at runtime and never stored. `VideoPlayerPage` now takes `url` and `keyRequestHeaders` and shows a message on `PlayerStatus.error`. Documented in the new "Example App" section of the README.
+
 ## [3.5.4] - 2026-09-26
 
 ### Added

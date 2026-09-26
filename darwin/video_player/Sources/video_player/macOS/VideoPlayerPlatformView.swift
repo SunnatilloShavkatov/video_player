@@ -22,7 +22,11 @@ class VideoPlayerPlatformView: NSView {
 
     var url: String = ""
     var assets: String = ""
+    /// Headers sent only with HLS AES-128 key requests (see HlsKeyResourceLoader).
+    var keyRequestHeaders: [String: String] = [:]
     var gravity: AVLayerVideoGravity = .resizeAspect
+    // Retained here: AVAssetResourceLoader holds its delegate weakly.
+    private var keyLoader: HlsKeyResourceLoader?
 
     private var timeObserver: Any?
 
@@ -80,6 +84,7 @@ class VideoPlayerPlatformView: NSView {
         let resizeMode = args?["resizeMode"] as? String
         self.url = urlArg
         self.assets = assetsArg
+        self.keyRequestHeaders = args?["keyRequestHeaders"] as? [String: String] ?? [:]
         self.gravity = videoGravity(s: resizeMode)
         self.playerLayer?.videoGravity = self.gravity
 
@@ -149,6 +154,7 @@ class VideoPlayerPlatformView: NSView {
         let sourceType = args["resizeMode"] as? String
         self.assets = ""
         self.url = videoPath
+        self.keyRequestHeaders = args["keyRequestHeaders"] as? [String: String] ?? [:]
         if let error = playVideo(gravity: videoGravity(s: sourceType)) {
             result(error)
         } else {
@@ -167,6 +173,7 @@ class VideoPlayerPlatformView: NSView {
         let sourceType = args["resizeMode"] as? String
         self.url = ""
         self.assets = videoPath
+        self.keyRequestHeaders = [:]
         if let error = playVideo(gravity: videoGravity(s: sourceType)) {
             result(error)
         } else {
@@ -194,7 +201,8 @@ class VideoPlayerPlatformView: NSView {
         self.gravity = gravity
         playerLayer?.videoGravity = gravity
 
-        let asset = AVURLAsset(url: videoURL)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders)
+        keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: playerItem)
 

@@ -6,7 +6,15 @@ import 'package:material_ui/material_ui.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoPlayerPage extends StatefulWidget {
-  const new({super.key});
+  const new({super.key, this.url = defaultUrl, this.keyRequestHeaders = const {}});
+
+  static const String defaultUrl =
+      'https://englifypublicvideos.hel1.your-objectstorage.com/public/englify-intro-video2/master.m3u8';
+
+  final String url;
+
+  /// Sent only with HLS AES-128 key requests, e.g. `{'Authorization': 'Bearer <token>'}`.
+  final Map<String, String> keyRequestHeaders;
 
   @override
   State<VideoPlayerPage> createState() => _VideoPlayerPageState();
@@ -20,7 +28,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   bool isLandscape = false;
   double _duration = 0;
   double _position = 0;
+  bool _hasError = false;
   StreamSubscription<double>? _positionSubscription;
+  StreamSubscription<PlayerStatus>? _statusSubscription;
 
   @override
   void reassemble() {
@@ -63,10 +73,23 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       children: [
         Align(
           child: VideoPlayerView(
-            url: 'https://englifypublicvideos.hel1.your-objectstorage.com/public/englify-intro-video2/master.m3u8',
+            url: widget.url,
+            keyRequestHeaders: widget.keyRequestHeaders,
             onVideoViewCreated: _onVideoViewCreated,
           ),
         ),
+        if (_hasError)
+          const Align(
+            alignment: Alignment(0, 0.3),
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'Playback failed. For encrypted HLS, check that the token is valid.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
         Positioned(
           child: SafeArea(
             child: IconButton(
@@ -219,6 +242,16 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       }
     });
 
+    // A rejected AES key (e.g. expired token) surfaces as PlayerStatus.error
+    await _statusSubscription?.cancel();
+    _statusSubscription = ctr.statusStream.listen((status) {
+      if (mounted) {
+        setState(() {
+          _hasError = status == PlayerStatus.error;
+        });
+      }
+    });
+
     ctr.setEventListener((event) {
       if (kDebugMode) {
         print(event);
@@ -229,8 +262,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   void _disposeController() {
     controller?.dispose().ignore();
     _positionSubscription?.cancel().ignore();
+    _statusSubscription?.cancel().ignore();
     controller = null;
     _positionSubscription = null;
+    _statusSubscription = null;
   }
 
   @override
