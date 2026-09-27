@@ -120,6 +120,8 @@ class VideoPlayerView internal constructor(
 
     override fun onDurationReady(seconds: Double) = send("durationReady", seconds)
 
+    override fun onFinished() = send("finished", null)
+
     private fun send(method: String, arguments: Any?) {
         if (isDisposed.get()) return
         try {

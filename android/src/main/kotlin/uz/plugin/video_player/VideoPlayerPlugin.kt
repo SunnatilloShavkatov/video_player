@@ -3,8 +3,7 @@ package uz.plugin.video_player
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
+import org.json.JSONException
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -40,17 +39,23 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     @SuppressLint("UnsafeOptInUsageError")
     override fun onMethodCall(call: MethodCall, result: Result) {
         if (call.method == "playVideo") {
+            if (resultMethod != null) {
+                result.error("PLAYER_ALREADY_ACTIVE", "A video player is already active", null)
+                return
+            }
             if (call.hasArgument("playerConfigJsonString")) {
                 val playerConfigJsonString = call.argument("playerConfigJsonString") as String?
                 if (playerConfigJsonString == null || playerConfigJsonString.isEmpty()) {
                     result.error("INVALID_CONFIG", "playerConfigJsonString is null or empty", null)
                     return
                 }
-                val gson = Gson()
                 val playerConfiguration = try {
-                    gson.fromJson(playerConfigJsonString, PlayerConfiguration::class.java)
-                } catch (e: JsonSyntaxException) {
+                    PlayerConfiguration.fromJson(playerConfigJsonString)
+                } catch (e: JSONException) {
                     result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
+                    return
+                } catch (e: Exception) {
+                    result.error("JSON_ERROR", "Failed to parse player configuration: ${e.message}", null)
                     return
                 }
                 val currentActivity = activity
@@ -112,23 +117,18 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode == playerActivity && resultCode == playerActivityFinish) {
-            // Check if resultMethod has already been used to avoid double usage
-            if (resultMethod == null) {
-                return true // No result method to handle the result, so exit
+        if (requestCode == playerActivity) {
+            val pendingResult = resultMethod ?: return true
+            resultMethod = null
+
+            if (resultCode == playerActivityFinish && data != null) {
+                val position: Long = data.getLongExtra("position", 0)
+                val duration: Long = data.getLongExtra("duration", 0)
+                pendingResult.success(listOf(position.toInt(), duration.toInt()))
+            } else {
+                pendingResult.success(null)
             }
-            // Handling null data case
-            if (data == null) {
-                resultMethod?.success(null)
-                resultMethod = null // Ensure the reply object isn't reused
-                return true
-            }
-            // Get position and duration from the intent
-            val position: Long = data.getLongExtra("position", 0)
-            val duration: Long = data.getLongExtra("duration", 0)
-            // Respond with the result
-            resultMethod?.success(listOf(position.toInt(), duration.toInt()))
-            resultMethod = null // Mark the resultMethod as used
+            return true
         }
         return true
     }

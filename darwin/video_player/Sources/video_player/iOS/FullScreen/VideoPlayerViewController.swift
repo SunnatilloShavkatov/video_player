@@ -12,7 +12,7 @@ import MediaPlayer
 import SnapKit
 import UIKit
 
-class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, SettingsBottomSheetCellDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
+class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerDelegate, BottomSheetCellDelegate, PlayerViewDelegate {
 
     private var speedList = ["2.0", "1.5", "1.0", "0.5"].sorted()
     private var pipController: AVPictureInPictureController?
@@ -21,7 +21,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var hasNotifiedDismissal = false
     private var isClosingPlayer = false
     private var dismissalCompletionHandlers: [() -> Void] = []
-    private var settingsActions: [SettingAction] = []
 
     ///
     weak var delegate: VideoPlayerDelegate?
@@ -31,8 +30,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var screenProtectorKit: ScreenProtectorKit?
     var qualityLabelText = ""
     var speedLabelText = ""
-    var qualityDelegate: QualityDelegate!
-    var speedDelegate: SpeedDelegate!
     var subtitleDelegate: SubtitleDelegate!
     var playerConfiguration: PlayerConfiguration!
     private var availableQualities: [QualityVariant] = []
@@ -280,7 +277,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         let settingModels = buildSettingModels()
         guard !settingModels.isEmpty else { return }
 
-        settingsActions = settingModels.map(\.action)
         let vc = SettingVC()
         vc.modalPresentationStyle = .custom
         vc.delegate = self
@@ -378,18 +374,12 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         completions.forEach { $0() }
     }
 
-    // settings bottom sheet tapped
-    func onSettingsBottomSheetCellTapped(index: Int) {
-        guard index < settingsActions.count else { return }
-        dispatchSettingAction(settingsActions[index])
-    }
-
     // bottom sheet tapped
     func onBottomSheetCellTapped(index: Int, type: BottomSheetType) {
         switch type {
         case .quality:
             // Build quality list (same as showQualityBottomSheet)
-            var qualities = ["Auto"]
+            var qualities = [playerConfiguration.autoText]
             if !availableQualities.isEmpty {
                 qualities.append(
                     contentsOf: availableQualities.map {
@@ -404,7 +394,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             self.selectedQualityText = qualities[index]
 
             // Set quality using preferredPeakBitRate
-            if selectedQualityText == "Auto" {
+            if selectedQualityText == playerConfiguration.autoText {
                 // Auto mode - adaptive streaming
                 playerView.changeQuality(url: "0")
             } else {
@@ -525,7 +515,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     func showQualityBottomSheet() {
         guard supportsQualitySelection else { return }
         // Build quality list from parsed variants
-        var listOfQuality = ["Auto"]
+        var listOfQuality = [playerConfiguration.autoText]
         if !availableQualities.isEmpty {
             listOfQuality.append(
                 contentsOf: availableQualities.map {
@@ -609,19 +599,6 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
         }
 
         return models
-    }
-
-    private func dispatchSettingAction(_ action: SettingAction) {
-        switch action {
-        case .quality:
-            showQualityBottomSheet()
-        case .speed:
-            showSpeedBottomSheet()
-        case .subtitle:
-            showSubtitleBottomSheet()
-        case .subtitleSize:
-            showSubtitleSizeBottomSheet()
-        }
     }
 }
 

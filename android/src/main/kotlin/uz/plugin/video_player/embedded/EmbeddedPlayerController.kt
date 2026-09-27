@@ -34,6 +34,7 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
         fun onStatus(status: String)
         fun onPosition(seconds: Double)
         fun onDurationReady(seconds: Double)
+        fun onFinished()
     }
 
     private companion object {
@@ -166,6 +167,7 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
             }
             Player.STATE_ENDED -> {
                 stopPositionUpdates()
+                listener.onFinished()
                 "ended"
             }
             else -> return

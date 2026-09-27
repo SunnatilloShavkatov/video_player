@@ -26,8 +26,6 @@ public class ScreenProtectorKit {
 
     private var window: UIWindow?
     private var screenPrevent: UITextField { Self.sharedScreenPrevent }
-    private var screenshotObserve: NSObjectProtocol?
-    private var screenRecordObserve: NSObjectProtocol?
     
     /// Initialize ScreenProtectorKit with the app's main window
     /// - Parameter window: The main window of the application
@@ -112,86 +110,6 @@ public class ScreenProtectorKit {
     /// ```
     public func disablePreventScreenshot() {
         setSecureTextEntry(false)
-    }
-    
-    /// Remove a specific observer
-    /// - Parameter observer: The observer to remove
-    public func removeObserver(observer: NSObjectProtocol?) {
-        guard let obs = observer else { return }
-        NotificationCenter.default.removeObserver(obs)
-    }
-    
-    /// Remove screenshot observer
-    public func removeScreenshotObserver() {
-        if let screenshotObserve = screenshotObserve {
-            removeObserver(observer: screenshotObserve)
-            self.screenshotObserve = nil
-        }
-    }
-    
-    /// Remove screen recording observer
-    public func removeScreenRecordObserver() {
-        if let screenRecordObserve = screenRecordObserve {
-            removeObserver(observer: screenRecordObserve)
-            self.screenRecordObserve = nil
-        }
-    }
-    
-    /// Remove all observers
-    public func removeAllObserver() {
-        removeScreenshotObserver()
-        removeScreenRecordObserver()
-    }
-    
-    /// Add observer for screenshot events
-    /// - Parameter onScreenshot: Callback executed when a screenshot is taken
-    ///
-    /// How to use:
-    /// ```swift
-    /// screenProtectorKit.screenshotObserver {
-    ///     // Handle screenshot event
-    ///     print("Screenshot detected!")
-    /// }
-    /// ```
-    public func screenshotObserver(using onScreenshot: @escaping () -> Void) {
-        screenshotObserve = NotificationCenter.default.addObserver(
-            forName: UIApplication.userDidTakeScreenshotNotification,
-            object: nil,
-            queue: OperationQueue.main
-        ) { _ in
-            onScreenshot()
-        }
-    }
-    
-    /// Add observer for screen recording events
-    /// - Parameter onScreenRecord: Callback executed when screen recording state changes
-    ///
-    /// How to use:
-    /// ```swift
-    /// if #available(iOS 11.0, *) {
-    ///     screenProtectorKit.screenRecordObserver { isCaptured in
-    ///         // Handle screen recording event
-    ///         print("Screen recording: \(isCaptured)")
-    ///     }
-    /// }
-    /// ```
-    @available(iOS 11.0, *)
-    public func screenRecordObserver(using onScreenRecord: @escaping (Bool) -> Void) {
-        screenRecordObserve = NotificationCenter.default.addObserver(
-            forName: UIScreen.capturedDidChangeNotification,
-            object: nil,
-            queue: OperationQueue.main
-        ) { _ in
-            let isCaptured = UIScreen.main.isCaptured
-            onScreenRecord(isCaptured)
-        }
-    }
-    
-    /// Check if screen is currently being recorded
-    /// - Returns: true if screen recording is active, false otherwise
-    @available(iOS 11.0, *)
-    public func screenIsRecording() -> Bool {
-        return UIScreen.main.isCaptured
     }
 }
 #endif

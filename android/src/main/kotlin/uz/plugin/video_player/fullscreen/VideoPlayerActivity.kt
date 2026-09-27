@@ -297,6 +297,8 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     }
 
     private fun bindControlActions() {
+        val canShare = !playerConfiguration.playVideoFromAsset && playerConfiguration.movieShareLink.isNotBlank()
+        views.share.visibility = if (canShare) View.VISIBLE else View.GONE
         views.close.setOnClickListener { finishWithResult() }
         views.share.setOnClickListener { shareMovieLink() }
         views.pip.setOnClickListener { enterPip(PIP_BUTTON_ASPECT_RATIO) }
@@ -316,9 +318,14 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
     private fun startPlaybackSafely() {
         try {
+            val sourceUrl = if (playerConfiguration.playVideoFromAsset) {
+                playerConfiguration.assetPath
+            } else {
+                playerConfiguration.videoUrl
+            }
             playerController = PlayerController(this, this)
             playerController.initialize(
-                playerConfiguration.videoUrl,
+                sourceUrl,
                 playerConfiguration.lastPosition,
                 playerConfiguration.subtitles,
                 playerConfiguration.keyRequestHeaders.orEmpty(),
@@ -487,7 +494,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     }
 
     override fun onTracksChanged(qualities: List<QualityOption>) {
-        bottomSheets.availableQualities = listOf(QualityOption("Auto", -1, -1, -1, -1, -1)) + qualities
+        bottomSheets.availableQualities = listOf(QualityOption(playerConfiguration.autoText, -1, -1, -1, -1, -1)) + qualities
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {

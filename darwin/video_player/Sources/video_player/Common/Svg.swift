@@ -25,8 +25,6 @@ struct Svg {
     static let play: UIImage? = UIImage(named: "play", in: resourceBundle, compatibleWith: nil)
     static let pause: UIImage? = UIImage(named: "pause", in: resourceBundle, compatibleWith: nil)
     static let exit: UIImage? = UIImage(named: "exit", in: resourceBundle, compatibleWith: nil)
-    static let screencast: UIImage? = UIImage(named: "screencast", in: resourceBundle, compatibleWith: nil)
-    static let down: UIImage? = UIImage(named: "down", in: resourceBundle, compatibleWith: nil)
     static let pip: UIImage? = UIImage(named: "pip", in: resourceBundle, compatibleWith: nil)
     static let rewind: UIImage? = UIImage(named: "rewind", in: resourceBundle, compatibleWith: nil)
     static let forward: UIImage? = UIImage(named: "forward", in: resourceBundle, compatibleWith: nil)
@@ -97,8 +95,6 @@ struct Svg {
     static var play: NSImage? { image(named: "play") }
     static var pause: NSImage? { image(named: "pause") }
     static var exit: NSImage? { image(named: "exit") }
-    static var screencast: NSImage? { image(named: "screencast") }
-    static var down: NSImage? { image(named: "down") }
     static var pip: NSImage? { image(named: "pip") }
     static var rewind: NSImage? { image(named: "rewind") }
     static var forward: NSImage? { image(named: "forward") }

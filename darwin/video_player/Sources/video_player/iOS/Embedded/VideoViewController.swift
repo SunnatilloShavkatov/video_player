@@ -266,11 +266,7 @@ class VideoViewController: UIViewController {
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
 
         if isObservingTimeControl {
-            do {
-                player.removeObserver(self, forKeyPath: #keyPath(AVPlayer.timeControlStatus), context: &VideoViewController.playerContext)
-            } catch {
-                debugPrint("⚠️ [VideoViewController] Failed to remove timeControlStatus observer: \(error)")
-            }
+            player.removeObserver(self, forKeyPath: #keyPath(AVPlayer.timeControlStatus), context: &VideoViewController.playerContext)
             isObservingTimeControl = false
         }
 
@@ -281,20 +277,12 @@ class VideoViewController: UIViewController {
         }
 
         if isObservingDuration {
-            do {
-                item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.duration), context: &VideoViewController.playerItemContext)
-            } catch {
-                debugPrint("⚠️ [VideoViewController] Failed to remove duration observer: \(error)")
-            }
+            item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.duration), context: &VideoViewController.playerItemContext)
             isObservingDuration = false
         }
 
         if isObservingStatus {
-            do {
-                item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &VideoViewController.playerItemContext)
-            } catch {
-                debugPrint("⚠️ [VideoViewController] Failed to remove status observer: \(error)")
-            }
+            item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &VideoViewController.playerItemContext)
             isObservingStatus = false
         }
 
@@ -396,6 +384,7 @@ class VideoViewController: UIViewController {
     @objc private func playerDidFinishPlaying() {
         guard !isDisposed else { return }
         methodChannel.invokeMethod("playerStatus", arguments: "ended")
+        methodChannel.invokeMethod("finished", arguments: nil)
     }
 
     private func setupPositionObserver() {

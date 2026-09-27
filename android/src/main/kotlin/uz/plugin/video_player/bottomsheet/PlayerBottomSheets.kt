@@ -30,11 +30,10 @@ class PlayerBottomSheets(
     private val controller: () -> PlayerController?,
 ) {
     private companion object {
-        const val AUTO_QUALITY = "Auto"
         val SPEEDS = listOf("0.5x", "1.0x", "1.5x", "2.0x")
     }
 
-    /** Quality options reported by the player; the first entry is "Auto". */
+    /** Quality options reported by the player; the first entry is the auto quality option. */
     var availableQualities: List<QualityOption> = emptyList()
 
     private val openDialogs = mutableListOf<BottomSheetDialog>()
@@ -43,7 +42,7 @@ class PlayerBottomSheets(
     private var settingsBackButton: ImageView? = null
     private var pickerBackButton: ImageView? = null
 
-    private var currentQuality = AUTO_QUALITY
+    private var currentQuality = config.autoText
     private var currentSpeed = "1.0x"
     private var qualityValue: TextView? = null
     private var speedValue: TextView? = null
@@ -106,7 +105,7 @@ class PlayerBottomSheets(
                 ?: return@showPicker
             currentQuality = option.displayName
             qualityValue?.text = currentQuality
-            if (option.displayName == AUTO_QUALITY) {
+            if (option.displayName == config.autoText || option.height == -1) {
                 controller()?.applyAutomaticQuality()
             } else {
                 controller()?.applyManualQuality(option)

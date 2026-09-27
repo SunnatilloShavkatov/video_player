@@ -114,7 +114,6 @@ final class PlayerGestureHandler: NSObject {
         guard enableGesture else { return }
         guard let targetView = targetView else { return }
         
-        let translation = gesture.translation(in: targetView)
         let location = gesture.location(in: targetView)
         let velocity = gesture.velocity(in: targetView)
         
