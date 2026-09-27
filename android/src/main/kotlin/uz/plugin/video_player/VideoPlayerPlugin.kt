@@ -1,4 +1,4 @@
-package uz.shs.video_player
+package uz.plugin.video_player
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -13,10 +13,10 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
-import uz.shs.video_player.activities.VideoPlayerActivity
-import uz.shs.video_player.models.PlayerConfiguration
+import uz.plugin.video_player.activities.VideoPlayerActivity
+import uz.plugin.video_player.models.PlayerConfiguration
 
-const val extraArgument = "uz.shs.video_player.ARGUMENT"
+const val extraArgument = "uz.plugin.video_player.ARGUMENT"
 const val playerActivity = 111
 const val playerActivityFinish = 222
 

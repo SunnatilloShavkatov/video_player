@@ -1,3 +1,16 @@
+## [3.5.6] - 2026-09-27
+
+### Changed
+- **Android, iOS, macOS**: **Breaking** - The native package id is renamed from `uz.shs.video_player` to `uz.plugin.video_player`. On Android this changes the Gradle `group`, the `namespace`, the Kotlin package and source path (`kotlin/uz/plugin/video_player/`) and `pluginClass` in `pubspec.yaml`. On iOS/macOS it changes the dispatch queue labels and the `HlsKeyResourceLoader` error domain. The Dart API and channel names (`video_player`, `plugins.video/video_player_view_<id>`) are unchanged. Host apps must run `flutter clean && flutter pub get` so `GeneratedPluginRegistrant` picks up `uz.plugin.video_player.VideoPlayerPlugin`, and must update any ProGuard/R8 rules or native code that refer to `uz.shs.video_player`.
+- **Example**: App ids follow the rename. Android `applicationId` / `namespace` is now `uz.plugin.video_player_example` (it installs as a new app next to the old one), and the iOS/macOS bundle id is `uz.plugin.videoPlayer` (tests: `uz.plugin.example.RunnerTests`).
+- **Android**: The plugin manifest no longer sets `android:allowBackup="false"` and `android:largeHeap="true"` on `<application>`. Library manifest attributes merge into the host app, so every app using the plugin had backup disabled and a large heap forced on (or hit a manifest merge conflict when it declared `allowBackup="true"`). Host apps now keep their own values.
+- **Android (embedded)**: `VideoPlayerView` polls the position only while the player is actually playing. Polling used to start on `STATE_READY` and kept sending `positionUpdate` every second while paused. It now starts and stops in `onIsPlayingChanged`, and a single `positionUpdate` is sent on pause, on `STATE_READY` without autoplay, and after a seek while paused (`onPositionDiscontinuity`). This matches the iOS/macOS periodic time observer, which does not tick while paused.
+
+### Removed
+- **Android**: The `WAKE_LOCK` entry with `tools:node="remove"` from the plugin manifest. It did not add a permission; it stripped `WAKE_LOCK` from the merged manifest, which could silently break host dependencies that need it (WorkManager, FCM). The plugin never uses `WAKE_LOCK` itself (no `setWakeMode`), so it now leaves the permission to the host. `INTERNET` and `ACCESS_NETWORK_STATE` stay: streaming needs the first, and `NetworkChangeReceiver` needs the second for `registerDefaultNetworkCallback` / `getNetworkCapabilities`.
+- **Android**: The `package` attribute from the plugin manifest. The namespace comes from `namespace = "uz.shs.video_player"` in `build.gradle.kts`, which AGP uses to resolve `.activities.VideoPlayerActivity` and generate `R`.
+- **Android**: `multiDexEnabled` and the `androidx.multidex:multidex` dependency from the plugin and the example app. With `minSdk 26` multidex is native to the runtime, so the library was unused.
+
 ## [3.5.5] - 2026-09-26
 
 ### Added

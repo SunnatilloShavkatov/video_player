@@ -1,4 +1,4 @@
-package uz.shs.video_player_example
+package uz.plugin.video_player_example
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

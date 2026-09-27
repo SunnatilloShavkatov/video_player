@@ -21,7 +21,7 @@ class VideoPlayerOverlayView: NSView {
     var onDidDismiss: (() -> Void)?
 
     private var _isResolved = false
-    private let resolutionQueue = DispatchQueue(label: "uz.shs.video_player.macos_overlay_session")
+    private let resolutionQueue = DispatchQueue(label: "uz.plugin.video_player.macos_overlay_session")
 
     private var isResolved: Bool {
         resolutionQueue.sync { _isResolved }

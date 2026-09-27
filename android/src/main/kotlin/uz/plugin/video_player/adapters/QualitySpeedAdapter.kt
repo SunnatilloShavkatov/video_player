@@ -1,4 +1,4 @@
-package uz.shs.video_player.adapters
+package uz.plugin.video_player.adapters
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import uz.shs.video_player.R
+import uz.plugin.video_player.R
 
 
 class QualitySpeedAdapter(

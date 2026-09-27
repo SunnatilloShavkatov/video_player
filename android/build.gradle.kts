@@ -2,16 +2,15 @@ plugins {
     id("com.android.library")
 }
 
-group = "uz.shs.video_player"
-version = "3.5.5"
+group = "uz.plugin.video_player"
+version = "3.5.6"
 
 android {
-    namespace = "uz.shs.video_player"
+    namespace = "uz.plugin.video_player"
     compileSdk = 37
 
     defaultConfig {
         minSdk = 26
-        multiDexEnabled = true
     }
 
     compileOptions {
@@ -43,10 +42,6 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
-
-    // Multidex
-    val multidexVersion = "2.0.1"
-    implementation("androidx.multidex:multidex:$multidexVersion")
 
     // JSON parsing (used in VideoPlayerPlugin for configuration deserialization)
     implementation("com.google.code.gson:gson:2.13.2")

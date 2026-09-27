@@ -1,4 +1,4 @@
-package uz.shs.video_player.player
+package uz.plugin.video_player.player
 
 import android.content.Context
 import androidx.core.net.toUri
@@ -21,10 +21,10 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.text.DefaultSubtitleParserFactory
 import androidx.media3.extractor.text.SubtitleExtractor
-import uz.shs.video_player.delegates.PlayerControllerDelegate
-import uz.shs.video_player.models.PlaybackState
-import uz.shs.video_player.models.QualityOption
-import uz.shs.video_player.models.SubtitleTrack
+import uz.plugin.video_player.delegates.PlayerControllerDelegate
+import uz.plugin.video_player.models.PlaybackState
+import uz.plugin.video_player.models.QualityOption
+import uz.plugin.video_player.models.SubtitleTrack
 
 /**
  * PlayerController manages ExoPlayer lifecycle and playback operations.

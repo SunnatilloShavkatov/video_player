@@ -1,4 +1,4 @@
-package uz.shs.video_player.models
+package uz.plugin.video_player.models
 
 import android.annotation.SuppressLint
 import androidx.media3.ui.AspectRatioFrameLayout

@@ -30,7 +30,7 @@ class VideoPlayerPlatformView: NSView {
 
     private var timeObserver: Any?
 
-    private let observerQueue = DispatchQueue(label: "uz.shs.video_player.macos_observer", qos: .userInitiated)
+    private let observerQueue = DispatchQueue(label: "uz.plugin.video_player.macos_observer", qos: .userInitiated)
     private var _isObservingDuration = false
     private var _isObservingStatus = false
     private var _isObservingTimeControl = false
@@ -50,7 +50,7 @@ class VideoPlayerPlatformView: NSView {
 
     private weak var currentPlayerItem: AVPlayerItem?
     private var _isDisposed = false
-    private let disposalQueue = DispatchQueue(label: "uz.shs.video_player.macos_disposal")
+    private let disposalQueue = DispatchQueue(label: "uz.plugin.video_player.macos_disposal")
 
     private var isDisposed: Bool {
         disposalQueue.sync { _isDisposed }

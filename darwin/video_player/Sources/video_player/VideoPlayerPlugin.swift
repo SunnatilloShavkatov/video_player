@@ -10,7 +10,7 @@ import Flutter
 import UIKit
 
 private final class PlaybackSession {
-    private let resolutionQueue = DispatchQueue(label: "uz.shs.video_player.playback_session")
+    private let resolutionQueue = DispatchQueue(label: "uz.plugin.video_player.playback_session")
     private let responder: FlutterResult
     private var isResolved = false
 

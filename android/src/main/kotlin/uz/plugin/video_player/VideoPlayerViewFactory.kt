@@ -1,4 +1,4 @@
-package uz.shs.video_player
+package uz.plugin.video_player
 
 import android.content.Context
 import io.flutter.plugin.common.BinaryMessenger

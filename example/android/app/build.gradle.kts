@@ -4,14 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "uz.shs.video_player_example"
+    namespace = "uz.plugin.video_player_example"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "uz.shs.video_player_example"
+        applicationId = "uz.plugin.video_player_example"
         minSdk = 26
         targetSdk = 37
-        multiDexEnabled = true
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -38,8 +37,4 @@ android {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    implementation("androidx.multidex:multidex:2.0.1")
 }

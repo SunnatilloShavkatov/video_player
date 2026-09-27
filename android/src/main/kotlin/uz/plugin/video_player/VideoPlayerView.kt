@@ -1,4 +1,4 @@
-package uz.shs.video_player
+package uz.plugin.video_player
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -24,8 +24,8 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
-import uz.shs.video_player.models.VideoViewModel
-import uz.shs.video_player.player.hlsMediaSourceFactory
+import uz.plugin.video_player.models.VideoViewModel
+import uz.plugin.video_player.player.hlsMediaSourceFactory
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -379,6 +379,14 @@ class VideoPlayerView internal constructor(
         }
     }
 
+    // One-off update for position changes while polling is stopped (paused, seek while paused)
+    private fun sendPositionUpdate() {
+        val positionMs = player?.currentPosition ?: return
+        if (positionMs != C.TIME_UNSET && positionMs >= 0) {
+            safeInvokeMethod("positionUpdate", positionMs / 1000.0)
+        }
+    }
+
     // Player.Listener implementation
     override fun onPlaybackStateChanged(playbackState: Int) {
         // ✅ FIXED: Guard disposal
@@ -392,7 +400,10 @@ class VideoPlayerView internal constructor(
 
             Player.STATE_BUFFERING -> "buffering"
             Player.STATE_READY -> {
-                startPositionUpdates()
+                // Polling is driven by onIsPlayingChanged; report the current position once
+                if (player?.isPlaying != true) {
+                    sendPositionUpdate()
+                }
 
                 // ✅ Safe duration notification
                 val durationMs = player?.duration
@@ -419,8 +430,29 @@ class VideoPlayerView internal constructor(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isDisposed.get()) return
 
+        // Poll position only while actually playing; stop when paused or buffering
+        if (isPlaying) {
+            startPositionUpdates()
+        } else {
+            stopPositionUpdates()
+            sendPositionUpdate()
+        }
+
         val status = if (isPlaying) "playing" else "paused"
         safeInvokeMethod("playerStatus", status)
+    }
+
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int
+    ) {
+        if (isDisposed.get()) return
+
+        // While playing, the next poll tick reports the new position
+        if (player?.isPlaying != true) {
+            sendPositionUpdate()
+        }
     }
 
     override fun onPlayerError(error: PlaybackException) {

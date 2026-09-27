@@ -1,4 +1,4 @@
-package uz.shs.video_player.services
+package uz.plugin.video_player.services
 
 import android.content.Context
 import android.net.ConnectivityManager

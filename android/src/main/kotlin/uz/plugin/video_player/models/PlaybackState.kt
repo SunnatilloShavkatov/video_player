@@ -1,4 +1,4 @@
-package uz.shs.video_player.models
+package uz.plugin.video_player.models
 
 /**
  * Represents the current playback state of the video player.

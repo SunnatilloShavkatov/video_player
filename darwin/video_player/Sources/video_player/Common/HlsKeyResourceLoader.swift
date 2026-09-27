@@ -20,11 +20,11 @@ import Foundation
 final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     private static let playlistScheme = "vphls"
     private static let keyScheme = "vpkey"
-    private static let errorDomain = "uz.shs.video_player.HlsKeyResourceLoader"
+    private static let errorDomain = "uz.plugin.video_player.HlsKeyResourceLoader"
 
     private let keyHeaders: [String: String]
     private let session = URLSession(configuration: .default)
-    private let queue = DispatchQueue(label: "uz.shs.video_player.hls-key-loader")
+    private let queue = DispatchQueue(label: "uz.plugin.video_player.hls-key-loader")
     // Accessed on `queue` only.
     private var keyCache: [URL: Data] = [:]
     private var tasks: [AVAssetResourceLoadingRequest: URLSessionDataTask] = [:]

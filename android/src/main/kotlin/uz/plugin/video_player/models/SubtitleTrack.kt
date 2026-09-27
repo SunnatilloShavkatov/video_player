@@ -1,4 +1,4 @@
-package uz.shs.video_player.models
+package uz.plugin.video_player.models
 
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable

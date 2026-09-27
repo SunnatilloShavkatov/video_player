@@ -1,8 +1,8 @@
-package uz.shs.video_player.delegates
+package uz.plugin.video_player.delegates
 
 import androidx.media3.common.PlaybackException
-import uz.shs.video_player.models.PlaybackState
-import uz.shs.video_player.models.QualityOption
+import uz.plugin.video_player.models.PlaybackState
+import uz.plugin.video_player.models.QualityOption
 
 /**
  * Delegate interface for PlayerController to communicate playback events

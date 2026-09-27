@@ -1,4 +1,4 @@
-package uz.shs.video_player.player
+package uz.plugin.video_player.player
 
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
