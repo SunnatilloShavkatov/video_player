@@ -21,7 +21,6 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.text.DefaultSubtitleParserFactory
 import androidx.media3.extractor.text.SubtitleExtractor
-import uz.plugin.video_player.delegates.PlayerControllerDelegate
 import uz.plugin.video_player.models.PlaybackState
 import uz.plugin.video_player.models.QualityOption
 import uz.plugin.video_player.models.SubtitleTrack
@@ -478,14 +477,6 @@ class PlayerController(
                 arrayOf(SubtitleExtractor(subtitleParserFactory.create(format), format))
             }
             ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
-                .enableLazyLoadingWithSingleTrack(
-                    0,
-                    format.buildUpon()
-                        .setSampleMimeType(MimeTypes.APPLICATION_MEDIA3_CUES)
-                        .setCodecs(format.sampleMimeType)
-                        .setCueReplacementBehavior(subtitleParserFactory.getCueReplacementBehavior(format))
-                        .build()
-                )
                 .createMediaSource(MediaItem.fromUri(config.uri.toString()))
         }
         return MergingMediaSource(hlsSource, *subtitleSources.toTypedArray())

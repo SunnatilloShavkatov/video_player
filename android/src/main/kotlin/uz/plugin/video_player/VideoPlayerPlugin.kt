@@ -13,7 +13,8 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
-import uz.plugin.video_player.activities.VideoPlayerActivity
+import uz.plugin.video_player.embedded.VideoPlayerViewFactory
+import uz.plugin.video_player.fullscreen.VideoPlayerActivity
 import uz.plugin.video_player.models.PlayerConfiguration
 
 const val extraArgument = "uz.plugin.video_player.ARGUMENT"

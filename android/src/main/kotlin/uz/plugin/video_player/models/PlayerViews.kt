@@ -6,14 +6,10 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.media3.ui.DefaultTimeBar
 
 /**
- * Data class holding references to all player UI views.
- *
- * This container decouples the Activity from direct view access
- * and facilitates passing UI components to helper classes
- * (like ControlsCoordinator, GestureManager).
+ * References to the full-screen player's views (activity layout + the
+ * controller layout inflated by Media3), shared by the player components.
  */
 data class PlayerViews(
     val close: ImageView,
@@ -26,15 +22,11 @@ data class PlayerViews(
     val forward: ImageView,
     val playPause: ImageView,
     val progressBar: ProgressBar,
-    val timer: LinearLayout,
-    val exoPosition: TextView,
-    val videoPosition: TextView,
     val zoom: ImageView,
     val orientation: ImageView,
-    val exoProgress: DefaultTimeBar,
     val customPlayback: RelativeLayout,
     val layoutBrightness: LinearLayout,
     val brightnessSeekbar: SeekBar,
     val layoutVolume: LinearLayout,
-    val volumeSeekBar: SeekBar
+    val volumeSeekBar: SeekBar,
 )

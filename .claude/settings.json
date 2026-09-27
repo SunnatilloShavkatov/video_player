@@ -1,0 +1,78 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.claude/skills/darwin-typecheck/scripts/typecheck.sh:*)",
+      "Bash(bash .claude/skills/darwin-typecheck/scripts/typecheck.sh:*)",
+      "Bash(.claude/skills/android-typecheck/scripts/typecheck.sh:*)",
+      "Bash(bash .claude/skills/android-typecheck/scripts/typecheck.sh:*)",
+      "Bash(flutter test -r failures-only:*)",
+      "Bash(flutter test --reporter failures-only:*)",
+      "Bash(rg:*)",
+      "Bash(git --no-optional-locks status:*)",
+      "Bash(git --no-optional-locks diff:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(tail -n 80 .claude/token-logs/report.log)"
+    ],
+    "deny": [
+      "Read(./build/**)",
+      "Read(./**/build/**)",
+      "Read(./**/.dart_tool/**)",
+      "Read(./**/Pods/**)",
+      "Read(./**/.gradle/**)",
+      "Read(./**/.swiftpm/**)",
+      "Read(./**/ephemeral/**)",
+      "Read(./**/GeneratedPluginRegistrant.*)",
+      "Read(./**/pubspec.lock)",
+      "Read(./**/Podfile.lock)",
+      "Read(./**/*.pbxproj)",
+      "Read(./**/*.xib)",
+      "Read(./INSTRUCTIONS.md)",
+      "Read(~/.claude/projects/**/*.jsonl)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/statusline.sh\"",
+    "padding": 0
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/slow-cmd-guard.sh",
+            "timeout": 5,
+            "statusMessage": "slow-cmd-guard"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/plugin-guard.sh",
+            "timeout": 10,
+            "statusMessage": "plugin-guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/token-report.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

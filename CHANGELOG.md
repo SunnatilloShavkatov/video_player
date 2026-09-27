@@ -1,3 +1,21 @@
+## [3.5.7] - 2026-09-27
+
+### Fixed
+- **iOS**: `scene(_:willConnectTo:options:)` in `VideoPlayerPlugin` now matches `FlutterSceneLifeCycleDelegate` (returns `Bool`, optional `options`). The old signature compiled but was never called, so the presenting view controller was only picked up on `sceneDidBecomeActive` / `sceneWillEnterForeground`.
+- **iOS**: The full-screen player no longer registers two pinch recognizers (one on the video view, one in `PlayerGestureHandler`); only the gesture handler's remains.
+- **iOS**: `NetworkMonitor.startMonitoring()` is idempotent. Each full-screen session used to call `start` again on the shared `NWPathMonitor`. The unused `stopMonitoring()` is removed, because a cancelled `NWPathMonitor` cannot be restarted.
+- **Android**: Removed package-private `enableLazyLoadingWithSingleTrack` invocation in `PlayerController.kt`, resolving Kotlin compiler incompatibility with Media3.
+
+### Changed
+- **iOS**: `PlayerView.swift` is split by responsibility (955 → ~450 lines, no behavior change intended). Controls and their layout move to `PlayerOverlayView`, stall/network/foreground recovery to `PlaybackRecoveryManager`, and sidecar subtitles to `SubtitleController`. Duplicate item-replacement, close, and thumb-image code is merged, and unused methods (`changeUrl`, `stop`, `setPlayButton`, `setDuration`, `hasSubtitleTracks`, `PlayerController.preroll`, `PlayerControlsCoordinator.setSliderValue`) are removed.
+- **iOS**: Sources are grouped into `FullScreen/`, `Player/`, `Embedded/`, `Subtitles/`, `BottomSheet/`, `Settings/`, `Views/` and `Utils/`. The podspec globs are unchanged.
+- **Android**: `VideoPlayerActivity.kt` is split by responsibility (1461 → ~508 lines). Extracted `AudioFocusHandler`, `PlaybackRecoveryManager`, `PlayerControlsCoordinator`, `PlayerGestureHandler`, `SubtitleController`, `PlayerBottomSheets`, and `WindowExtensions`.
+- **Android**: Sources are grouped into `fullscreen/`, `player/`, `embedded/`, `subtitles/`, `bottomsheet/`, and `utils/`. Updated `AndroidManifest.xml` activity declaration to `.fullscreen.VideoPlayerActivity`.
+- **Tooling & Agent Architecture**: Integrated Antigravity workspace configuration in `.agents/` (`skills.json`, `hooks.json` lifecycle guards for slow commands, token context flooding, and plugin contracts). Refactored `AGENTS.md` by 62% (~2,300 tokens saved per turn) with a Zero-Hop Feature Dispatch Matrix.
+
+### Removed
+- **iOS**: `VGPlayerSlider`, which nothing used.
+
 ## [3.5.6] - 2026-09-27
 
 ### Changed

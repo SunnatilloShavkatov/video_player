@@ -5,7 +5,7 @@
 
     <application android:supportsRtl="true">
         <activity
-            android:name=".activities.VideoPlayerActivity"
+            android:name=".fullscreen.VideoPlayerActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|layoutDirection"
             android:hardwareAccelerated="false"
             android:resizeableActivity="true"

@@ -1,0 +1,14 @@
+# ripgrep reads this file (git does not). Keeps agent searches out of generated
+# and bulky files — the same set .claude/settings.json denies to Read.
+build/
+.dart_tool/
+Pods/
+.gradle/
+.swiftpm/
+ephemeral/
+GeneratedPluginRegistrant.*
+pubspec.lock
+Podfile.lock
+*.pbxproj
+*.xib
+INSTRUCTIONS.md

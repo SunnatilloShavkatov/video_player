@@ -107,8 +107,11 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         registrar.register(videoViewFactory, withId: "plugins.video/video_player_view")
     }
 
-    public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+    // Signature must match FlutterSceneLifeCycleDelegate exactly (Bool return, optional
+    // options) or Flutter never calls it. Returns false: we observe, not handle, the connection.
+    public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions?) -> Bool {
         updateViewController(from: scene)
+        return false
     }
 
     public func sceneDidBecomeActive(_ scene: UIScene) {

@@ -1,0 +1,40 @@
+{
+  "slow-cmd-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/antigravity_cmd_guard.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "view_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/antigravity_read_guard.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "plugin-guard": {
+    "PostToolUse": [
+      {
+        "matcher": "replace_file_content|write_to_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/antigravity_plugin_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
