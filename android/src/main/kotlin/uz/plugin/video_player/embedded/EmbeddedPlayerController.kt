@@ -19,6 +19,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import uz.plugin.video_player.player.createRenderersFactory
 import uz.plugin.video_player.player.hlsMediaSourceFactory
 
 /**
@@ -41,7 +42,7 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
         const val POSITION_INTERVAL_MS = 1000L
     }
 
-    private val player = ExoPlayer.Builder(context).build()
+    private val player = ExoPlayer.Builder(context, createRenderersFactory(context)).build()
     private val playerView = PlayerView(context).apply {
         layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         player = this@EmbeddedPlayerController.player

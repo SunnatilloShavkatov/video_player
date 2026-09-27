@@ -7,7 +7,7 @@ folder layout and pitfalls — shared with other coding agents. Edit rules there
 This file only adds Claude Code specifics.
 
 - **Package:** `uz.plugin.video_player`
-- **Current Version:** `3.5.7`
+- **Current Version:** `3.5.8`
 - **Repository:** `https://github.com/SunnatilloShavkatov/video_player`
 
 ## Claude Code specifics

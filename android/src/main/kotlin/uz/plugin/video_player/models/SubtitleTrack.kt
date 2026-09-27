@@ -1,12 +1,22 @@
 package uz.plugin.video_player.models
 
-import com.google.gson.annotations.SerializedName
+import org.json.JSONObject
 import java.io.Serializable
 
 data class SubtitleTrack(
-    @SerializedName("id") val id: String = "",
-    @SerializedName("label") val label: String = "",
-    @SerializedName("lang") val lang: String = "",
-    @SerializedName("is_default") val isDefault: Boolean = false,
-    @SerializedName("url") val url: String = "",
-) : Serializable
+    val id: String = "",
+    val label: String = "",
+    val lang: String = "",
+    val isDefault: Boolean = false,
+    val url: String = "",
+) : Serializable {
+    companion object {
+        fun fromJson(json: JSONObject): SubtitleTrack = SubtitleTrack(
+            id = json.optString("id", ""),
+            label = json.optString("label", ""),
+            lang = json.optString("lang", ""),
+            isDefault = json.optBoolean("is_default", false),
+            url = json.optString("url", "")
+        )
+    }
+}

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.plugin.video_player"
-version = "3.5.7"
+version = "3.5.8"
 
 android {
     namespace = "uz.plugin.video_player"
@@ -42,9 +42,6 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
-
-    // JSON parsing (used in VideoPlayerPlugin for configuration deserialization)
-    implementation("com.google.code.gson:gson:2.13.2")
 
     // UI
     implementation("androidx.appcompat:appcompat:1.7.1")

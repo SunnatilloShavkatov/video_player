@@ -1,3 +1,9 @@
+## [3.5.8] - 2026-09-27
+
+### Fixed
+- **Android**: Added `PlayerRenderersFactory` configuring ExoPlayer decoder fallback and deprioritizing emulator-specific `c2.goldfish.*` decoders to prevent SELinux `memfd:MessageQueue` BufferPool crashes on Android 15/16 emulators (e.g. 16 KB page-size images).
+- **Android**: Replaced `com.google.code.gson` dependency with Android standard `org.json.JSONObject` parsing for `PlayerConfiguration` and `SubtitleTrack`.
+
 ## [3.5.7] - 2026-09-27
 
 ### Fixed

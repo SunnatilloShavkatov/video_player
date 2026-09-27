@@ -83,7 +83,7 @@ class PlayerController(
 
         // Initialize ExoPlayer
         val startPositionMs = (lastPositionSeconds * 1000).coerceAtLeast(0)
-        player = ExoPlayer.Builder(context)
+        player = ExoPlayer.Builder(context, createRenderersFactory(context))
             .setLoadControl(loadControl)
             .build().apply {
             setMediaSource(mediaSource, startPositionMs)
