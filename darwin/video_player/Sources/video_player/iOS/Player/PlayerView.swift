@@ -136,6 +136,9 @@ class PlayerView: UIView {
             bottomView: overlay.bottomView,
             overlayView: overlay
         )
+        controlsCoordinator.onScrub = { [weak self] phase in
+            self?.playerController?.handleScrub(phase)
+        }
 
         overlay.setPlayButtonVisible(false)
         overlay.activityIndicator.startAnimating()
@@ -293,9 +296,6 @@ class PlayerView: UIView {
                 $0.controlsCoordinator?.showControls()
             }
         }
-        on(overlay.timeSlider, .valueChanged) {
-            $0.playerController?.seekToPosition(seconds: Double($0.overlay.timeSlider.value))
-        }
     }
 
     override func layoutSubviews() {
@@ -380,7 +380,7 @@ extension PlayerView: PlayerObserverDelegate {
 
     func observerManager(_ manager: PlayerObserverManager, didUpdatePosition position: TimeInterval, duration: TimeInterval) {
         controlsCoordinator?.updateSlider(currentSeconds: position, durationSeconds: duration)
-        controlsCoordinator?.updateCurrentTime(seconds: position)
+        // Updates the time label via PlayerControllerDelegate.didUpdatePosition
         playerController?.updatePosition(position)
     }
 

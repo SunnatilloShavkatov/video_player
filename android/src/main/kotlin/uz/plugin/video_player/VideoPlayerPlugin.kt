@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import org.json.JSONException
+import androidx.lifecycle.LifecycleOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -30,7 +31,9 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     @SuppressLint("UnsafeOptInUsageError")
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         binding.platformViewRegistry.registerViewFactory(
-            "plugins.video/video_player_view", VideoPlayerViewFactory(binding.binaryMessenger)
+            "plugins.video/video_player_view",
+            // FlutterActivity and FlutterFragmentActivity are LifecycleOwners.
+            VideoPlayerViewFactory(binding.binaryMessenger) { (activity as? LifecycleOwner)?.lifecycle }
         )
         channel = MethodChannel(binding.binaryMessenger, "video_player")
         channel.setMethodCallHandler(this)

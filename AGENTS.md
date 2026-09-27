@@ -20,15 +20,15 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
 
 | Feature / Concern | iOS (UIKit) | macOS (AppKit) | Android (Media3) | Dart Layer |
 |---|---|---|---|---|
-| **Buttons, Slider, Layout** | `iOS/Player/PlayerOverlayView.swift` | `macOS/VideoPlayerOverlayView.swift` | `activity_video_player.xml` | `video_player_view.dart` |
+| **Buttons, Slider, Layout** | `iOS/Player/PlayerOverlayView.swift` | `macOS/PlayerControlsView.swift` | `activity_video_player.xml` | `video_player_view.dart` |
 | **Play, Pause, Seek, Rate** | `iOS/Player/PlayerController.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_method_channel.dart` |
-| **KVO, Time, Notifications** | `iOS/Player/PlayerObserverManager.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_view.dart` |
+| **KVO, Time, Notifications** | `iOS/Player/PlayerObserverManager.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_view_controller.dart` |
 | **Gestures (Tap/Pan/Pinch)** | `iOS/Player/PlayerGestureHandler.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerGestureHandler.kt` | - |
-| **Controls Visibility & Spinner**| `iOS/Player/PlayerControlsCoordinator.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerControlsCoordinator.kt` | - |
+| **Controls Visibility & Spinner**| `iOS/Player/PlayerControlsCoordinator.swift` | `macOS/PlayerControlsView.swift` | `player/PlayerControlsCoordinator.kt` | - |
 | **Stall / Network / Audio Recovery**| `iOS/Player/PlaybackRecoveryManager.swift` | - | `player/PlaybackRecoveryManager.kt` | - |
 | **Subtitles (WebVTT)** | `iOS/Subtitles/SubtitleController.swift` | - | `subtitles/SubtitleController.kt` | `video_player_view.dart` |
 | **Sheets, PiP, Screen Protect** | `iOS/FullScreen/VideoPlayerViewController.swift`| - | `fullscreen/VideoPlayerActivity.kt` | `video_player.dart` |
-| **Embedded Platform View** | `iOS/Embedded/VideoViewController.swift` | `macOS/VideoPlayerPlatformView.swift` | `embedded/VideoPlayerView.kt` | `video_player_view.dart` |
+| **Embedded Platform View** | `iOS/Embedded/VideoViewController.swift` + `Common/EmbeddedPlayerObserver.swift` (KVO, position; shared) | `macOS/VideoPlayerPlatformView.swift` + `Common/EmbeddedPlayerObserver.swift` | `embedded/VideoPlayerView.kt` | `video_player_view.dart` (widget) + `video_player_view_controller.dart` (commands, streams) |
 | **Shared Darwin Logic** | `Common/` (Strictly NO UIKit/AppKit imports) | `Common/` | - | - |
 
 ---
@@ -37,7 +37,7 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
 
 1. **No Blind Exploration:** Use the Dispatch Matrix above to open the exact file. Never search repository-wide when the owning file is in the table.
 2. **Selective File Reading (Token Conservation):**
-   - For files > 300 lines (`VideoPlayerActivity.kt`, `VideoPlayerViewController.swift`, `video_player_view.dart`), read only target line ranges (`StartLine`/`EndLine`).
+   - For files > 300 lines (`VideoPlayerActivity.kt`, `VideoPlayerViewController.swift`, `video_player_view_controller.dart`), read only target line ranges (`StartLine`/`EndLine`).
    - Never read `CHANGELOG.md`, `INSTRUCTIONS.md`, `API_CLARIFICATION.md`, `pubspec.lock`, or generated files in full. Use `rg -n` for lookups.
 3. **No Builds Without User Consent:**
    - Never run `flutter build`, `flutter run`, `pod install`, or `./gradlew`.

@@ -10,6 +10,13 @@
 import UIKit
 import AVFoundation
 
+/// Time slider drag phases, in seconds. Seeking itself belongs to PlayerController.
+enum ScrubPhase {
+    case began
+    case moved(Double)
+    case ended(Double)
+}
+
 /// Coordinates UI controls state with player state
 /// This class updates UI elements but does NOT control playback
 final class PlayerControlsCoordinator {
@@ -33,7 +40,12 @@ final class PlayerControlsCoordinator {
     private var controlsVisible = true
     // While true (e.g. during a network stall) controls stay visible: no auto-hide
     private var autoHideSuspended = false
-    
+    // While the user drags the time slider, playback updates must not move it
+    private var isScrubbing = false
+
+    /// Time slider drag events; the owner turns them into seeks.
+    var onScrub: ((ScrubPhase) -> Void)?
+
     // MARK: - Initialization
     
     init(
@@ -54,8 +66,9 @@ final class PlayerControlsCoordinator {
         self.topView = topView
         self.bottomView = bottomView
         self.overlayView = overlayView
+        bindTimeSlider()
     }
-    
+
     // MARK: - Play/Pause Button
     
     func updatePlayButton(isPlaying: Bool) {
@@ -69,6 +82,11 @@ final class PlayerControlsCoordinator {
     // MARK: - Time Display
     
     func updateCurrentTime(seconds: Double) {
+        guard !isScrubbing else { return }
+        setCurrentTimeLabel(seconds)
+    }
+
+    private func setCurrentTimeLabel(_ seconds: Double) {
         let time = CMTime(seconds: seconds, preferredTimescale: 1)
         currentTimeLabel?.text = VGPlayerUtils.getTimeString(from: time)
     }
@@ -81,8 +99,8 @@ final class PlayerControlsCoordinator {
     // MARK: - Slider
     
     func updateSlider(currentSeconds: Double, durationSeconds: Double) {
-        guard let slider = timeSlider else { return }
-        
+        guard let slider = timeSlider, !isScrubbing else { return }
+
         // Only update if difference is significant (avoid jitter)
         let newValue = Float(currentSeconds)
         if abs(slider.value - newValue) > 0.1 {
@@ -91,7 +109,36 @@ final class PlayerControlsCoordinator {
             slider.value = newValue
         }
     }
-    
+
+    /// Reports drag phases to `onScrub`; while dragging, playback updates leave
+    /// the thumb, the time label and the auto-hide timer alone.
+    private func bindTimeSlider() {
+        guard let slider = timeSlider else { return }
+        slider.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.isScrubbing = true
+            self.invalidateTimers()
+            self.onScrub?(.began)
+        }, for: .touchDown)
+        slider.addAction(UIAction { [weak self, weak slider] _ in
+            guard let self, let slider else { return }
+            let seconds = Double(slider.value)
+            if self.isScrubbing {
+                self.setCurrentTimeLabel(seconds)
+                self.onScrub?(.moved(seconds))
+            } else {
+                // Non-touch changes (e.g. VoiceOver increment) land immediately.
+                self.onScrub?(.ended(seconds))
+            }
+        }, for: .valueChanged)
+        slider.addAction(UIAction { [weak self, weak slider] _ in
+            guard let self, let slider, self.isScrubbing else { return }
+            self.isScrubbing = false
+            self.onScrub?(.ended(Double(slider.value)))
+            self.resetControlsTimer()
+        }, for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    }
+
     // MARK: - Loading Indicator
     
     func showLoadingIndicator() {
@@ -146,7 +193,7 @@ final class PlayerControlsCoordinator {
     
     func resetControlsTimer() {
         controlsTimer?.invalidate()
-        guard !autoHideSuspended else {
+        guard !autoHideSuspended, !isScrubbing else {
             controlsTimer = nil
             return
         }

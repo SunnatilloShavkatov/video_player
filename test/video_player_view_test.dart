@@ -61,4 +61,41 @@ void main() {
     await controller!.dispose();
     debugDefaultTargetPlatformOverride = null;
   });
+
+  testWidgets('finished event without arguments reaches the event listener', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+    int? viewId;
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (call) async {
+      if (call.method == 'create') {
+        viewId = (call.arguments as Map<Object?, Object?>)['id']! as int;
+      }
+      return null;
+    });
+
+    VideoPlayerViewController? controller;
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: VideoPlayerView(url: 'https://example.com/video.mp4', onVideoViewCreated: (c) => controller = c),
+      ),
+    );
+    await tester.pump();
+
+    Object? received;
+    controller!.setEventListener((data) => received = data);
+
+    // Native sends `finished` with null arguments (Android, iOS and macOS).
+    const codec = StandardMethodCodec();
+    await messenger.handlePlatformMessage(
+      'plugins.video/video_player_view_$viewId',
+      codec.encodeMethodCall(const MethodCall('finished')),
+      (_) {},
+    );
+
+    expect(received, isNotNull);
+
+    await controller!.dispose();
+    debugDefaultTargetPlatformOverride = null;
+  });
 }

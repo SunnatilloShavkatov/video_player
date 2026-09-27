@@ -118,7 +118,11 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
 
     fun play() = player.play()
 
-    fun pause() = player.pause()
+    fun pause() {
+        // A pause from Dart while the host is stopped wins over resuming on start.
+        resumeOnHostStart = false
+        player.pause()
+    }
 
     fun setMuted(muted: Boolean) {
         player.volume = if (muted) 0f else 1f
@@ -130,6 +134,26 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
     fun durationSeconds(): Double {
         val durationMs = player.duration
         return if (durationMs != C.TIME_UNSET && durationMs > 0) durationMs / 1000.0 else 0.0
+    }
+
+    // MARK: - Host visibility
+
+    // Set in onHostStopped when the video was playing; consumed in onHostStarted.
+    private var resumeOnHostStart = false
+
+    /** Host screen covered (e.g. by the full-screen player) or app backgrounded. */
+    fun onHostStopped() {
+        if (isReleased) return
+        // playWhenReady covers playing and buffering-to-play
+        resumeOnHostStart = player.playWhenReady && player.playbackState != Player.STATE_ENDED
+        player.pause()
+    }
+
+    /** Host screen visible again: resume if [onHostStopped] paused a running video. */
+    fun onHostStarted() {
+        if (isReleased || !resumeOnHostStart) return
+        resumeOnHostStart = false
+        player.play()
     }
 
     // MARK: - Position
@@ -168,12 +192,13 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
             }
             Player.STATE_ENDED -> {
                 stopPositionUpdates()
-                listener.onFinished()
                 "ended"
             }
             else -> return
         }
         listener.onStatus(status)
+        // Same order as iOS/macOS: status "ended" first, then "finished".
+        if (playbackState == Player.STATE_ENDED) listener.onFinished()
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {

@@ -3,6 +3,18 @@
 ### Fixed
 - **Android**: Added `PlayerRenderersFactory` configuring ExoPlayer decoder fallback and deprioritizing emulator-specific `c2.goldfish.*` decoders to prevent SELinux `memfd:MessageQueue` BufferPool crashes on Android 15/16 emulators (e.g. 16 KB page-size images).
 - **Android**: Replaced `com.google.code.gson` dependency with Android standard `org.json.JSONObject` parsing for `PlayerConfiguration` and `SubtitleTrack`.
+- **Dart**: `VideoPlayerViewController.setEventListener` no longer throws `type 'Null' is not a subtype of type 'Object'` when the native `finished` event arrives without arguments; the callback now receives an empty map.
+- **Android**: The embedded player sends `playerStatus: ended` before `finished`, matching iOS and macOS.
+- **iOS**: Subtitle cues are only redrawn when the cue text changes, instead of on every 0.2s subtitle tick.
+- **iOS**: Dragging the full-screen time slider now uses "chase time" scrubbing (Apple QA1820) instead of starting a new seek on every `.valueChanged` event: fast keyframe seeks for a live frame preview, at most one in flight, then one precise seek on release. Playback pauses during the drag and resumes afterwards if it was playing. Playback updates no longer move the thumb, overwrite the time label or hide the controls while the user drags.
+- **iOS**: The embedded player sends `playerStatus`, `positionUpdate` and `durationReady` again after its screen reappears. `viewWillDisappear` (e.g. presenting the full-screen player over the Flutter screen) stopped the observers and nothing restarted them. Playback also resumes automatically if it was running when the screen disappeared, unless Dart called `pause()` in the meantime.
+- **Android**: The embedded player follows the host activity's lifecycle, like iOS does when its screen is covered. It used to keep playing, with sound, behind the full-screen player and while the app was in the background. It now pauses on `ON_STOP` and resumes on `ON_START` if it was playing (or buffering to play), unless Dart called `pause()` in the meantime.
+- **Android**: The full-screen player reports `duration: 0` instead of an overflowed value when it is closed before the media is prepared (`C.TIME_UNSET`), and seeking forward in that state no longer targets a negative position.
+
+### Changed
+- **Dart**: Split `lib/src/video_player_view.dart` into the widget, `video_player_view_controller.dart` (a `part`, so the controller constructor stays private) and `models/resize_mode.dart` / `models/player_status.dart`. `video_player_view.dart` re-exports the enums, so the public API and existing imports are unchanged.
+- **macOS**: Moved the full-screen controls out of `VideoPlayerOverlayView` into `PlayerControlsView`, mirroring iOS `PlayerOverlayView`: hierarchy and layout (top bar, center controls, bottom bar, spinner), fade and the 3.5s auto-hide timer, and the settings/speed menu. `VideoPlayerOverlayView` keeps playback, mouse and keyboard input, and result delivery, and decides when auto-hide is allowed (`canAutoHide`: playing and not scrubbing). No behavior change.
+- **iOS / macOS**: The embedded player's KVO, end-of-item notification and position ticks moved out of iOS `VideoViewController` and macOS `VideoPlayerPlatformView` into one shared, Flutter-agnostic `Common/EmbeddedPlayerObserver` with status / duration / position / finished callbacks (like Android `EmbeddedPlayerController.Listener`). The two copies of this code were identical except that macOS could register the item observers twice; the shared version skips `start()` while already observing. Both views keep the method channel and playback commands. Event names and order are unchanged.
 
 ## [3.5.7] - 2026-09-27
 

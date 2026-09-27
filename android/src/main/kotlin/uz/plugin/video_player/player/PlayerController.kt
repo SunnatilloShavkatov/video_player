@@ -233,7 +233,8 @@ class PlayerController(
     fun seekForward(incrementMs: Long = 10000) {
         player?.let {
             val newPosition = it.currentPosition + incrementMs
-            it.seekTo(newPosition.coerceAtMost(it.duration))
+            // Duration is C.TIME_UNSET until the media is prepared; clamping to it would seek negative.
+            it.seekTo(if (it.duration == C.TIME_UNSET) newPosition else newPosition.coerceAtMost(it.duration))
         }
     }
 
@@ -259,9 +260,9 @@ class PlayerController(
     /**
      * Get total duration of the video.
      *
-     * @return Duration in milliseconds
+     * @return Duration in milliseconds, or 0 while unknown (C.TIME_UNSET)
      */
-    fun getDuration(): Long = player?.duration ?: 0
+    fun getDuration(): Long = player?.duration?.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0
 
     /**
      * Check if video is currently playing.

@@ -149,6 +149,65 @@ final class PlayerController {
         }
     }
     
+    // MARK: - Scrubbing ("chase time", Apple QA1820)
+
+    private var isScrubbing = false
+    private var chaseTime: CMTime?
+    private var isChaseSeekInProgress = false
+
+    /// Live frame preview while the time slider is dragged. Playback is paused
+    /// silently (`playerState` keeps the user's intent) and resumed on release.
+    func handleScrub(_ phase: ScrubPhase) {
+        switch phase {
+        case .began:
+            isScrubbing = true
+            if playerState == .playing { player?.pause() }
+        case .moved(let seconds):
+            guard isScrubbing else { return }
+            chaseTime = CMTime(seconds: seconds, preferredTimescale: 600)
+            if !isChaseSeekInProgress { seekToChaseTime() }
+        case .ended(let seconds):
+            endScrub(at: seconds)
+        }
+    }
+
+    /// Fast keyframe seeks, never more than one in flight: when one completes,
+    /// jump straight to the latest drag position and skip everything in between.
+    private func seekToChaseTime() {
+        guard let player, let target = chaseTime else {
+            isChaseSeekInProgress = false
+            return
+        }
+        isChaseSeekInProgress = true
+        player.seek(to: target, toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if let latest = self.chaseTime, CMTimeCompare(latest, target) != 0 {
+                    self.seekToChaseTime()
+                } else {
+                    self.isChaseSeekInProgress = false
+                }
+            }
+        }
+    }
+
+    /// Stop chasing, land precisely on the release position, then resume if the
+    /// user was playing. The precise seek cancels any chase seek still in flight.
+    private func endScrub(at seconds: Double) {
+        isScrubbing = false
+        chaseTime = nil
+        guard let player else { return }
+        let time = CMTime(seconds: seconds, preferredTimescale: 600)
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            DispatchQueue.main.async {
+                // A new drag may have started before this seek completed.
+                guard let self, !self.isScrubbing, self.playerState == .playing else { return }
+                self.player?.play()
+                self.player?.rate = self.playerRate
+            }
+        }
+    }
+
     /// Update position from time observer
     func updatePosition(_ seconds: Double) {
         streamPosition = seconds

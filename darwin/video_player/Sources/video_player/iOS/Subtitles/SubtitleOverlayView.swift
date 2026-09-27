@@ -131,11 +131,14 @@ public class SubtitleOverlayView: UIView {
 
     public func setText(_ text: String?) {
         guard let text = text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            guard label.text != nil else { return }
             label.isHidden = true
             label.text = nil
             return
         }
 
+        // Called every 0.2s; reassigning the same cue would redraw the line boxes.
+        guard text != label.text else { return }
         label.text = text
         label.isHidden = false
     }

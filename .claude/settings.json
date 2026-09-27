@@ -46,6 +46,12 @@
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/slow-cmd-guard.sh",
             "timeout": 5,
             "statusMessage": "slow-cmd-guard"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/cat-guard.sh",
+            "timeout": 5,
+            "statusMessage": "cat-guard"
           }
         ]
       }

@@ -2,6 +2,9 @@ package uz.plugin.video_player.embedded
 
 import android.content.Context
 import android.view.View
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -14,13 +17,15 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Embedded player platform view. Maps the per-view channel
  * `plugins.video/video_player_view_<id>` onto [EmbeddedPlayerController]:
  * commands in via [onMethodCall], events out via [EmbeddedPlayerController.Listener].
+ * Follows the host activity: paused while it is stopped, resumed if it was playing.
  */
 class VideoPlayerView internal constructor(
     context: Context,
     messenger: BinaryMessenger,
     id: Int,
     creationParams: Any?,
-) : PlatformView, MethodCallHandler, EmbeddedPlayerController.Listener {
+    private val hostLifecycle: Lifecycle?,
+) : PlatformView, MethodCallHandler, EmbeddedPlayerController.Listener, DefaultLifecycleObserver {
 
     private val isDisposed = AtomicBoolean(false)
     private var methodChannel: MethodChannel? = MethodChannel(messenger, "plugins.video/video_player_view_$id")
@@ -28,6 +33,7 @@ class VideoPlayerView internal constructor(
 
     init {
         methodChannel?.setMethodCallHandler(this)
+        hostLifecycle?.addObserver(this)
         if (creationParams is Map<*, *>) {
             loadFromCreationParams(VideoViewModel(creationParams))
         }
@@ -131,8 +137,15 @@ class VideoPlayerView internal constructor(
         }
     }
 
+    // MARK: - Host lifecycle
+
+    override fun onStop(owner: LifecycleOwner) = controller.onHostStopped()
+
+    override fun onStart(owner: LifecycleOwner) = controller.onHostStarted()
+
     override fun dispose() {
         if (!isDisposed.compareAndSet(false, true)) return
+        hostLifecycle?.removeObserver(this)
         methodChannel?.setMethodCallHandler(null)
         methodChannel = null
         controller.release()

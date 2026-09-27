@@ -14,10 +14,6 @@ import UIKit
 
 class VideoViewController: UIViewController {
 
-    // ✅ CRITICAL: Static contexts prevent Swift exclusivity violations
-    private static var playerItemContext = 0
-    private static var playerContext = 0
-
     private var registrar: FlutterPluginRegistrar?
     private var methodChannel: FlutterMethodChannel
 
@@ -39,34 +35,14 @@ class VideoViewController: UIViewController {
         return view
     }()
 
-    // Position observer
-    private var timeObserver: Any?
-
-    // ✅ FIXED: Thread-safe observer flags
-    private let observerQueue = DispatchQueue(label: "com.video.observer", qos: .userInitiated)
-    private var _isObservingDuration = false
-    private var _isObservingStatus = false
-    private var _isObservingTimeControl = false
-
-    private var isObservingDuration: Bool {
-        get { observerQueue.sync { _isObservingDuration } }
-        set { observerQueue.sync { _isObservingDuration = newValue } }
-    }
-    private var isObservingStatus: Bool {
-        get { observerQueue.sync { _isObservingStatus } }
-        set { observerQueue.sync { _isObservingStatus = newValue } }
-    }
-    private var isObservingTimeControl: Bool {
-        get { observerQueue.sync { _isObservingTimeControl } }
-        set { observerQueue.sync { _isObservingTimeControl = newValue } }
-    }
-
-    // ✅ FIXED: Weak reference to prevent retain cycle
-    private weak var currentPlayerItem: AVPlayerItem?
+    // KVO, end-of-item and position ticks (Common/); events are forwarded in bindObserver()
+    private lazy var observer = EmbeddedPlayerObserver(player: player)
 
     // ✅ FIXED: Disposal guard
     private var isDisposed = false
     private let disposalQueue = DispatchQueue(label: "com.video.disposal")
+    // Set in viewWillDisappear when the video was playing; consumed in viewWillAppear.
+    private var resumeOnAppear = false
 
     init(
         registrar: FlutterPluginRegistrar? = nil,
@@ -86,6 +62,7 @@ class VideoViewController: UIViewController {
 
         // Setup player early
         player.automaticallyWaitsToMinimizeStalling = true
+        bindObserver()
     }
 
     required init?(coder: NSCoder) {
@@ -144,7 +121,7 @@ class VideoViewController: UIViewController {
             return FlutterError(code: "DISPOSED", message: "Video view controller is already disposed", details: nil)
         }
 
-        stopObservingPlayerIfNeeded()
+        observer.stop()
 
         player.pause()
 
@@ -173,8 +150,7 @@ class VideoViewController: UIViewController {
 
         player.replaceCurrentItem(with: playerItem)
 
-        setupPositionObserver()
-        startObservingPlayerIfNeeded()
+        observer.start()
 
         player.play()
         return nil
@@ -203,233 +179,29 @@ class VideoViewController: UIViewController {
         return .success(remoteURL)
     }
 
-    // MARK: - Observer Management (Centralized)
+    // MARK: - Observer Events
 
-    private func startObservingPlayerIfNeeded() {
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { self.startObservingPlayerIfNeeded() }
-            return
-        }
+    private func bindObserver() {
+        observer.onStatus = { [weak self] status in self?.send("playerStatus", status) }
+        observer.onDuration = { [weak self] seconds in self?.send("durationReady", seconds) }
+        observer.onPosition = { [weak self] seconds in self?.send("positionUpdate", seconds) }
+        observer.onFinished = { [weak self] in self?.send("finished", nil) }
+    }
 
+    private func send(_ method: String, _ arguments: Any?) {
         guard !isDisposed else { return }
-        guard let item = player.currentItem else { return }
-
-        if isObservingTimeControl {
-            return
-        }
-
-        player.addObserver(
-            self,
-            forKeyPath: #keyPath(AVPlayer.timeControlStatus),
-            options: [.new, .old],
-            context: &VideoViewController.playerContext
-        )
-        isObservingTimeControl = true
-
-        item.addObserver(
-            self,
-            forKeyPath: #keyPath(AVPlayerItem.duration),
-            options: [.new, .initial],
-            context: &VideoViewController.playerItemContext
-        )
-        isObservingDuration = true
-
-        item.addObserver(
-            self,
-            forKeyPath: #keyPath(AVPlayerItem.status),
-            options: .new,
-            context: &VideoViewController.playerItemContext
-        )
-        isObservingStatus = true
-
-        currentPlayerItem = item
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(playerDidFinishPlaying),
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: item
-        )
-    }
-
-    private func stopObservingPlayerIfNeeded() {
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { self.stopObservingPlayerIfNeeded() }
-            return
-        }
-
-        if let observer = timeObserver {
-            player.removeTimeObserver(observer)
-            timeObserver = nil
-        }
-
-        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
-
-        if isObservingTimeControl {
-            player.removeObserver(self, forKeyPath: #keyPath(AVPlayer.timeControlStatus), context: &VideoViewController.playerContext)
-            isObservingTimeControl = false
-        }
-
-        guard let item = currentPlayerItem else {
-            isObservingDuration = false
-            isObservingStatus = false
-            return
-        }
-
-        if isObservingDuration {
-            item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.duration), context: &VideoViewController.playerItemContext)
-            isObservingDuration = false
-        }
-
-        if isObservingStatus {
-            item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &VideoViewController.playerItemContext)
-            isObservingStatus = false
-        }
-
-        currentPlayerItem = nil
-    }
-
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-
-        // ✅ CRITICAL: Check STATIC context to prevent exclusivity violations
-        if context == &VideoViewController.playerItemContext {
-            handlePlayerItemObservation(keyPath: keyPath, object: object, change: change)
-        } else if context == &VideoViewController.playerContext {
-            handlePlayerObservation(keyPath: keyPath, change: change)
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
-    }
-
-    private func handlePlayerItemObservation(
-        keyPath: String?,
-        object: Any?,
-        change: [NSKeyValueChangeKey: Any]?
-    ) {
-        guard !isDisposed, isObservingDuration || isObservingStatus else { return }
-
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { [weak self] in
-                self?.handlePlayerItemObservation(keyPath: keyPath, object: object, change: change)
-            }
-            return
-        }
-
-        guard let keyPath = keyPath else { return }
-
-        switch keyPath {
-        case #keyPath(AVPlayerItem.duration):
-            let duration = getDuration()
-            if duration > 0 {
-                methodChannel.invokeMethod("durationReady", arguments: duration)
-            }
-
-        case #keyPath(AVPlayerItem.status):
-            if let item = object as? AVPlayerItem {
-                switch item.status {
-                case .readyToPlay:
-                    methodChannel.invokeMethod("playerStatus", arguments: "ready")
-                case .failed:
-                    methodChannel.invokeMethod("playerStatus", arguments: "error")
-                case .unknown:
-                    methodChannel.invokeMethod("playerStatus", arguments: "idle")
-                @unknown default:
-                    break
-                }
-            }
-
-        default:
-            break
-        }
-    }
-
-    private func handlePlayerObservation(
-        keyPath: String?,
-        change: [NSKeyValueChangeKey: Any]?
-    ) {
-        guard !isDisposed, isObservingTimeControl else { return }
-
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { [weak self] in
-                self?.handlePlayerObservation(keyPath: keyPath, change: change)
-            }
-            return
-        }
-
-        guard let keyPath = keyPath else { return }
-
-        switch keyPath {
-        case #keyPath(AVPlayer.timeControlStatus):
-            switch player.timeControlStatus {
-            case .waitingToPlayAtSpecifiedRate:
-                methodChannel.invokeMethod("playerStatus", arguments: "buffering")
-            case .paused:
-                methodChannel.invokeMethod("playerStatus", arguments: "paused")
-            case .playing:
-                methodChannel.invokeMethod("playerStatus", arguments: "playing")
-            @unknown default:
-                break
-            }
-
-        default:
-            break
-        }
-    }
-
-    @objc private func playerDidFinishPlaying() {
-        guard !isDisposed else { return }
-        methodChannel.invokeMethod("playerStatus", arguments: "ended")
-        methodChannel.invokeMethod("finished", arguments: nil)
-    }
-
-    private func setupPositionObserver() {
-        if let observer = timeObserver {
-            player.removeTimeObserver(observer)
-            timeObserver = nil
-        }
-
-        let interval = CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        timeObserver = player.addPeriodicTimeObserver(
-            forInterval: interval,
-            queue: DispatchQueue.main
-        ) { [weak self] time in
-            guard let self = self, !self.isDisposed else { return }
-            let positionSeconds = time.seconds
-            self.methodChannel.invokeMethod("positionUpdate", arguments: positionSeconds)
-        }
+        methodChannel.invokeMethod(method, arguments: arguments)
     }
 
     func getDuration() -> Double {
-        guard let currentItem = player.currentItem else { return 0.0 }
-        let duration = currentItem.duration
-
-        guard duration.isValid && !duration.isIndefinite else {
-            if let seekableRange = currentItem.seekableTimeRanges.last?.timeRangeValue {
-                let endTime = CMTimeAdd(seekableRange.start, seekableRange.duration)
-                let seconds = CMTimeGetSeconds(endTime)
-                if seconds.isFinite && !seconds.isNaN && seconds > 0 {
-                    return seconds
-                }
-            }
-            return 0.0
-        }
-
-        let durationSeconds = duration.seconds
-        guard durationSeconds.isFinite && !durationSeconds.isNaN && durationSeconds > 0 else {
-            return 0.0
-        }
-
-        return durationSeconds
+        observer.durationSeconds()
     }
 
     // MARK: - Playback Controls
 
     func pause() {
+        // A pause from Dart while hidden wins over resuming on reappear.
+        resumeOnAppear = false
         player.pause()
     }
 
@@ -464,8 +236,25 @@ class VideoViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        // rate is non-zero while playing or buffering to play
+        resumeOnAppear = player.rate != 0
         player.pause()
-        stopObservingPlayerIfNeeded()
+        observer.stop()
+    }
+
+    /// Undoes viewWillDisappear (e.g. a modal full-screen player was dismissed over
+    /// the Flutter screen): events restart, and playback resumes if it was running.
+    /// The first appearance is a no-op: playVideo already started the observer.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !isDisposed, player.currentItem != nil else { return }
+        if !observer.isObserving {
+            observer.start()
+        }
+        if resumeOnAppear {
+            resumeOnAppear = false
+            player.play()
+        }
     }
 
     deinit {
@@ -483,14 +272,13 @@ class VideoViewController: UIViewController {
 
         let teardown = {
             self.player.pause()
-            self.stopObservingPlayerIfNeeded()
+            self.observer.invalidate()
             self.player.replaceCurrentItem(with: nil)
 
             if let layer = self.playerLayer, layer.superlayer != nil {
                 layer.removeFromSuperlayer()
             }
             self.playerLayer = nil
-            self.currentPlayerItem = nil
         }
 
         if Thread.isMainThread {
