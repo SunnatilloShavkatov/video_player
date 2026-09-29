@@ -7,6 +7,10 @@
 // The application's name. By default this is also the title of the Flutter window.
 PRODUCT_NAME = Video Player
 
+// Must differ from the plugin's module (`video_player`) even ignoring case; otherwise the
+// default module name `Video_Player` shadows `import video_player` in GeneratedPluginRegistrant.
+PRODUCT_MODULE_NAME = VideoPlayerExample
+
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = uz.plugin.videoPlayer
 
