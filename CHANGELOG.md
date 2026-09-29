@@ -1,3 +1,37 @@
+## [3.6.0] - 2026-09-29
+
+### Migration
+`VideoPlayerViewController` commands now throw instead of failing silently. If you call them without a `try/catch`, a native failure (or `setUrl` with a non-HTTPS URL) becomes an unhandled async error:
+
+```dart
+try {
+  await controller.setUrl(url);
+  final seconds = await controller.getDuration();
+} on ArgumentError {
+  // not a valid HTTPS URL
+} on PlatformException catch (e) {
+  // native failure, see e.code / e.message
+} on StateError {
+  // controller already disposed
+}
+```
+
+### Added
+- **CI**: `.github/workflows/ci.yml` runs `flutter analyze` + `flutter test`, Android Gradle unit tests, and debug builds of the example on iOS and macOS for every push to `master` and pull request.
+- **Android**: JVM unit tests (`android/src/test`, JUnit 4) for the `UrlPolicy` HTTPS rules and the new `PlaybackIntent` recovery rules.
+- **Darwin**: XCTest unit tests (`darwin/video_player/Tests`, run with `Tests/run-tests.sh`) for HTTPS URL checks, `PlayerConfiguration` / `SubtitleTrack` parsing and time formatting.
+
+### Fixed
+- **Dart**: `VideoPlayerViewController` commands (`play`, `pause`, `seekTo`, `getDuration`, `setUrl`, ...) no longer swallow errors. Native failures surface as `PlatformException`, a disposed controller throws `StateError`. `getDuration` no longer returns `0` on failure; `0.0` now only means "unknown".
+- **Dart**: `VideoPlayerViewController.setUrl` validates the URL like the widget does and throws `ArgumentError` for anything but a valid HTTPS URL.
+- **Android / iOS / macOS**: Remote playback is HTTPS-only on the native side too. `http://` URLs are rejected (`INVALID_URL` / `IllegalArgumentException`) in the full-screen and embedded players. Android used to accept them, and iOS/macOS accepted any URL scheme.
+
+### Changed
+- **iOS**: Split `VideoPlayerViewController.swift` (623 → ~380 lines): the settings sheet, quality / speed / subtitle bottom sheets and their selection handling moved to `VideoPlayerViewController+Settings.swift`. Some state became internal instead of `private` so the extension can reach it. No behavior change.
+- **Android**: Split `VideoPlayerActivity.kt` (515 → ~470 lines): Picture-in-Picture moved to `PictureInPictureHandler`. No behavior change.
+- **Android**: The HTTPS checks live in one place, `utils/UrlPolicy`.
+- **Android**: `PlayerController` keeps its play / pause / network-recovery state in `PlaybackIntent` (pure Kotlin, unit tested). `PlayerController.kt` 487 → ~475 lines. No behavior change.
+
 ## [3.5.8] - 2026-09-27
 
 ### Fixed

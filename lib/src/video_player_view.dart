@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:video_player/src/models/player_status.dart';
 import 'package:video_player/src/models/resize_mode.dart';
-import 'package:video_player/src/utils/log_message.dart';
 import 'package:video_player/src/utils/url_validator.dart';
 
 export 'package:video_player/src/models/player_status.dart';

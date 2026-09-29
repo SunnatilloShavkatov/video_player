@@ -24,6 +24,7 @@ import androidx.media3.extractor.text.SubtitleExtractor
 import uz.plugin.video_player.models.PlaybackState
 import uz.plugin.video_player.models.QualityOption
 import uz.plugin.video_player.models.SubtitleTrack
+import uz.plugin.video_player.utils.UrlPolicy
 
 /**
  * PlayerController manages ExoPlayer lifecycle and playback operations.
@@ -48,9 +49,7 @@ class PlayerController(
 ) {
     private var player: ExoPlayer? = null
     private val playerListener = createPlayerListener()
-    private var isRemotePlayback = false
-    private var playWhenReadyIntent = true
-    private var waitingForNetworkRecovery = false
+    private val intent = PlaybackIntent()
 
     /**
      * Initialize the player with a video URL and optional starting position.
@@ -65,9 +64,8 @@ class PlayerController(
         subtitles: List<SubtitleTrack> = emptyList(),
         keyRequestHeaders: Map<String, String> = emptyMap(),
     ) {
-        isRemotePlayback = url.startsWith("http://") || url.startsWith("https://")
-        playWhenReadyIntent = true
-        waitingForNetworkRecovery = false
+        require(!UrlPolicy.isInsecureHttp(url)) { "Only HTTPS URLs are allowed" }
+        intent.onInitialized(remote = UrlPolicy.isHttps(url))
 
         val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders)
 
@@ -110,7 +108,7 @@ class PlayerController(
      * Start or resume playback.
      */
     fun play() {
-        playWhenReadyIntent = true
+        intent.onPlay()
         player?.play()
     }
 
@@ -118,8 +116,7 @@ class PlayerController(
      * Pause playback.
      */
     fun pause() {
-        playWhenReadyIntent = false
-        waitingForNetworkRecovery = false
+        intent.onPause()
         player?.pause()
     }
 
@@ -129,7 +126,7 @@ class PlayerController(
     }
 
     fun resumeAfterTransientLoss() {
-        if (!playWhenReadyIntent) {
+        if (!intent.wantsPlayback) {
             return
         }
 
@@ -137,7 +134,7 @@ class PlayerController(
         player?.play()
     }
 
-    fun shouldResumeOnHostResume(): Boolean = playWhenReadyIntent
+    fun shouldResumeOnHostResume(): Boolean = intent.wantsPlayback
 
     /**
      * Seek to a specific position.
@@ -199,21 +196,17 @@ class PlayerController(
     }
 
     fun onNetworkLost() {
-        if (!isRemotePlayback) {
-            return
-        }
-        waitingForNetworkRecovery = playWhenReadyIntent
+        intent.onNetworkLost()
     }
 
     fun shouldAutoRecoverAfterNetworkRestore(): Boolean {
-        return isRemotePlayback && waitingForNetworkRecovery && playWhenReadyIntent
+        return intent.shouldAutoRecover
     }
 
-    fun retryPlayback(shouldResumePlayback: Boolean = playWhenReadyIntent) {
+    fun retryPlayback(shouldResumePlayback: Boolean = intent.wantsPlayback) {
         val exoPlayer = player ?: return
 
-        playWhenReadyIntent = shouldResumePlayback
-        waitingForNetworkRecovery = false
+        intent.onRetry(shouldResumePlayback)
 
         exoPlayer.prepare()
         if (shouldResumePlayback) {
@@ -291,26 +284,24 @@ class PlayerController(
             try { it.release() } catch (_: Exception) {}
         }
         player = null
-        waitingForNetworkRecovery = false
+        intent.onReleased()
     }
 
-    fun isRemotePlayback(): Boolean = isRemotePlayback
+    fun isRemotePlayback(): Boolean = intent.isRemote
 
     /**
      * Create the player event listener for delegating callbacks.
      */
     private fun createPlayerListener() = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
-            if (isRemotePlayback && playWhenReadyIntent) {
-                waitingForNetworkRecovery = true
-            }
+            intent.onPlayerError()
             delegate?.onPlayerError(error)
             delegate?.onPlaybackStateChanged(PlaybackState.ERROR)
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
-                waitingForNetworkRecovery = false
+                intent.onPlaying()
             }
             delegate?.onIsPlayingChanged(isPlaying)
         }
@@ -325,8 +316,7 @@ class PlayerController(
                 }
 
                 Player.STATE_ENDED -> {
-                    playWhenReadyIntent = false
-                    waitingForNetworkRecovery = false
+                    intent.onEnded()
                     delegate?.onPlaybackEnded()
                     PlaybackState.IDLE
                 }
@@ -385,7 +375,7 @@ class PlayerController(
     ): MediaSource {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
 
-        val uri = if (url.startsWith("http://") || url.startsWith("https://")) {
+        val uri = if (UrlPolicy.isHttps(url)) {
             url.toUri()
         } else {
             "asset:///flutter_assets/$url".toUri()

@@ -187,8 +187,8 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         }
 
         let trimmedUrl = configuration.url.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl) else {
-            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL"))
+        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl), remoteURL.isSecureRemote else {
+            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL: only HTTPS is allowed"))
         }
 
         resolvedConfiguration.url = remoteURL.absoluteString
@@ -391,8 +391,8 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin {
         }
 
         let trimmedUrl = configuration.url.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl) else {
-            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL"))
+        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl), remoteURL.isSecureRemote else {
+            return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL: only HTTPS is allowed"))
         }
 
         resolvedConfiguration.url = remoteURL.absoluteString

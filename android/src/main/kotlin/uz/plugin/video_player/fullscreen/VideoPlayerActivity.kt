@@ -1,18 +1,14 @@
 package uz.plugin.video_player.fullscreen
 
 import android.annotation.SuppressLint
-import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.media.AudioManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.util.Rational
 import android.view.View
 import android.view.WindowManager
 import android.widget.RelativeLayout
@@ -25,7 +21,6 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import uz.plugin.video_player.R
 import uz.plugin.video_player.bottomsheet.PlayerBottomSheets
@@ -59,6 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - AudioFocusHandler          media audio focus (player/)
  * - SubtitleController         sidecar subtitle selection + size (subtitles/)
  * - PlayerBottomSheets         settings, quality, speed, subtitle pickers (bottomsheet/)
+ * - PictureInPictureHandler    entering PiP, PiP view state, PiP-closed detection (fullscreen/)
  */
 @UnstableApi
 class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
@@ -67,9 +63,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
         private const val TAG = "VideoPlayer"
         private const val SEEK_INCREMENT_MS = 10000L
         private const val ORIENTATION_RESTORE_DELAY_MS = 3000L
-        private const val PIP_DISMISS_CHECK_DELAY_MS = 300L
-        private val PIP_BUTTON_ASPECT_RATIO = Rational(16, 9)
-        private val PIP_AUTO_ASPECT_RATIO = Rational(100, 50)
 
         @Volatile
         private var currentInstance: WeakReference<VideoPlayerActivity>? = null
@@ -97,10 +90,10 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     private lateinit var audioFocus: AudioFocusHandler
     private lateinit var subtitles: SubtitleController
     private lateinit var bottomSheets: PlayerBottomSheets
+    private lateinit var pip: PictureInPictureHandler
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var orientationRestoreRunnable: Runnable? = null
-    private var pipDismissCheckRunnable: Runnable? = null
 
     // Startup guard: playback starts once both the window and the surface are ready.
     private val isSurfaceReady = AtomicBoolean(false)
@@ -108,7 +101,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     private val isStarted = AtomicBoolean(false)
 
     private var playbackState: PlaybackState = PlaybackState.PLAYING
-    private var wasInPictureInPicture = false
     private var shouldResumeOnForeground = false
     private var hasPlaybackEnded = false
     private var pendingErrorToastMessage: String? = null
@@ -294,6 +286,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
         subtitles = SubtitleController(this, playerView, playerConfiguration) { controllerOrNull }
         bottomSheets = PlayerBottomSheets(this, playerConfiguration, subtitles) { controllerOrNull }
+        pip = PictureInPictureHandler(this, playerView, mainHandler) { finishWithResult() }
     }
 
     private fun bindControlActions() {
@@ -301,7 +294,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
         views.share.visibility = if (canShare) View.VISIBLE else View.GONE
         views.close.setOnClickListener { finishWithResult() }
         views.share.setOnClickListener { shareMovieLink() }
-        views.pip.setOnClickListener { enterPip(PIP_BUTTON_ASPECT_RATIO) }
+        views.pip.setOnClickListener { pip.enterFromButton() }
         views.more.setOnClickListener { bottomSheets.showSettings() }
         views.rewind.setOnClickListener { controllerOrNull?.seekBackward(SEEK_INCREMENT_MS) }
         views.forward.setOnClickListener { controllerOrNull?.seekForward(SEEK_INCREMENT_MS) }
@@ -402,52 +395,17 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     private fun cancelPendingRunnables() {
         gestureHandler.cancelPendingTaps()
         orientationRestoreRunnable?.let { mainHandler.removeCallbacks(it) }
-        pipDismissCheckRunnable?.let { mainHandler.removeCallbacks(it) }
+        if (::pip.isInitialized) pip.cancelPending()
         orientationRestoreRunnable = null
-        pipDismissCheckRunnable = null
     }
 
     // MARK: - Picture-in-Picture
 
-    private fun enterPip(aspectRatio: Rational) {
-        val builder = PictureInPictureParams.Builder().setAspectRatio(aspectRatio)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.setAutoEnterEnabled(false)
-        }
-        try {
-            enterPictureInPictureMode(builder.build())
-        } catch (e: Exception) {
-            // Catch all exceptions including system bugs (NPE, RemoteException, etc.)
-            Log.w(TAG, "Failed to enter PiP", e)
-        }
-    }
-
-    override fun onUserLeaveHint() {
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) && !isInPictureInPictureMode) {
-            enterPip(PIP_AUTO_ASPECT_RATIO)
-        }
-    }
+    override fun onUserLeaveHint() = pip.onUserLeaveHint()
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        if (isInPictureInPictureMode) {
-            playerView.hideController()
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            wasInPictureInPicture = true
-            return
-        }
-        // Exiting PiP: let the lifecycle settle, then tell "user closed the PiP window"
-        // (not visible, not a config change) apart from "returned to the app".
-        pipDismissCheckRunnable?.let { mainHandler.removeCallbacks(it) }
-        pipDismissCheckRunnable = Runnable {
-            val isVisible = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
-            if (!isVisible && !isChangingConfigurations && wasInPictureInPicture) {
-                finishWithResult()
-            } else {
-                playerView.showController()
-            }
-            wasInPictureInPicture = false
-        }.also { mainHandler.postDelayed(it, PIP_DISMISS_CHECK_DELAY_MS) }
+        pip.onModeChanged(isInPictureInPictureMode)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

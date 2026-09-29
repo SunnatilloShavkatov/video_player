@@ -11,7 +11,7 @@ Flutter plugin with native iOS (Swift), macOS (Swift), and Android (Kotlin) impl
   - Embedded view API: **SECONDS (`double`)** (`seekTo`, `getDuration`, `positionStream`).
   - Milliseconds across Flutter/native boundaries is a breaking error.
 - **File Size Rule:** Native source files must stay under ~500 lines (`PlayerView.swift` under ~450). When logic grows, extract into a subcomponent instead of growing the file.
-- **Security & URLs:** HTTPS only for streaming (`validateVideoUrl()`). Assets use `playVideoFromAsset: true`.
+- **Security & URLs:** HTTPS only for streaming (`UrlValidator.isNotValidHttpsUrl()` in Dart, `URL.isSecureRemote` in Darwin, `https://` checks in Kotlin). Assets use `playVideoFromAsset: true`.
 
 ---
 
@@ -27,7 +27,7 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
 | **Controls Visibility & Spinner**| `iOS/Player/PlayerControlsCoordinator.swift` | `macOS/PlayerControlsView.swift` | `player/PlayerControlsCoordinator.kt` | - |
 | **Stall / Network / Audio Recovery**| `iOS/Player/PlaybackRecoveryManager.swift` | - | `player/PlaybackRecoveryManager.kt` | - |
 | **Subtitles (WebVTT)** | `iOS/Subtitles/SubtitleController.swift` | - | `subtitles/SubtitleController.kt` | `video_player_view.dart` |
-| **Sheets, PiP, Screen Protect** | `iOS/FullScreen/VideoPlayerViewController.swift`| - | `fullscreen/VideoPlayerActivity.kt` | `video_player.dart` |
+| **Sheets, PiP, Screen Protect** | `iOS/FullScreen/VideoPlayerViewController.swift` (+ `+Settings.swift`: sheets, quality/speed/subtitle) | - | `fullscreen/VideoPlayerActivity.kt` (+ `PictureInPictureHandler.kt`) | `video_player.dart` |
 | **Embedded Platform View** | `iOS/Embedded/VideoViewController.swift` + `Common/EmbeddedPlayerObserver.swift` (KVO, position; shared) | `macOS/VideoPlayerPlatformView.swift` + `Common/EmbeddedPlayerObserver.swift` | `embedded/VideoPlayerView.kt` | `video_player_view.dart` (widget) + `video_player_view_controller.dart` (commands, streams) |
 | **Shared Darwin Logic** | `Common/` (Strictly NO UIKit/AppKit imports) | `Common/` | - | - |
 
@@ -44,6 +44,7 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
    - For Swift compile check: `bash .claude/skills/darwin-typecheck/scripts/typecheck.sh`
    - For Android compile check: `bash .claude/skills/android-typecheck/scripts/typecheck.sh`
    - For Dart unit tests: `flutter test -r failures-only [test/<file>_test.dart]`
+   - Android JVM unit tests live in `android/src/test/kotlin` (pure Kotlin, no `android.*`); CI runs them with Gradle. Recovery/intent rules live in `player/PlaybackIntent.kt` (unit tested). Swift unit tests for `Common/` live in `darwin/video_player/Tests`; run `bash darwin/video_player/Tests/run-tests.sh` (add new pure `Common/` files to that script). CI (`.github/workflows/ci.yml`) also analyzes Dart and compiles the example on iOS/macOS.
 4. **iOS & macOS Darwin Rules:**
    - Podspec globs `Common/**` + `iOS/**` for iOS, and `Common/**` + `macOS/**` for macOS.
    - Wrap platform files in `#if os(iOS)` or `#if os(macOS)`.

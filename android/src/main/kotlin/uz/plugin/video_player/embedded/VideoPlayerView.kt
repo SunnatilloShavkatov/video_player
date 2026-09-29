@@ -1,6 +1,7 @@
 package uz.plugin.video_player.embedded
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -12,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 import uz.plugin.video_player.models.VideoViewModel
 import java.util.concurrent.atomic.AtomicBoolean
+import uz.plugin.video_player.utils.UrlPolicy
 
 /**
  * Embedded player platform view. Maps the per-view channel
@@ -26,6 +28,10 @@ class VideoPlayerView internal constructor(
     creationParams: Any?,
     private val hostLifecycle: Lifecycle?,
 ) : PlatformView, MethodCallHandler, EmbeddedPlayerController.Listener, DefaultLifecycleObserver {
+
+    private companion object {
+        const val TAG = "VideoPlayerView"
+    }
 
     private val isDisposed = AtomicBoolean(false)
     private var methodChannel: MethodChannel? = MethodChannel(messenger, "plugins.video/video_player_view_$id")
@@ -45,8 +51,9 @@ class VideoPlayerView internal constructor(
         val url = params.getUrl()
         when {
             url.isEmpty() -> Unit
-            url.startsWith("http://") || url.startsWith("https://") ->
-                controller.loadUrl(url, params.getKeyRequestHeaders(), params.getResizeMode())
+            UrlPolicy.isInsecureHttp(url) || UrlPolicy.isHttps(url) ->
+                runCatching { controller.loadUrl(url, params.getKeyRequestHeaders(), params.getResizeMode()) }
+                    .onFailure { Log.w(TAG, "Initial URL rejected: ${it.message}") }
             else -> controller.loadAsset(url, params.getResizeMode())
         }
     }

@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dart:
+    name: Analyze & Dart tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test -r failures-only
+
+  android:
+    name: Android compile & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: example
+      # Compiles the plugin sources and runs android/src/test (pure JVM tests).
+      - run: ./gradlew :video_player:testDebugUnitTest
+        working-directory: example/android
+
+  darwin:
+    name: Swift compile (${{ matrix.target }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ios, macos]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: example
+      - name: Build example (compiles the plugin's Swift sources)
+        run: |
+          if [ "${{ matrix.target }}" = "ios" ]; then
+            flutter build ios --debug --no-codesign
+          else
+            flutter build macos --debug
+          fi
+        working-directory: example
+
+  swift-tests:
+    name: Swift unit tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pure Common/ logic (URL rules, config parsing, time formatting); no Flutter needed.
+      - run: bash darwin/video_player/Tests/run-tests.sh

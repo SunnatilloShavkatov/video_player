@@ -11,6 +11,10 @@ part of 'video_player_view.dart';
 /// 3. Listen to streams for position and status updates
 /// 4. Call [dispose] when done to clean up resources
 ///
+/// **Errors:** commands are not swallowed. A disposed controller throws
+/// [StateError], an invalid URL throws [ArgumentError], and native failures
+/// surface as [PlatformException]. Catch them where the command is issued.
+///
 /// **Example:**
 /// ```
 /// late VideoPlayerViewController _controller;
@@ -76,16 +80,15 @@ final class VideoPlayerViewController {
     ResizeMode resizeMode = ResizeMode.fit,
     Map<String, String> keyRequestHeaders = const {},
   }) async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('setUrl', {
-        'url': url,
-        'resizeMode': resizeMode.value,
-        'keyRequestHeaders': keyRequestHeaders,
-      });
-    } catch (e, s) {
-      logMessage('setUrl failed', error: e, stackTrace: s);
+    _checkNotDisposed();
+    if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
+      throw ArgumentError.value(url, 'url', 'Must be a valid HTTPS URL');
     }
+    await _channel.invokeMethod('setUrl', {
+      'url': url,
+      'resizeMode': resizeMode.value,
+      'keyRequestHeaders': keyRequestHeaders,
+    });
   }
 
   /// Loads and plays a video from Flutter assets.
@@ -109,12 +112,8 @@ final class VideoPlayerViewController {
   ///     - assets/videos/intro.mp4
   /// ```
   Future<void> setAssets({required String assets, ResizeMode resizeMode = ResizeMode.fit}) async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.value});
-    } catch (e, s) {
-      logMessage('setAssets failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('setAssets', {'assets': assets, 'resizeMode': resizeMode.value});
   }
 
   /// Pauses video playback.
@@ -126,12 +125,8 @@ final class VideoPlayerViewController {
   /// await controller.pause();
   /// ```
   Future<void> pause() async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('pause');
-    } catch (e, s) {
-      logMessage('pause failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('pause');
   }
 
   /// Starts or resumes video playback.
@@ -144,12 +139,8 @@ final class VideoPlayerViewController {
   /// await controller.play();
   /// ```
   Future<void> play() async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('play');
-    } catch (e, s) {
-      logMessage('play failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('play');
   }
 
   /// Mutes the video audio.
@@ -162,12 +153,8 @@ final class VideoPlayerViewController {
   /// await controller.mute();
   /// ```
   Future<void> mute() async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('mute');
-    } catch (e, s) {
-      logMessage('mute failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('mute');
   }
 
   /// Unmutes the video audio.
@@ -179,12 +166,8 @@ final class VideoPlayerViewController {
   /// await controller.unmute();
   /// ```
   Future<void> unmute() async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('unmute');
-    } catch (e, s) {
-      logMessage('unmute failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('unmute');
   }
 
   /// Gets the total duration of the currently loaded video.
@@ -203,14 +186,9 @@ final class VideoPlayerViewController {
   /// typically when player status changes to [PlayerStatus.ready].
   /// Use [onDurationReady] callback for automatic notification.
   Future<double> getDuration() async {
-    try {
-      _checkNotDisposed();
-      final result = await _channel.invokeMethod('getDuration');
-      return (result as double?) ?? 0.0;
-    } catch (e, s) {
-      logMessage('getDuration failed', error: e, stackTrace: s);
-    }
-    return 0;
+    _checkNotDisposed();
+    final result = await _channel.invokeMethod('getDuration');
+    return (result as double?) ?? 0.0;
   }
 
   /// Seeks to a specific position in the video.
@@ -234,12 +212,8 @@ final class VideoPlayerViewController {
   /// **Note:** Seeking may trigger buffering. Monitor [statusStream]
   /// for [PlayerStatus.buffering] and [PlayerStatus.ready] states.
   Future<void> seekTo({required double seconds}) async {
-    try {
-      _checkNotDisposed();
-      await _channel.invokeMethod('seekTo', {'seconds': seconds});
-    } catch (e, s) {
-      logMessage('seekTo failed', error: e, stackTrace: s);
-    }
+    _checkNotDisposed();
+    await _channel.invokeMethod('seekTo', {'seconds': seconds});
   }
 
   StreamController<double>? _positionController;

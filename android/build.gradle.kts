@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.plugin.video_player"
-version = "3.5.8"
+version = "3.6.0"
 
 android {
     namespace = "uz.plugin.video_player"
@@ -46,4 +46,7 @@ dependencies {
     // UI
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
+
+    // Unit tests (pure JVM)
+    testImplementation("junit:junit:4.13.2")
 }

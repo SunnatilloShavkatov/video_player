@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
 import uz.plugin.video_player.player.createRenderersFactory
 import uz.plugin.video_player.player.hlsMediaSourceFactory
+import uz.plugin.video_player.utils.UrlPolicy
 
 /**
  * Embedded (inline) player: owns the ExoPlayer, its view and position polling.
@@ -85,8 +86,9 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
 
     // MARK: - Loading
 
-    /** Remote or raw URI. HLS (".m3u8" / "hls" in the URL) sends [keyHeaders] with AES-128 key requests. */
+    /** HTTPS URL only (throws otherwise). HLS (".m3u8" / "hls" in the URL) sends [keyHeaders] with AES-128 key requests. */
     fun loadUrl(url: String, keyHeaders: Map<String, String>, resizeMode: Int) {
+        UrlPolicy.requireHttps(url)
         val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
         val mediaSource = if (isHls) {
             hlsMediaSourceFactory(DefaultDataSource.Factory(container.context), keyHeaders)

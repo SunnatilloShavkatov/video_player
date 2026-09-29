@@ -39,6 +39,17 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bash .claude/hooks/read-guard.sh",
+            "timeout": 5,
+            "statusMessage": "read-guard"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

@@ -203,7 +203,7 @@ class VideoPlayerPlatformView: NSView {
         }
 
         let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl) else {
+        guard !trimmedUrl.isEmpty, let remoteURL = URL(string: trimmedUrl), remoteURL.isSecureRemote else {
             return .failure(VideoSourceResolutionFailure(code: "INVALID_URL", message: "Invalid video URL: \(url)"))
         }
 

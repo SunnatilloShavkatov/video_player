@@ -98,4 +98,43 @@ void main() {
     await controller!.dispose();
     debugDefaultTargetPlatformOverride = null;
   });
+  testWidgets('controller commands surface errors instead of swallowing them', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+    int? viewId;
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (call) async {
+      if (call.method == 'create') {
+        viewId = (call.arguments as Map<Object?, Object?>)['id']! as int;
+      }
+      return null;
+    });
+
+    VideoPlayerViewController? controller;
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: VideoPlayerView(url: 'https://example.com/video.mp4', onVideoViewCreated: (c) => controller = c),
+      ),
+    );
+    await tester.pump();
+
+    final channel = MethodChannel('plugins.video/video_player_view_$viewId');
+    var nativeCalls = 0;
+    messenger.setMockMethodCallHandler(channel, (call) {
+      nativeCalls++;
+      return Future<ByteData?>.error(PlatformException(code: 'PLAY_ERROR', message: 'boom'));
+    });
+
+    await expectLater(controller!.play(), throwsA(isA<PlatformException>()));
+    await expectLater(controller!.getDuration(), throwsA(isA<PlatformException>()));
+
+    nativeCalls = 0;
+    await expectLater(controller!.setUrl(url: 'http://example.com/video.mp4'), throwsArgumentError);
+    await expectLater(controller!.setUrl(url: 'not-a-url'), throwsArgumentError);
+    expect(nativeCalls, 0, reason: 'invalid URLs must be rejected before reaching native');
+
+    await controller!.dispose();
+    await expectLater(controller!.play(), throwsStateError);
+    debugDefaultTargetPlatformOverride = null;
+  });
 }
