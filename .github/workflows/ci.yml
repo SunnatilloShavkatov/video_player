@@ -38,6 +38,9 @@ jobs:
           cache: true
       - run: flutter pub get
         working-directory: example
+      # gradlew is gitignored (Flutter generates it); --config-only injects the wrapper without building.
+      - run: flutter build apk --config-only
+        working-directory: example
       # Compiles the plugin sources and runs android/src/test (pure JVM tests).
       - run: ./gradlew :video_player:testDebugUnitTest
         working-directory: example/android
