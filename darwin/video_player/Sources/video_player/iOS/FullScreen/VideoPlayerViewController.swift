@@ -21,6 +21,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var hasNotifiedDismissal = false
     private var isClosingPlayer = false
     private var dismissalCompletionHandlers: [() -> Void] = []
+    private var supportedOrientations: UIInterfaceOrientationMask = .allButUpsideDown
 
     ///
     weak var delegate: VideoPlayerDelegate?
@@ -71,6 +72,18 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    /// Pins the player to the presenter's current orientation until it has appeared. Otherwise a
+    /// phone held in a different physical orientation makes UIKit force a window rotation in the
+    /// middle of the present transition, which has crashed inside UIKit's safe-area update.
+    func pinOrientationForPresentation(to orientation: UIInterfaceOrientation) {
+        guard UIDevice.current.userInterfaceIdiom != .pad, orientation != .unknown else { return }
+        supportedOrientations = UIInterfaceOrientationMask(rawValue: 1 << orientation.rawValue)
+    }
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        supportedOrientations
     }
 
     func setupPictureInPicture() {
@@ -181,6 +194,17 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         setNeedsUpdateOfHomeIndicatorAutoHidden()
+        releaseOrientationPin()
+    }
+
+    private func releaseOrientationPin() {
+        guard supportedOrientations != .allButUpsideDown else { return }
+        supportedOrientations = .allButUpsideDown
+        if #available(iOS 16.0, *) {
+            setNeedsUpdateOfSupportedInterfaceOrientations()
+        } else {
+            UIViewController.attemptRotationToDeviceOrientation()
+        }
     }
 
     override func viewDidDisappear(_ animated: Bool) {

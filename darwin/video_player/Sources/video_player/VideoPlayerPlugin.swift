@@ -243,6 +243,9 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
             activePlaybackSession = session
             activePlayerViewController = vc
             bindPlaybackLifecycle(to: vc, session: session)
+            if let orientation = presenter.view.window?.windowScene?.interfaceOrientation {
+                vc.pinOrientationForPresentation(to: orientation)
+            }
             presenter.present(vc, animated: true, completion: nil)
             return
         default:

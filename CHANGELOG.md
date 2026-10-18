@@ -1,3 +1,13 @@
+## [3.6.1] - 2026-10-18
+
+### Fixed
+- Fixed iOS `VideoPlayerViewController` presentation crash by temporarily pinning orientation during modal present transition.
+- Fixed macOS AppInfo `PRODUCT_MODULE_NAME` configuration to prevent import shadowing in example app.
+
+### Changed
+- Updated `material_ui` dependency in example app.
+- Added `flutter build apk` config-only verification step to CI workflow.
+
 ## [3.6.0] - 2026-09-29
 
 ### Migration
