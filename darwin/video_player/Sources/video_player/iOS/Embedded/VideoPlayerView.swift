@@ -50,6 +50,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     deinit {
         // Properly cleanup video view controller and resources
         self._methodChannel.setMethodCallHandler(nil)
+        // Before detaching: removeFromSuperview runs viewWillDisappear, whose pause emits events.
+        videoViewController.closeChannel()
         detachVideoViewControllerIfNeeded()
         NotificationCenter.default.removeObserver(self)
     }
@@ -179,7 +181,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
 
     private func detachVideoViewControllerIfNeeded() {
         guard isAttachedToParent else {
-            videoViewController.view.removeFromSuperview()
+            // viewIfLoaded: touching .view here would load it and start playback mid-teardown.
+            videoViewController.viewIfLoaded?.removeFromSuperview()
             return
         }
 

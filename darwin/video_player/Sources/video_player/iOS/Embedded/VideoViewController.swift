@@ -43,6 +43,8 @@ class VideoViewController: UIViewController {
     private let disposalQueue = DispatchQueue(label: "com.video.disposal")
     // Set in viewWillDisappear when the video was playing; consumed in viewWillAppear.
     private var resumeOnAppear = false
+    // Set by closeChannel(); main thread only, like every send().
+    private var isChannelClosed = false
 
     init(
         registrar: FlutterPluginRegistrar? = nil,
@@ -189,8 +191,16 @@ class VideoViewController: UIViewController {
     }
 
     private func send(_ method: String, _ arguments: Any?) {
-        guard !isDisposed else { return }
+        guard !isDisposed, !isChannelClosed else { return }
         methodChannel.invokeMethod(method, arguments: arguments)
+    }
+
+    /// Stops all channel traffic before the platform view is torn down. On app termination
+    /// FlutterEngine.destroyContext releases platform views after the shell is gone, so any
+    /// invokeMethod from then on (e.g. the "paused" KVO fired by viewWillDisappear) asserts.
+    func closeChannel() {
+        isChannelClosed = true
+        observer.stop()
     }
 
     func getDuration() -> Double {
@@ -229,7 +239,7 @@ class VideoViewController: UIViewController {
 
     private func sendError(_ message: String) {
         debugPrint("[VideoViewController] Error: \(message)")
-        methodChannel.invokeMethod("playerStatus", arguments: "error")
+        send("playerStatus", "error")
     }
 
     // MARK: - Lifecycle

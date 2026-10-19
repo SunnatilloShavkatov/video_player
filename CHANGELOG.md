@@ -1,3 +1,9 @@
+## [3.6.2] - 2026-10-19
+
+### Fixed
+- Fixed iOS `NSInternalInconsistencyException` ("Sending a message before the FlutterEngine has been run") on app termination: the embedded `VideoPlayerView` now closes its method channel before detaching, so the `paused` event fired by `viewWillDisappear` no longer reaches an already destroyed engine.
+- Fixed iOS embedded player loading its view (and starting playback) during teardown when it was never attached to a host view controller.
+
 ## [3.6.1] - 2026-10-18
 
 ### Fixed
