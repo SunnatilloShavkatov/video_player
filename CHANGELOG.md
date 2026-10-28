@@ -1,3 +1,18 @@
+## [3.7.0] - 2026-10-28
+
+### Migration
+Subtitle URLs must now be HTTPS, like the video URL. `VideoPlayer.playVideo` throws an `ArgumentError` (named `playerConfig.subtitles[i].url`) for an `http://`, `file://` or malformed subtitle URL instead of passing it to native.
+
+### Fixed
+- Fixed full-screen playback that native cannot play (iOS `AVPlayerItem` status `.failed`, e.g. a 404 or a rejected HLS key) returning `PlaybackCompleted` with `[0, 0]`. It now closes the player and returns `PlaybackFailed` (`PLAYBACK_FAILED`).
+- Fixed iOS full-screen reporting a duration of `0` when closed from Dart (`close`) or by swipe-to-dismiss; only the back button reported the real duration.
+- Fixed Android `playVideo` futures that never completed when the host activity was recreated by a configuration change, when it detached, or when `playerConfigJsonString` was missing. A detach now completes the future as `PlaybackCancelled`, and a missing config returns `INVALID_CONFIG`.
+- Fixed `PlaybackCompleted` turning into `PlaybackFailed` when native returns position/duration as doubles, and `VideoPlayerViewController.getDuration`, `positionStream` and `onDurationReady` throwing when native sends whole numbers as ints. A missing duration now defaults to `0` (was `1`).
+- Fixed iPad crash when tapping Share in the iOS full-screen player (`UIActivityViewController` popover had no source view).
+
+### Security
+- Subtitle sidecars are only fetched over HTTPS on iOS and Android as well; non-HTTPS tracks are skipped. iOS no longer parses a non-2xx response as WebVTT.
+
 ## [3.6.2] - 2026-10-19
 
 ### Fixed

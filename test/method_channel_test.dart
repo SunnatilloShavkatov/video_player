@@ -44,6 +44,21 @@ void main() {
       expect(result.durationSeconds, 300);
     });
 
+    test('playVideo accepts doubles from native and defaults missing values to 0', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel(channelName),
+        (MethodCall call) async => call.method == 'playVideo' ? [12.0, null] : null,
+      );
+
+      final result = await methodChannel.playVideo(
+        playerConfigJsonString: '{"videoUrl": "https://example.com/video.m3u8"}',
+      );
+
+      expect(result, isA<PlaybackCompleted>());
+      expect((result as PlaybackCompleted).lastPositionSeconds, 12);
+      expect(result.durationSeconds, 0);
+    });
+
     test('playVideo handles null result', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
         const MethodChannel(channelName),

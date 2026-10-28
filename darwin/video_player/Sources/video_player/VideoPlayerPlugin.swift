@@ -152,6 +152,13 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
             }
         }
 
+        viewController.onPlaybackFailed = { [weak self, weak viewController] code, message in
+            session.resolve(error: FlutterError(code: code, message: message, details: nil))
+            if self?.activePlayerViewController === viewController {
+                self?.activePlaybackSession = nil
+            }
+        }
+
         viewController.onDidDismiss = { [weak self, weak viewController] in
             if self?.activePlayerViewController === viewController {
                 self?.activePlayerViewController = nil

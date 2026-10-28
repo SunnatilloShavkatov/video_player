@@ -26,6 +26,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     ///
     weak var delegate: VideoPlayerDelegate?
     var onPlaybackFinished: (([Int]) -> Void)?
+    var onPlaybackFailed: ((String, String) -> Void)?
     var onDidDismiss: (() -> Void)?
     private var url: String?
     private var screenProtectorKit: ScreenProtectorKit?
@@ -250,6 +251,13 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
 
+    func playbackFailed(message: String) {
+        guard !hasReportedPlaybackResult else { return }
+        hasReportedPlaybackResult = true
+        onPlaybackFailed?("PLAYBACK_FAILED", message)
+        requestClose()
+    }
+
     func close(duration: [Int]) {
         requestClose(duration: duration) { [weak self] in
             self?.dismiss(animated: true, completion: nil)
@@ -261,6 +269,11 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
             return
         }
         let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+            popover.permittedArrowDirections = []
+        }
         present(activityVC, animated: true)
     }
 

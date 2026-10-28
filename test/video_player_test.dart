@@ -46,6 +46,22 @@ void main() {
       );
     });
 
+    test('throws exception for non-HTTPS subtitle URL', () {
+      expect(
+        () => VideoPlayer.instance.playVideo(
+          playerConfig: PlayerConfiguration.remote(
+            videoUrl: 'https://example.com/video.m3u8',
+            title: 'Test',
+            subtitles: const [
+              SubtitleTrack(id: 'en', label: 'English', lang: 'en', url: 'https://example.com/en.vtt'),
+              SubtitleTrack(id: 'ru', label: 'Russian', lang: 'ru', url: 'http://example.com/ru.vtt'),
+            ],
+          ),
+        ),
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'playerConfig.subtitles[1].url')),
+      );
+    });
+
     test('throws exception for file URL', () {
       expect(
         () => VideoPlayer.instance.playVideo(

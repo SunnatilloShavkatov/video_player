@@ -188,7 +188,7 @@ final class VideoPlayerViewController {
   Future<double> getDuration() async {
     _checkNotDisposed();
     final result = await _channel.invokeMethod('getDuration');
-    return (result as double?) ?? 0.0;
+    return (result as num?)?.toDouble() ?? 0.0;
   }
 
   /// Seeks to a specific position in the video.
@@ -326,12 +326,12 @@ final class VideoPlayerViewController {
 
       switch (call.method) {
         case 'positionUpdate':
-          final position = (call.arguments as double?) ?? 0.0;
+          final position = (call.arguments as num?)?.toDouble() ?? 0.0;
           if (!_isDisposed) {
             _positionController?.add(position);
           }
         case 'durationReady':
-          final duration = (call.arguments as double?) ?? 0.0;
+          final duration = (call.arguments as num?)?.toDouble() ?? 0.0;
           if (!_isDisposed && duration > 0 && _durationReadyCallback != null) {
             _durationReadyCallback!(duration);
           }

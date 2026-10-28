@@ -46,32 +46,30 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 result.error("PLAYER_ALREADY_ACTIVE", "A video player is already active", null)
                 return
             }
-            if (call.hasArgument("playerConfigJsonString")) {
-                val playerConfigJsonString = call.argument("playerConfigJsonString") as String?
-                if (playerConfigJsonString == null || playerConfigJsonString.isEmpty()) {
-                    result.error("INVALID_CONFIG", "playerConfigJsonString is null or empty", null)
-                    return
-                }
-                val playerConfiguration = try {
-                    PlayerConfiguration.fromJson(playerConfigJsonString)
-                } catch (e: JSONException) {
-                    result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
-                    return
-                } catch (e: Exception) {
-                    result.error("JSON_ERROR", "Failed to parse player configuration: ${e.message}", null)
-                    return
-                }
-                val currentActivity = activity
-                if (currentActivity == null) {
-                    result.error("NO_ACTIVITY", "Activity is null", null)
-                    return
-                }
-                val intent =
-                    Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
-                intent.putExtra(extraArgument, playerConfiguration)
-                currentActivity.startActivityForResult(intent, playerActivity)
-                resultMethod = result
+            val playerConfigJsonString = call.argument<String>("playerConfigJsonString")
+            if (playerConfigJsonString.isNullOrEmpty()) {
+                result.error("INVALID_CONFIG", "playerConfigJsonString is missing or empty", null)
+                return
             }
+            val playerConfiguration = try {
+                PlayerConfiguration.fromJson(playerConfigJsonString)
+            } catch (e: JSONException) {
+                result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
+                return
+            } catch (e: Exception) {
+                result.error("JSON_ERROR", "Failed to parse player configuration: ${e.message}", null)
+                return
+            }
+            val currentActivity = activity
+            if (currentActivity == null) {
+                result.error("NO_ACTIVITY", "Activity is null", null)
+                return
+            }
+            val intent =
+                Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
+            intent.putExtra(extraArgument, playerConfiguration)
+            currentActivity.startActivityForResult(intent, playerActivity)
+            resultMethod = result
         } else if (call.method == "close") {
             VideoPlayerActivity.closeCurrentIfActive()
             result.success(null)
@@ -92,7 +90,7 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        resultMethod = null
+        // Keep resultMethod: the player's result is delivered to the recreated activity.
         cleanupActivityBinding()
     }
 
@@ -104,6 +102,8 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivity() {
+        // No activity will deliver the player's result; complete the Dart future as cancelled.
+        resultMethod?.success(null)
         resultMethod = null
         cleanupActivityBinding()
     }

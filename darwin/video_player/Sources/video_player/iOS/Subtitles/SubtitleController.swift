@@ -56,13 +56,14 @@ final class SubtitleController {
         cues = []
         overlayView.setText(nil)
 
-        guard let track, let url = URL(string: track.url) else {
+        guard let track, let url = URL(string: track.url), url.isSecureRemote else {
             stopTimeObserver()
             return
         }
 
-        downloadTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+        downloadTask = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             guard let self, let data, error == nil,
+                  let status = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(status),
                   let content = String(data: data, encoding: .utf8) else {
                 return
             }

@@ -98,6 +98,54 @@ void main() {
     await controller!.dispose();
     debugDefaultTargetPlatformOverride = null;
   });
+  testWidgets('controller accepts whole-number durations and positions sent as int', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+    int? viewId;
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (call) async {
+      if (call.method == 'create') {
+        viewId = (call.arguments as Map<Object?, Object?>)['id']! as int;
+      }
+      return null;
+    });
+
+    VideoPlayerViewController? controller;
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: VideoPlayerView(url: 'https://example.com/video.mp4', onVideoViewCreated: (c) => controller = c),
+      ),
+    );
+    await tester.pump();
+
+    final channel = MethodChannel('plugins.video/video_player_view_$viewId');
+    messenger.setMockMethodCallHandler(channel, (call) async => call.method == 'getDuration' ? 300 : null);
+    expect(await controller!.getDuration(), 300.0);
+
+    double? readyDuration;
+    controller!.onDurationReady((d) => readyDuration = d);
+    final positions = <double>[];
+    controller!.positionStream.listen(positions.add);
+
+    Future<void> sendFromNative(String method, Object? args) => messenger.handlePlatformMessage(
+      channel.name,
+      const StandardMethodCodec().encodeMethodCall(MethodCall(method, args)),
+      (_) {},
+    );
+    await sendFromNative('durationReady', 120);
+    await sendFromNative('positionUpdate', 7);
+    await tester.pump();
+
+    expect(readyDuration, 120.0);
+    expect(positions, [7.0]);
+
+    messenger.setMockMethodCallHandler(channel, null);
+    // dispose() closes positionStream, which ends `sub`. Cancelling first would hang
+    // close() under fake async.
+    await controller!.dispose();
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('controller commands surface errors instead of swallowing them', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 

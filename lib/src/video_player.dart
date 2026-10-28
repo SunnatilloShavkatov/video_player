@@ -71,7 +71,7 @@ final class VideoPlayer {
   /// - [PlaybackFailed] when playback encounters an error
   ///
   /// **Throws:**
-  /// - [ArgumentError] if the video URL is not a valid HTTPS URL.
+  /// - [ArgumentError] if the video URL or any subtitle URL is not a valid HTTPS URL.
   ///
   /// **Platform-Specific Behavior:**
   /// - **iOS**: Uses AVPlayer with native controls, supports Picture-in-Picture
@@ -107,6 +107,15 @@ final class VideoPlayer {
         'playerConfig.videoUrl',
         'Invalid URL format. Must be HTTPS URL',
       );
+    }
+    for (final (index, subtitle) in playerConfig.subtitles.indexed) {
+      if (UrlValidator.instance.isNotValidHttpsUrl(subtitle.url)) {
+        throw ArgumentError.value(
+          subtitle.url,
+          'playerConfig.subtitles[$index].url',
+          'Invalid URL format. Must be HTTPS URL',
+        );
+      }
     }
     final String jsonStringConfig = _encodeConfig(playerConfig.toMap());
     return VideoPlayerPlatform.instance.playVideo(playerConfigJsonString: jsonStringConfig);

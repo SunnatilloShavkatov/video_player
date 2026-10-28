@@ -34,8 +34,8 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
         return PlaybackFailed(error: 'Invalid platform response: expected 2 elements, got ${result.length}');
       }
 
-      final lastPositionSeconds = (result[0] ?? 0) as int;
-      final durationSeconds = (result[1] ?? 1) as int;
+      final lastPositionSeconds = (result[0] as num?)?.toInt() ?? 0;
+      final durationSeconds = (result[1] as num?)?.toInt() ?? 0;
 
       // Return as-is (platform already provides seconds)
       return PlaybackCompleted(lastPositionSeconds: lastPositionSeconds, durationSeconds: durationSeconds);

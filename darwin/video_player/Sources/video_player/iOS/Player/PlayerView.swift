@@ -20,6 +20,7 @@ import UIKit
 
 protocol PlayerViewDelegate: NSObjectProtocol {
     func close(duration: [Int])
+    func playbackFailed(message: String)
     func settingsPressed()
     func changeOrientation()
     func togglePictureInPictureMode()
@@ -338,7 +339,7 @@ extension PlayerView: PlayerControllerDelegate {
 
 extension PlayerView: PlayerObserverDelegate {
     func observerManager(_ manager: PlayerObserverManager, didUpdateDuration duration: TimeInterval) {
-        controlsCoordinator?.updateDuration(seconds: duration)
+        playerController?.updateDuration(duration) // label updates via PlayerControllerDelegate
         overlay.timeSlider.isEnabled = true
     }
 
@@ -346,9 +347,10 @@ extension PlayerView: PlayerObserverDelegate {
         if status == .readyToPlay {
             playerController?.handlePlayerReady()
         } else if status == .failed {
+            // A failed AVPlayerItem cannot recover; end the session so Dart gets PlaybackFailed.
             DispatchQueue.main.async { [weak self] in
                 self?.controlsCoordinator?.hideLoadingIndicator()
-                debugPrint("❌ AVPlayerItem Status Failed: \(self?.player.currentItem?.error?.localizedDescription ?? "Unknown error")")
+                self?.delegate?.playbackFailed(message: self?.player.currentItem?.error?.localizedDescription ?? "Unknown error")
             }
         }
     }

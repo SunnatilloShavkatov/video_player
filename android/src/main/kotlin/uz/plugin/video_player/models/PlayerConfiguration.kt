@@ -1,6 +1,7 @@
 package uz.plugin.video_player.models
 
 import org.json.JSONObject
+import uz.plugin.video_player.utils.UrlPolicy
 import java.io.Serializable
 
 data class PlayerConfiguration(
@@ -29,7 +30,9 @@ data class PlayerConfiguration(
             if (subtitlesArray != null) {
                 for (i in 0 until subtitlesArray.length()) {
                     val subObj = subtitlesArray.optJSONObject(i) ?: continue
-                    subtitlesList.add(SubtitleTrack.fromJson(subObj))
+                    val track = SubtitleTrack.fromJson(subObj)
+                    // HTTPS-only contract: Dart rejects these too; never fetch a sidecar in cleartext.
+                    if (UrlPolicy.isHttps(track.url)) subtitlesList.add(track)
                 }
             }
 
