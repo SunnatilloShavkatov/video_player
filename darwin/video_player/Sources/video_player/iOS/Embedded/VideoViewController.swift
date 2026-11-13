@@ -21,6 +21,7 @@ class VideoViewController: UIViewController {
     var url: String = ""
     /// Headers sent only with HLS AES-128 key requests (see HlsKeyResourceLoader).
     var keyRequestHeaders: [String: String] = [:]
+    var keyRequestHosts: [String] = []
     var gravity: AVLayerVideoGravity
 
     // ✅ FIXED: Reusable player, not lazy (prevents multiple instances)
@@ -52,6 +53,7 @@ class VideoViewController: UIViewController {
         assets: String,
         url: String,
         keyRequestHeaders: [String: String] = [:],
+        keyRequestHosts: [String] = [],
         gravity: AVLayerVideoGravity
     ) {
         self.registrar = registrar
@@ -59,6 +61,7 @@ class VideoViewController: UIViewController {
         self.assets = assets
         self.url = url
         self.keyRequestHeaders = keyRequestHeaders
+        self.keyRequestHosts = keyRequestHosts
         self.gravity = gravity
         super.init(nibName: nil, bundle: nil)
 
@@ -146,7 +149,7 @@ class VideoViewController: UIViewController {
             playerLayer?.videoGravity = gravity
         }
 
-        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders, keyHosts: keyRequestHosts)
         keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
 

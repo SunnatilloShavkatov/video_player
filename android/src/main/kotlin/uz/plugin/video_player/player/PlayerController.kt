@@ -57,17 +57,19 @@ class PlayerController(
      * @param url Video URL (HLS stream)
      * @param lastPositionSeconds Starting position in seconds
      * @param keyRequestHeaders Headers added only to HLS AES-128 key requests
+     * @param keyRequestHosts Extra hosts (besides the playlist host) allowed to receive them
      */
     fun initialize(
         url: String,
         lastPositionSeconds: Long,
         subtitles: List<SubtitleTrack> = emptyList(),
         keyRequestHeaders: Map<String, String> = emptyMap(),
+        keyRequestHosts: Set<String> = emptySet(),
     ) {
         require(!UrlPolicy.isInsecureHttp(url)) { "Only HTTPS URLs are allowed" }
         intent.onInitialized(remote = UrlPolicy.isHttps(url))
 
-        val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders)
+        val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders, keyRequestHosts)
 
         // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
@@ -372,6 +374,7 @@ class PlayerController(
         url: String,
         subtitles: List<SubtitleTrack> = emptyList(),
         keyRequestHeaders: Map<String, String> = emptyMap(),
+        keyRequestHosts: Set<String> = emptySet(),
     ): MediaSource {
         val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
 
@@ -390,10 +393,10 @@ class PlayerController(
                 .build()
         }
 
-        val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+        val isHls = UrlPolicy.isHls(url)
 
         if (isHls && keyRequestHeaders.isNotEmpty()) {
-            return createKeyAuthorizedHlsSource(uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders)
+            return createKeyAuthorizedHlsSource(url, uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders, keyRequestHosts)
         }
 
         val mediaItem = MediaItem.Builder()
@@ -438,12 +441,14 @@ class PlayerController(
      * application/x-media3-cues samples.
      */
     private fun createKeyAuthorizedHlsSource(
+        url: String,
         uri: android.net.Uri,
         dataSourceFactory: DataSource.Factory,
         subtitleConfigs: List<MediaItem.SubtitleConfiguration>,
         keyRequestHeaders: Map<String, String>,
+        keyRequestHosts: Set<String>,
     ): MediaSource {
-        val hlsSource = hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders)
+        val hlsSource = hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders, url, keyRequestHosts)
             .createMediaSource(
                 MediaItem.Builder()
                     .setUri(uri)

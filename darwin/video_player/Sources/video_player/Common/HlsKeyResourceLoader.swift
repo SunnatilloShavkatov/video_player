@@ -23,14 +23,16 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     private static let errorDomain = "uz.plugin.video_player.HlsKeyResourceLoader"
 
     private let keyHeaders: [String: String]
+    private let allowedKeyHosts: Set<String>
     private let session = URLSession(configuration: .default)
     private let queue = DispatchQueue(label: "uz.plugin.video_player.hls-key-loader")
     // Accessed on `queue` only.
     private var keyCache: [URL: Data] = [:]
     private var tasks: [AVAssetResourceLoadingRequest: URLSessionDataTask] = [:]
 
-    private init(keyHeaders: [String: String]) {
+    private init(keyHeaders: [String: String], allowedKeyHosts: Set<String>) {
         self.keyHeaders = keyHeaders
+        self.allowedKeyHosts = allowedKeyHosts
     }
 
     deinit {
@@ -38,13 +40,20 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     /// Returns a plain asset when there are no headers or the URL is not an https HLS playlist.
-    static func makeAsset(url: URL, keyHeaders: [String: String]) -> (asset: AVURLAsset, loader: HlsKeyResourceLoader?) {
+    /// `keyHosts` lists hosts besides the playlist's own that may receive `keyHeaders`.
+    static func makeAsset(
+        url: URL,
+        keyHeaders: [String: String],
+        keyHosts: [String] = []
+    ) -> (asset: AVURLAsset, loader: HlsKeyResourceLoader?) {
         guard !keyHeaders.isEmpty,
               url.absoluteString.lowercased().contains(".m3u8"),
               let proxiedURL = replacingScheme(of: url, from: "https", to: playlistScheme) else {
             return (AVURLAsset(url: url), nil)
         }
-        let loader = HlsKeyResourceLoader(keyHeaders: keyHeaders)
+        var allowedHosts = Set(keyHosts.map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
+        if let playlistHost = url.host?.lowercased() { allowedHosts.insert(playlistHost) }
+        let loader = HlsKeyResourceLoader(keyHeaders: keyHeaders, allowedKeyHosts: allowedHosts)
         let asset = AVURLAsset(url: proxiedURL)
         asset.resourceLoader.setDelegate(loader, queue: loader.queue)
         return (asset, loader)
@@ -87,6 +96,14 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     private func loadKey(from url: URL, for loadingRequest: AVAssetResourceLoadingRequest) {
+        // The key URI comes from the playlist: never send the headers to an unlisted host.
+        guard let host = url.host?.lowercased(), allowedKeyHosts.contains(host) else {
+            loadingRequest.finishLoading(with: Self.error(
+                code: -1,
+                "HLS key request blocked: host is not the playlist host or in keyRequestHosts"
+            ))
+            return
+        }
         if let cached = keyCache[url] {
             loadingRequest.dataRequest?.respond(with: cached)
             loadingRequest.finishLoading()

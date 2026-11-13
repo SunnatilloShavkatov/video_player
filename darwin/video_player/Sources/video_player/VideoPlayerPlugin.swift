@@ -23,40 +23,19 @@ private final class PlaybackSession {
     }
 
     func resolve(with payload: [Int]) {
-        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
-            guard !isResolved else { return nil }
-            isResolved = true
-            return responder
-        }
-
-        guard let responderToCall else { return }
-        if Thread.isMainThread {
-            responderToCall(payload)
-        } else {
-            DispatchQueue.main.async {
-                responderToCall(payload)
-            }
-        }
+        complete(payload)
     }
 
     func resolve(error: FlutterError) {
-        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
-            guard !isResolved else { return nil }
-            isResolved = true
-            return responder
-        }
-
-        guard let responderToCall else { return }
-        if Thread.isMainThread {
-            responderToCall(error)
-        } else {
-            DispatchQueue.main.async {
-                responderToCall(error)
-            }
-        }
+        complete(error)
     }
 
     func cancel() {
+        complete(nil)
+    }
+
+    /// Claims the single resolution, then delivers `value` to the responder on the main thread.
+    private func complete(_ value: Any?) {
         let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
             guard !isResolved else { return nil }
             isResolved = true
@@ -65,10 +44,10 @@ private final class PlaybackSession {
 
         guard let responderToCall else { return }
         if Thread.isMainThread {
-            responderToCall(nil)
+            responderToCall(value)
         } else {
             DispatchQueue.main.async {
-                responderToCall(nil)
+                responderToCall(value)
             }
         }
     }

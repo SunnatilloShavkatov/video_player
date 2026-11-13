@@ -115,8 +115,9 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         activity = null
     }
 
+    // Not consumed: other plugins (deep links, notifications) must still see new intents.
     override fun onNewIntent(intent: Intent): Boolean {
-        return true
+        return false
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
@@ -133,7 +134,8 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             }
             return true
         }
-        return true
+        // Not our request code: leave it for other plugins.
+        return false
     }
 
 }

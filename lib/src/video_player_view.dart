@@ -24,6 +24,7 @@ class VideoPlayerView extends StatelessWidget {
     required this.onVideoViewCreated,
     this.resizeMode = ResizeMode.fit,
     this.keyRequestHeaders = const {},
+    this.keyRequestHosts = const [],
   });
 
   /// Platform view type name for video player
@@ -38,10 +39,15 @@ class VideoPlayerView extends StatelessWidget {
   /// segment requests never carry them.
   final Map<String, String> keyRequestHeaders;
 
+  /// Extra hosts, besides the playlist's own host, that may receive
+  /// [keyRequestHeaders]. See `PlayerConfiguration.keyRequestHosts`.
+  final List<String> keyRequestHosts;
+
   Map<String, dynamic> get _creationParams => <String, dynamic>{
     'url': url,
     'resizeMode': resizeMode.value,
     'keyRequestHeaders': keyRequestHeaders,
+    'keyRequestHosts': keyRequestHosts,
   };
 
   @override

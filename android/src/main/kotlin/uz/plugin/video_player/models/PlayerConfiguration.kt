@@ -20,6 +20,7 @@ data class PlayerConfiguration(
     val subtitleSizeText: String = "Subtitle Size",
     val subtitleOffText: String = "Off",
     val keyRequestHeaders: Map<String, String>? = emptyMap(),
+    val keyRequestHosts: List<String> = emptyList(),
 ) : Serializable {
     companion object {
         fun fromJson(jsonString: String): PlayerConfiguration {
@@ -46,6 +47,14 @@ data class PlayerConfiguration(
                 }
             }
 
+            val hostsList = mutableListOf<String>()
+            val hostsArray = json.optJSONArray("keyRequestHosts")
+            if (hostsArray != null) {
+                for (i in 0 until hostsArray.length()) {
+                    hostsArray.optString(i, "").takeIf { it.isNotBlank() }?.let(hostsList::add)
+                }
+            }
+
             return PlayerConfiguration(
                 title = json.optString("title", ""),
                 videoUrl = json.optString("videoUrl", ""),
@@ -61,7 +70,8 @@ data class PlayerConfiguration(
                 subtitleText = json.optString("subtitleText", "Subtitles"),
                 subtitleSizeText = json.optString("subtitleSizeText", "Subtitle Size"),
                 subtitleOffText = json.optString("subtitleOffText", "Off"),
-                keyRequestHeaders = headersMap
+                keyRequestHeaders = headersMap,
+                keyRequestHosts = hostsList,
             )
         }
     }

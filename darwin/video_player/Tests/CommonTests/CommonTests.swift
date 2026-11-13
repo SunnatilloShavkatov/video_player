@@ -52,6 +52,7 @@ final class PlayerConfigurationTests: XCTestCase {
         XCTAssertEqual(config?.subtitleOffText, "Off")
         XCTAssertEqual(config?.isScreenshotEnabled, false)
         XCTAssertEqual(config?.keyRequestHeaders, [:])
+        XCTAssertEqual(config?.keyRequestHosts, [])
     }
 
     func testParsesSubtitlesAndDropsInvalidOnes() {

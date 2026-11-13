@@ -190,7 +190,8 @@ class PlayerView: UIView {
     private func makeAsset(url: URL) -> AVURLAsset {
         let (asset, loader) = HlsKeyResourceLoader.makeAsset(
             url: url,
-            keyHeaders: playerConfiguration?.keyRequestHeaders ?? [:]
+            keyHeaders: playerConfiguration?.keyRequestHeaders ?? [:],
+            keyHosts: playerConfiguration?.keyRequestHosts ?? []
         )
         keyLoader = loader
         return asset

@@ -65,6 +65,8 @@ final class VideoPlayerViewController {
   /// - [resizeMode]: How the new video should fit in the view (default: [ResizeMode.fit])
   /// - [keyRequestHeaders]: Headers sent only with HLS AES-128 key requests
   ///   (default: none). See [VideoPlayerView.keyRequestHeaders].
+  /// - [keyRequestHosts]: Extra hosts allowed to receive [keyRequestHeaders]
+  ///   (default: none). See [VideoPlayerView.keyRequestHosts].
   ///
   /// **Example:**
   /// ```
@@ -79,6 +81,7 @@ final class VideoPlayerViewController {
     required String url,
     ResizeMode resizeMode = ResizeMode.fit,
     Map<String, String> keyRequestHeaders = const {},
+    List<String> keyRequestHosts = const [],
   }) async {
     _checkNotDisposed();
     if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
@@ -88,19 +91,20 @@ final class VideoPlayerViewController {
       'url': url,
       'resizeMode': resizeMode.value,
       'keyRequestHeaders': keyRequestHeaders,
+      'keyRequestHosts': keyRequestHosts,
     });
   }
 
   /// Loads and plays a video from Flutter assets.
   ///
   /// **Parameters:**
-  /// - [assets]: Asset path relative to `assets/` directory (required)
+  /// - [assets]: Asset path exactly as declared in `pubspec.yaml`, e.g. `assets/videos/intro.mp4` (required)
   /// - [resizeMode]: How the video should fit in the view (default: [ResizeMode.fit])
   ///
   /// **Example:**
   /// ```
   /// await controller.setAssets(
-  ///   assets: 'videos/intro.mp4',
+  ///   assets: 'assets/videos/intro.mp4',
   ///   resizeMode: ResizeMode.fit,
   /// );
   /// ```

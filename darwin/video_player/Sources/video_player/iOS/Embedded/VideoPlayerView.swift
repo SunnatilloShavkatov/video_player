@@ -32,7 +32,8 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         let sourceType: String? = args?["resizeMode"] as? String
         let gravity = videoGravity(s: sourceType ?? "")
         let keyRequestHeaders = args?["keyRequestHeaders"] as? [String: String] ?? [:]
-        let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", keyRequestHeaders: keyRequestHeaders, gravity: gravity)
+        let keyRequestHosts = (args?["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
+        let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", keyRequestHeaders: keyRequestHeaders, keyRequestHosts: keyRequestHosts, gravity: gravity)
         self.videoViewController = viewController
         
         super.init()
@@ -88,6 +89,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
                 self.videoViewController.assets = ""
                 self.videoViewController.url = path
                 self.videoViewController.keyRequestHeaders = args["keyRequestHeaders"] as? [String: String] ?? [:]
+                self.videoViewController.keyRequestHosts = (args["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
                 if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
                     result(error)
                 } else {
@@ -111,6 +113,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
                 self.videoViewController.url = ""
                 self.videoViewController.assets = path
                 self.videoViewController.keyRequestHeaders = [:]
+                self.videoViewController.keyRequestHosts = []
                 if let error = self.videoViewController.playVideo(gravity: videoGravity(s: sourceType)) {
                     result(error)
                 } else {

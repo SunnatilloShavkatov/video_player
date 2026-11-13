@@ -1,3 +1,19 @@
+## [3.8.0] - 2026-11-13
+
+### Migration
+Minimum versions are now Dart `>=3.14.0` and Flutter `>=3.50.0`; the example app uses AGP 9.3.1, Gradle 9.5.0 and Kotlin 2.4.20.
+
+`keyRequestHeaders` are now sent only to the playlist's own host. If your HLS key endpoint is on a different host, add it to the new `keyRequestHosts` (`PlayerConfiguration.remote`, `VideoPlayerView`, `setUrl`); otherwise the key request fails.
+
+### Security
+- **Android / iOS / macOS:** HLS key requests carrying `keyRequestHeaders` are limited to the playlist host plus `keyRequestHosts`; Android additionally rejects non-HTTPS key URIs.
+
+### Fixed
+- **Android:** the plugin no longer swallows other plugins' `onActivityResult` and `onNewIntent` events.
+- **Android:** HLS is detected by `.m3u8` in the URL path only (was any URL containing "hls"), matching iOS.
+- **iOS:** observers are removed when the player observer manager is released off the main thread.
+- Fixed `setAssets` / `assetPath` docs: pass the path as declared in `pubspec.yaml` (`assets/videos/intro.mp4`).
+
 ## [3.7.0] - 2026-10-28
 
 ### Migration

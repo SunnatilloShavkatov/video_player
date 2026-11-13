@@ -37,4 +37,23 @@ class UrlPolicyTest {
         assertFalse(UrlPolicy.isHttps(""))
         assertFalse(UrlPolicy.isInsecureHttp(""))
     }
+
+    @Test
+    fun detectsHlsByPathOnly() {
+        assertTrue(UrlPolicy.isHls("https://example.com/a/master.m3u8"))
+        assertTrue(UrlPolicy.isHls("https://example.com/a/master.M3U8?token=1"))
+        assertFalse(UrlPolicy.isHls("https://example.com/chls/clip.mp4"))
+        assertFalse(UrlPolicy.isHls("https://example.com/clip.mp4?x=.m3u8"))
+    }
+
+    @Test
+    fun keyUriMustBeHttpsOnPlaylistOrAllowedHost() {
+        val playlist = "https://cdn.example.com/a/master.m3u8"
+        assertTrue(UrlPolicy.isAllowedKeyUri("https://cdn.example.com/key", playlist, emptySet()))
+        assertTrue(UrlPolicy.isAllowedKeyUri("https://CDN.example.com/key", playlist, emptySet()))
+        assertTrue(UrlPolicy.isAllowedKeyUri("https://keys.example.com/key", playlist, setOf("Keys.Example.com")))
+        assertFalse(UrlPolicy.isAllowedKeyUri("https://keys.example.com/key", playlist, emptySet()))
+        assertFalse(UrlPolicy.isAllowedKeyUri("https://evil.example/key", playlist, setOf("keys.example.com")))
+        assertFalse(UrlPolicy.isAllowedKeyUri("http://cdn.example.com/key", playlist, emptySet()))
+    }
 }

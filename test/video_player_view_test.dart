@@ -38,6 +38,7 @@ void main() {
         child: VideoPlayerView(
           url: 'https://example.com/master.m3u8',
           keyRequestHeaders: headers,
+          keyRequestHosts: const ['keys.example.com'],
           onVideoViewCreated: (c) => controller = c,
         ),
       ),
@@ -45,6 +46,7 @@ void main() {
     await tester.pump();
 
     expect(creationParams?['keyRequestHeaders'], headers);
+    expect(creationParams?['keyRequestHosts'], ['keys.example.com']);
     expect(controller, isNotNull);
 
     MethodCall? setUrlCall;
@@ -53,10 +55,15 @@ void main() {
       return null;
     });
 
-    await controller!.setUrl(url: 'https://example.com/other.m3u8', keyRequestHeaders: headers);
+    await controller!.setUrl(
+      url: 'https://example.com/other.m3u8',
+      keyRequestHeaders: headers,
+      keyRequestHosts: const ['keys.example.com'],
+    );
 
     expect(setUrlCall?.method, 'setUrl');
     expect((setUrlCall!.arguments as Map<Object?, Object?>)['keyRequestHeaders'], headers);
+    expect((setUrlCall!.arguments as Map<Object?, Object?>)['keyRequestHosts'], ['keys.example.com']);
 
     await controller!.dispose();
     debugDefaultTargetPlatformOverride = null;

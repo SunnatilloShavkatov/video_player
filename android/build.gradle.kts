@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.plugin.video_player"
-version = "3.7.0"
+version = "3.8.0"
 
 android {
     namespace = "uz.plugin.video_player"
@@ -23,9 +23,6 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
-
-    sourceSets["main"].java.srcDirs("src/main/kotlin")
-    sourceSets["main"].res.srcDirs("src/main/res")
 
     androidResources {
         noCompress += "mp4"

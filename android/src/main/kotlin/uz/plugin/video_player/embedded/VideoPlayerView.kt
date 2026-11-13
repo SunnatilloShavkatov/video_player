@@ -52,7 +52,7 @@ class VideoPlayerView internal constructor(
         when {
             url.isEmpty() -> Unit
             UrlPolicy.isInsecureHttp(url) || UrlPolicy.isHttps(url) ->
-                runCatching { controller.loadUrl(url, params.getKeyRequestHeaders(), params.getResizeMode()) }
+                runCatching { controller.loadUrl(url, params.getKeyRequestHeaders(), params.getKeyRequestHosts(), params.getResizeMode()) }
                     .onFailure { Log.w(TAG, "Initial URL rejected: ${it.message}") }
             else -> controller.loadAsset(url, params.getResizeMode())
         }
@@ -72,7 +72,7 @@ class VideoPlayerView internal constructor(
                     result.error("INVALID_URL", "URL cannot be empty", null)
                     return@respond
                 }
-                controller.loadUrl(args.getUrl(), args.getKeyRequestHeaders(), args.getResizeMode())
+                controller.loadUrl(args.getUrl(), args.getKeyRequestHeaders(), args.getKeyRequestHosts(), args.getResizeMode())
                 result.success(null)
             }
             "setAssets" -> respond(result, "SET_ASSETS_ERROR", "Failed to set asset") {

@@ -86,12 +86,12 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
 
     // MARK: - Loading
 
-    /** HTTPS URL only (throws otherwise). HLS (".m3u8" / "hls" in the URL) sends [keyHeaders] with AES-128 key requests. */
-    fun loadUrl(url: String, keyHeaders: Map<String, String>, resizeMode: Int) {
+    /** HTTPS URL only (throws otherwise). HLS (".m3u8" in the URL path) sends [keyHeaders] with AES-128 key requests. */
+    fun loadUrl(url: String, keyHeaders: Map<String, String>, keyHosts: Set<String>, resizeMode: Int) {
         UrlPolicy.requireHttps(url)
-        val isHls = url.contains(".m3u8") || url.contains("hls", ignoreCase = true)
+        val isHls = UrlPolicy.isHls(url)
         val mediaSource = if (isHls) {
-            hlsMediaSourceFactory(DefaultDataSource.Factory(container.context), keyHeaders)
+            hlsMediaSourceFactory(DefaultDataSource.Factory(container.context), keyHeaders, url, keyHosts)
                 .createMediaSource(MediaItem.fromUri(url.toUri()))
         } else {
             progressiveSource(url.toUri())

@@ -172,6 +172,19 @@ void main() {
       expect(config.toMap()['keyRequestHeaders'], <String, String>{});
     });
 
+    test('keyRequestHosts defaults to empty and is serialized', () {
+      final defaults = PlayerConfiguration.remote(videoUrl: 'https://example.com/video.m3u8', title: 'Test');
+      expect(defaults.keyRequestHosts, isEmpty);
+      expect(defaults.toMap()['keyRequestHosts'], <String>[]);
+
+      final config = PlayerConfiguration.remote(
+        videoUrl: 'https://example.com/video.m3u8',
+        title: 'Test',
+        keyRequestHosts: const ['keys.example.com'],
+      );
+      expect(config.toMap()['keyRequestHosts'], ['keys.example.com']);
+    });
+
     test('sends keyRequestHeaders to the platform without leaking values in toString', () async {
       String? sentConfig;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(

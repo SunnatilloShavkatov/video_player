@@ -8,6 +8,7 @@ class VideoViewModel(map: Map<*, *>) {
     private var url: String = ""
     private var resizeMode: String = ""
     private var keyRequestHeaders: Map<String, String> = emptyMap()
+    private var keyRequestHosts: Set<String> = emptySet()
 
     init {
         // Support both 'url' and 'assets' keys for backward compatibility
@@ -19,6 +20,10 @@ class VideoViewModel(map: Map<*, *>) {
             }
             ?.toMap()
             ?: emptyMap()
+        this.keyRequestHosts = (map["keyRequestHosts"] as? List<*>)
+            ?.filterIsInstance<String>()
+            ?.toSet()
+            ?: emptySet()
     }
 
     fun getUrl(): String {
@@ -28,6 +33,11 @@ class VideoViewModel(map: Map<*, *>) {
     /** Headers sent only with HLS AES-128 key requests. */
     fun getKeyRequestHeaders(): Map<String, String> {
         return keyRequestHeaders
+    }
+
+    /** Extra hosts (besides the playlist host) allowed to receive the key headers. */
+    fun getKeyRequestHosts(): Set<String> {
+        return keyRequestHosts
     }
 
     @SuppressLint("UnsafeOptInUsageError")

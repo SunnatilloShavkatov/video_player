@@ -124,10 +124,10 @@ final class PlayerObserverManager: NSObject {
     /// MUST be called on main thread
     func removeObservers() {
         // Ensure we're on the main thread for observer removal
+        // Synchronous hop: from deinit an async [weak self] block would find self already
+        // nil and skip the removal, leaving the time observer and KVO registered.
         guard Thread.isMainThread else {
-            DispatchQueue.main.async { [weak self] in
-                self?.removeObservers()
-            }
+            DispatchQueue.main.sync { removeObservers() }
             return
         }
         

@@ -21,6 +21,7 @@ class VideoPlayerPlatformView: NSView {
     var assets: String = ""
     /// Headers sent only with HLS AES-128 key requests (see HlsKeyResourceLoader).
     var keyRequestHeaders: [String: String] = [:]
+    var keyRequestHosts: [String] = []
     var gravity: AVLayerVideoGravity = .resizeAspect
     // Retained here: AVAssetResourceLoader holds its delegate weakly.
     private var keyLoader: HlsKeyResourceLoader?
@@ -64,6 +65,7 @@ class VideoPlayerPlatformView: NSView {
         self.url = urlArg
         self.assets = assetsArg
         self.keyRequestHeaders = args?["keyRequestHeaders"] as? [String: String] ?? [:]
+        self.keyRequestHosts = (args?["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
         self.gravity = videoGravity(s: resizeMode)
         self.playerLayer?.videoGravity = self.gravity
 
@@ -135,6 +137,7 @@ class VideoPlayerPlatformView: NSView {
         self.assets = ""
         self.url = videoPath
         self.keyRequestHeaders = args["keyRequestHeaders"] as? [String: String] ?? [:]
+        self.keyRequestHosts = (args["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
         if let error = playVideo(gravity: videoGravity(s: sourceType)) {
             result(error)
         } else {
@@ -154,6 +157,7 @@ class VideoPlayerPlatformView: NSView {
         self.url = ""
         self.assets = videoPath
         self.keyRequestHeaders = [:]
+        self.keyRequestHosts = []
         if let error = playVideo(gravity: videoGravity(s: sourceType)) {
             result(error)
         } else {
@@ -181,7 +185,7 @@ class VideoPlayerPlatformView: NSView {
         self.gravity = gravity
         playerLayer?.videoGravity = gravity
 
-        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: videoURL, keyHeaders: keyRequestHeaders, keyHosts: keyRequestHosts)
         keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: playerItem)
