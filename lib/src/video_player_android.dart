@@ -5,7 +5,7 @@ import 'package:video_player/src/bindings/video_player_api.g.dart';
 import 'package:video_player/src/native_bridge.dart';
 import 'package:video_player/src/native_video_player.dart';
 
-/// [VideoPlayerPlatform] over JNI: Dart calls `VideoPlayerApi` directly, with no method channel. The outcome
+/// [NativeVideoPlayer] over JNI: Dart calls `VideoPlayerApi` directly, with no method channel. The outcome
 /// arrives through an `$async` listener, so Kotlin never blocks on Dart.
 class AndroidVideoPlayer extends NativeVideoPlayer {
   new() : super(AndroidVideoPlayerBridge());

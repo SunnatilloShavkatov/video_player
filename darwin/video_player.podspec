@@ -17,6 +17,10 @@ and iOS screen protection features across Android, iOS, and macOS.
   s.source           = { :path => '.' }
   s.ios.source_files = 'video_player/Sources/video_player/Common/**/*.{swift,h,m}', 'video_player/Sources/video_player/iOS/**/*.{swift,h,m}', 'video_player/Sources/video_player/VideoPlayerPlugin.swift'
   s.osx.source_files = 'video_player/Sources/video_player/Common/**/*.{swift,h,m}', 'video_player/Sources/video_player/macOS/**/*.{swift,h,m}', 'video_player/Sources/video_player/VideoPlayerPlugin.swift'
+  s.source_files     = 'video_player/Sources/video_player_c/video_player_darwin.m',
+                       'video_player/Sources/video_player_c/video_player_api.h',
+                       'video_player/Sources/video_player_c/include/*.h'
+  s.public_header_files = 'video_player/Sources/video_player_c/include/*.h'
   s.resources        = 'video_player/Sources/video_player/Assets/*'
   
   s.ios.deployment_target = '15.0'

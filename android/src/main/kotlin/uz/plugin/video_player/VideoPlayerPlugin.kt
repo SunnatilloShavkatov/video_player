@@ -3,15 +3,13 @@ package uz.plugin.video_player
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import org.json.JSONException
 import androidx.lifecycle.LifecycleOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import uz.plugin.video_player.embedded.VideoPlayerViewFactory
 import uz.plugin.video_player.fullscreen.VideoPlayerActivity
@@ -21,10 +19,10 @@ const val extraArgument = "uz.plugin.video_player.ARGUMENT"
 const val playerActivity = 111
 const val playerActivityFinish = 222
 
-class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
+class VideoPlayerPlugin : FlutterPlugin, ActivityAware,
     PluginRegistry.NewIntentListener, PluginRegistry.ActivityResultListener {
-    private lateinit var channel: MethodChannel
-    private var resultMethod: Result? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingCallback: VideoPlayerApi.PlayCallback? = null
     private var activity: Activity? = null
     private var activityBinding: ActivityPluginBinding? = null
 
@@ -35,51 +33,60 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             // FlutterActivity and FlutterFragmentActivity are LifecycleOwners.
             VideoPlayerViewFactory(binding.binaryMessenger) { (activity as? LifecycleOwner)?.lifecycle }
         )
-        channel = MethodChannel(binding.binaryMessenger, "video_player")
-        channel.setMethodCallHandler(this)
+        VideoPlayerApi.host = this
+    }
+
+    /** Starts the fullscreen player; runs on the main thread because it launches an Activity. */
+    internal fun playVideo(playerConfigJsonString: String, callback: VideoPlayerApi.PlayCallback) {
+        mainHandler.post { startPlayer(playerConfigJsonString, callback) }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
-    override fun onMethodCall(call: MethodCall, result: Result) {
-        if (call.method == "playVideo") {
-            if (resultMethod != null) {
-                result.error("PLAYER_ALREADY_ACTIVE", "A video player is already active", null)
-                return
-            }
-            val playerConfigJsonString = call.argument<String>("playerConfigJsonString")
-            if (playerConfigJsonString.isNullOrEmpty()) {
-                result.error("INVALID_CONFIG", "playerConfigJsonString is missing or empty", null)
-                return
-            }
-            val playerConfiguration = try {
-                PlayerConfiguration.fromJson(playerConfigJsonString)
-            } catch (e: JSONException) {
-                result.error("JSON_ERROR", "Invalid JSON format: ${e.message}", null)
-                return
-            } catch (e: Exception) {
-                result.error("JSON_ERROR", "Failed to parse player configuration: ${e.message}", null)
-                return
-            }
-            val currentActivity = activity
-            if (currentActivity == null) {
-                result.error("NO_ACTIVITY", "Activity is null", null)
-                return
-            }
-            val intent =
-                Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
-            intent.putExtra(extraArgument, playerConfiguration)
+    internal fun close() {
+        mainHandler.post { VideoPlayerActivity.closeCurrentIfActive() }
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun startPlayer(playerConfigJsonString: String, callback: VideoPlayerApi.PlayCallback) {
+        if (pendingCallback != null) {
+            callback.onError("PLAYER_ALREADY_ACTIVE", "A video player is already active")
+            return
+        }
+        if (playerConfigJsonString.isEmpty()) {
+            callback.onError("INVALID_CONFIG", "playerConfigJsonString is missing or empty")
+            return
+        }
+        val playerConfiguration = try {
+            PlayerConfiguration.fromJson(playerConfigJsonString)
+        } catch (e: JSONException) {
+            callback.onError("JSON_ERROR", "Invalid JSON format: ${e.message}")
+            return
+        } catch (e: Exception) {
+            callback.onError("JSON_ERROR", "Failed to parse player configuration: ${e.message}")
+            return
+        }
+        val currentActivity = activity
+        if (currentActivity == null) {
+            callback.onError("NO_ACTIVITY", "Activity is null")
+            return
+        }
+        val intent = Intent(currentActivity.applicationContext, VideoPlayerActivity::class.java)
+        intent.putExtra(extraArgument, playerConfiguration)
+        pendingCallback = callback
+        try {
             currentActivity.startActivityForResult(intent, playerActivity)
-            resultMethod = result
-        } else if (call.method == "close") {
-            VideoPlayerActivity.closeCurrentIfActive()
-            result.success(null)
-        } else {
-            result.notImplemented()
+        } catch (e: Exception) {
+            pendingCallback = null
+            callback.onError("START_FAILED", "Failed to start the player: ${e.message}")
         }
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        channel.setMethodCallHandler(null)
+        if (VideoPlayerApi.host === this) {
+            VideoPlayerApi.host = null
+        }
+        pendingCallback?.onCancelled()
+        pendingCallback = null
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -90,7 +97,7 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        // Keep resultMethod: the player's result is delivered to the recreated activity.
+        // Keep pendingCallback: the player's result is delivered to the recreated activity.
         cleanupActivityBinding()
     }
 
@@ -103,8 +110,8 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onDetachedFromActivity() {
         // No activity will deliver the player's result; complete the Dart future as cancelled.
-        resultMethod?.success(null)
-        resultMethod = null
+        pendingCallback?.onCancelled()
+        pendingCallback = null
         cleanupActivityBinding()
     }
 
@@ -122,15 +129,15 @@ class VideoPlayerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == playerActivity) {
-            val pendingResult = resultMethod ?: return true
-            resultMethod = null
+            val pendingResult = pendingCallback ?: return true
+            pendingCallback = null
 
             if (resultCode == playerActivityFinish && data != null) {
                 val position: Long = data.getLongExtra("position", 0)
                 val duration: Long = data.getLongExtra("duration", 0)
-                pendingResult.success(listOf(position.toInt(), duration.toInt()))
+                pendingResult.onFinished(position.toInt(), duration.toInt())
             } else {
-                pendingResult.success(null)
+                pendingResult.onCancelled()
             }
             return true
         }

@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:objective_c/objective_c.dart' as objc;
 import 'package:video_player/src/bindings/video_player_darwin.g.dart';
 import 'package:video_player/src/native_bridge.dart';
 import 'package:video_player/src/native_video_player.dart';
-import 'package:objective_c/objective_c.dart' as objc;
 
-/// [VideoPlayerPlatform] over the Objective-C runtime: Dart calls `VideoPlayerApi` (Swift, `@objc`) directly, with
+/// [NativeVideoPlayer] over the Objective-C runtime: Dart calls `VideoPlayerApi` (Swift, `@objc`) directly, with
 /// no method channel. Results are listener blocks, which may fire on any thread and are delivered to this isolate.
 class DarwinVideoPlayer extends NativeVideoPlayer {
   new() : super(DarwinVideoPlayerBridge());

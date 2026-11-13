@@ -14,12 +14,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  jni: ^1.1.2
+  objective_c: ^9.6.4
   plugin_platform_interface: ^2.1.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   analysis_lints: ^1.1.1
+  ffigen: ^23.0.0
+  jnigen: ^1.0.1
 
 flutter:
   plugin:

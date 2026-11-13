@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Video Player</string>
+    <string name="app_name" translatable="false">Video Player</string>
     <string name="video_player_error_retry">Playback error. Tap play to retry.</string>
     <string name="video_player_error_no_internet">No internet connection. Check your internet and tap play to retry.</string>
 </resources>

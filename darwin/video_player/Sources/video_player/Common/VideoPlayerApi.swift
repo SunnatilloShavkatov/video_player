@@ -17,7 +17,8 @@ protocol VideoPlayerHost: AnyObject {
 /// exactly once; before the plugin registers it answers `NOT_ATTACHED`.
 @objc(VideoPlayerApi)
 public final class VideoPlayerApi: NSObject {
-    static weak var host: VideoPlayerHost?
+    // Strong on purpose: on macOS nothing else retains the plugin instance once the method channel is gone.
+    static var host: VideoPlayerHost?
 
     @objc public static func playVideo(_ playerConfigJson: String, callback: @escaping PlayBlock) {
         onMain {

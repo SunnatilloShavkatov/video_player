@@ -170,7 +170,7 @@ final class PlaybackFailed extends PlaybackResult {
   /// This can be:
   /// - A [String] error message from the native platform
   /// - An [Exception] from Dart code
-  /// - A [PlatformException] from the method channel
+  /// - A `NativeFailure` reported by the native side (JNI / Objective-C bridge)
   ///
   /// **Example:**
   /// ```

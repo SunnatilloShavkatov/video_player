@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-
 import 'package:video_player/src/models/playback_result.dart';
-import 'package:video_player/src/video_player_method_channel.dart';
+import 'package:video_player/src/video_player_android.dart';
+import 'package:video_player/src/video_player_darwin.dart';
 
 abstract class VideoPlayerPlatform extends PlatformInterface {
   /// Constructs a VideoPlayerPlatform.
@@ -9,12 +10,14 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static VideoPlayerPlatform _instance = MethodChannelVideoPlayer();
+  static VideoPlayerPlatform? _instance;
 
   /// The default instance of [VideoPlayerPlatform] to use.
   ///
-  /// Defaults to [MethodChannelVideoPlayer].
-  static VideoPlayerPlatform get instance => _instance;
+  /// Defaults to [AndroidVideoPlayer] on Android and [DarwinVideoPlayer] elsewhere (iOS, macOS), unless replaced,
+  /// e.g. by a test.
+  static VideoPlayerPlatform get instance =>
+      _instance ??= defaultTargetPlatform == TargetPlatform.android ? AndroidVideoPlayer() : DarwinVideoPlayer();
 
   /// Platform-specific implementations should set this with their own
   /// platform-specific class that extends [VideoPlayerPlatform] when

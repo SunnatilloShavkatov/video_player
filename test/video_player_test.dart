@@ -1,28 +1,17 @@
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player/video_player.dart';
+
+import 'fake_video_player_bridge.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoPlayer Error Handling', () {
-    const channelName = 'video_player';
+    late FakeVideoPlayerBridge bridge;
 
-    setUp(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel(channelName),
-        null,
-      );
-    });
-
-    tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel(channelName),
-        null,
-      );
-    });
+    setUp(() => bridge = installFakeBridge());
 
     test('throws exception for invalid URL format', () {
       expect(
@@ -107,15 +96,7 @@ void main() {
     });
 
     test('accepts valid HTTPS URL', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel(channelName),
-        (MethodCall call) async {
-          if (call.method == 'playVideo') {
-            return [0, 100];
-          }
-          return null;
-        },
-      );
+      bridge.result = [0, 100];
 
       final result = await VideoPlayer.instance.playVideo(
         playerConfig: const PlayerConfiguration(
@@ -186,17 +167,6 @@ void main() {
     });
 
     test('sends keyRequestHeaders to the platform without leaking values in toString', () async {
-      String? sentConfig;
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel(channelName),
-        (call) async {
-          if (call.method == 'playVideo') {
-            sentConfig = (call.arguments as Map<Object?, Object?>)['playerConfigJsonString'] as String?;
-            return [0, 0];
-          }
-          return null;
-        },
-      );
       final config = PlayerConfiguration.remote(
         videoUrl: 'https://example.com/master.m3u8',
         title: 'Lesson',
@@ -205,7 +175,7 @@ void main() {
 
       await VideoPlayer.instance.playVideo(playerConfig: config);
 
-      final decoded = jsonDecode(sentConfig!) as Map<String, dynamic>;
+      final decoded = jsonDecode(bridge.playedConfigs.single) as Map<String, dynamic>;
       expect(decoded['keyRequestHeaders'], {'Authorization': 'Bearer secret-token'});
       expect(config.toString(), contains('Authorization'));
       expect(config.toString(), isNot(contains('secret-token')));

@@ -16,8 +16,18 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "video_player_c",
+            path: "Sources/video_player_c",
+            publicHeadersPath: "include",
+            cSettings: [
+                .headerSearchPath("."),
+                .headerSearchPath("include"),
+            ]
+        ),
+        .target(
             name: "video_player",
             dependencies: [
+                "video_player_c",
                 .product(name: "FlutterFramework", package: "FlutterFramework"),
                 .product(name: "SnapKit", package: "SnapKit", condition: .when(platforms: [.iOS])),
             ],

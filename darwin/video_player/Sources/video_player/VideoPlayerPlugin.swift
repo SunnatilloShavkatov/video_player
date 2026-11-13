@@ -11,10 +11,10 @@ import UIKit
 
 private final class PlaybackSession {
     private let resolutionQueue = DispatchQueue(label: "uz.plugin.video_player.playback_session")
-    private let responder: FlutterResult
+    private let responder: PlayBlock
     private var isResolved = false
 
-    init(responder: @escaping FlutterResult) {
+    init(responder: @escaping PlayBlock) {
         self.responder = responder
     }
 
@@ -23,20 +23,20 @@ private final class PlaybackSession {
     }
 
     func resolve(with payload: [Int]) {
-        complete(payload)
+        complete(payload.first ?? 0, payload.dropFirst().first ?? 0, nil, nil)
     }
 
-    func resolve(error: FlutterError) {
-        complete(error)
+    func resolve(code: String, message: String) {
+        complete(-1, -1, code, message)
     }
 
     func cancel() {
-        complete(nil)
+        complete(-1, -1, nil, nil)
     }
 
-    /// Claims the single resolution, then delivers `value` to the responder on the main thread.
-    private func complete(_ value: Any?) {
-        let responderToCall = resolutionQueue.sync { () -> FlutterResult? in
+    /// Claims the single resolution, then delivers it to the responder on the main thread.
+    private func complete(_ position: Int, _ duration: Int, _ code: String?, _ message: String?) {
+        let responderToCall = resolutionQueue.sync { () -> PlayBlock? in
             guard !isResolved else { return nil }
             isResolved = true
             return responder
@@ -44,10 +44,10 @@ private final class PlaybackSession {
 
         guard let responderToCall else { return }
         if Thread.isMainThread {
-            responderToCall(value)
+            responderToCall(position, duration, code, message)
         } else {
             DispatchQueue.main.async {
-                responderToCall(value)
+                responderToCall(position, duration, code, message)
             }
         }
     }
@@ -58,8 +58,7 @@ struct VideoSourceResolutionFailure: Error {
     let message: String
 }
 
-public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
-    private static var channel: FlutterMethodChannel?
+public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate, VideoPlayerHost {
     public private(set) static var viewController: FlutterViewController?
     private var registrar: FlutterPluginRegistrar?
     private var activePlaybackSession: PlaybackSession?
@@ -76,10 +75,7 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
                   let flutterController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController as? FlutterViewController {
             viewController = flutterController
         }
-        channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger())
-        if let channel = channel {
-            registrar.addMethodCallDelegate(instance, channel: channel)
-        }
+        VideoPlayerApi.host = instance
         registrar.addApplicationDelegate(instance)
         registrar.addSceneDelegate(instance)
         let videoViewFactory = VideoPlayerViewFactory(registrar: registrar)
@@ -132,7 +128,7 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         }
 
         viewController.onPlaybackFailed = { [weak self, weak viewController] code, message in
-            session.resolve(error: FlutterError(code: code, message: message, details: nil))
+            session.resolve(code: code, message: message)
             if self?.activePlayerViewController === viewController {
                 self?.activePlaybackSession = nil
             }
@@ -181,62 +177,56 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         return .success(resolvedConfiguration)
     }
 
-    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    func closePlayer(completion: @escaping () -> Void) {
         cleanupOrphanedSessionIfNeeded()
-
-        switch call.method {
-        case "close":
-            if let activePlayerViewController {
-                activePlayerViewController.requestClose {
-                    result(nil)
-                }
-            } else {
-                result(nil)
+        if let activePlayerViewController {
+            activePlayerViewController.requestClose {
+                completion()
             }
-        case "playVideo":
-            guard activePlayerViewController == nil else {
-                result(FlutterError(code: "PLAYER_ALREADY_ACTIVE", message: "A video player is already active", details: nil))
-                return
-            }
-            guard let presenter = VideoPlayerPlugin.viewController else {
-                result(FlutterError(code: "NO_VIEW_CONTROLLER", message: "No FlutterViewController available to present video", details: nil))
-                return
-            }
-            guard let args = call.arguments as? [String: String],
-                  let playerConfigJsonString = args["playerConfigJsonString"],
-                  let json = convertStringToDictionary(text: playerConfigJsonString),
-                  let playerConfiguration = PlayerConfiguration.fromMap(map: json) else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid player configuration", details: nil))
-                return
-            }
-
-            let resolvedConfiguration: PlayerConfiguration
-            switch resolvePlaybackSource(for: playerConfiguration) {
-            case .success(let configuration):
-                resolvedConfiguration = configuration
-            case .failure(let error):
-                result(FlutterError(code: error.code, message: error.message, details: nil))
-                return
-            }
-
-            let vc = VideoPlayerViewController()
-            vc.modalPresentationStyle = .fullScreen
-            vc.playerConfiguration = resolvedConfiguration
-            vc.speedLabelText = resolvedConfiguration.speedText
-            vc.qualityLabelText = resolvedConfiguration.qualityText
-            vc.selectedQualityText = resolvedConfiguration.autoText
-            let session = PlaybackSession(responder: result)
-            activePlaybackSession = session
-            activePlayerViewController = vc
-            bindPlaybackLifecycle(to: vc, session: session)
-            if let orientation = presenter.view.window?.windowScene?.interfaceOrientation {
-                vc.pinOrientationForPresentation(to: orientation)
-            }
-            presenter.present(vc, animated: true, completion: nil)
-            return
-        default:
-            result(FlutterMethodNotImplemented)
+        } else {
+            completion()
         }
+    }
+
+    func playVideo(configJson playerConfigJsonString: String, completion result: @escaping PlayBlock) {
+        cleanupOrphanedSessionIfNeeded()
+        guard activePlayerViewController == nil else {
+            result(-1, -1, "PLAYER_ALREADY_ACTIVE", "A video player is already active")
+            return
+        }
+        guard let presenter = VideoPlayerPlugin.viewController else {
+            result(-1, -1, "NO_VIEW_CONTROLLER", "No FlutterViewController available to present video")
+            return
+        }
+        guard let json = convertStringToDictionary(text: playerConfigJsonString),
+              let playerConfiguration = PlayerConfiguration.fromMap(map: json) else {
+            result(-1, -1, "INVALID_ARGS", "Invalid player configuration")
+            return
+        }
+
+        let resolvedConfiguration: PlayerConfiguration
+        switch resolvePlaybackSource(for: playerConfiguration) {
+        case .success(let configuration):
+            resolvedConfiguration = configuration
+        case .failure(let error):
+            result(-1, -1, error.code, error.message)
+            return
+        }
+
+        let vc = VideoPlayerViewController()
+        vc.modalPresentationStyle = .fullScreen
+        vc.playerConfiguration = resolvedConfiguration
+        vc.speedLabelText = resolvedConfiguration.speedText
+        vc.qualityLabelText = resolvedConfiguration.qualityText
+        vc.selectedQualityText = resolvedConfiguration.autoText
+        let session = PlaybackSession(responder: result)
+        activePlaybackSession = session
+        activePlayerViewController = vc
+        bindPlaybackLifecycle(to: vc, session: session)
+        if let orientation = presenter.view.window?.windowScene?.interfaceOrientation {
+            vc.pinOrientationForPresentation(to: orientation)
+        }
+        presenter.present(vc, animated: true, completion: nil)
     }
 }
 
@@ -250,7 +240,7 @@ struct VideoSourceResolutionFailure: Error {
     let message: String
 }
 
-public class VideoPlayerPlugin: NSObject, FlutterPlugin {
+public class VideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerHost {
     private let registrar: FlutterPluginRegistrar
     private var activePlayerOverlay: VideoPlayerOverlayView?
 
@@ -260,93 +250,85 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin {
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "video_player", binaryMessenger: registrar.messenger)
         let instance = VideoPlayerPlugin(registrar: registrar)
-        registrar.addMethodCallDelegate(instance, channel: channel)
+        VideoPlayerApi.host = instance
 
         let viewFactory = VideoPlayerPlatformViewFactory(registrar: registrar)
         registrar.register(viewFactory, withId: "plugins.video/video_player_view")
     }
 
-    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        switch call.method {
-        case "close":
-            if let activePlayerOverlay = activePlayerOverlay {
-                activePlayerOverlay.requestClose {
-                    result(nil)
-                }
-            } else {
-                result(nil)
+    func closePlayer(completion: @escaping () -> Void) {
+        if let activePlayerOverlay = activePlayerOverlay {
+            activePlayerOverlay.requestClose {
+                completion()
             }
-
-        case "playVideo":
-            guard activePlayerOverlay == nil else {
-                result(FlutterError(code: "PLAYER_ALREADY_ACTIVE", message: "A video player is already active", details: nil))
-                return
-            }
-
-            guard let hostView = resolveHostView() else {
-                result(FlutterError(code: "NO_HOST_VIEW", message: "No host view available to display player", details: nil))
-                return
-            }
-
-            guard let args = call.arguments as? [String: String],
-                  let playerConfigJsonString = args["playerConfigJsonString"],
-                  let json = convertStringToDictionary(text: playerConfigJsonString),
-                  let playerConfiguration = PlayerConfiguration.fromMap(map: json) else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid player configuration", details: nil))
-                return
-            }
-
-            let resolvedConfiguration: PlayerConfiguration
-            switch resolvePlaybackSource(for: playerConfiguration) {
-            case .success(let configuration):
-                resolvedConfiguration = configuration
-            case .failure(let error):
-                result(FlutterError(code: error.code, message: error.message, details: nil))
-                return
-            }
-
-            let overlayView = VideoPlayerOverlayView(configuration: resolvedConfiguration)
-            activePlayerOverlay = overlayView
-
-            overlayView.onPlaybackFinished = { [weak self] payload in
-                result(payload)
-                self?.activePlayerOverlay = nil
-            }
-
-            overlayView.onPlaybackFailed = { [weak self] code, message in
-                result(FlutterError(code: code, message: message, details: nil))
-                self?.activePlayerOverlay = nil
-            }
-
-            overlayView.onDidDismiss = { [weak self] in
-                self?.activePlayerOverlay = nil
-            }
-
-            overlayView.translatesAutoresizingMaskIntoConstraints = false
-            hostView.addSubview(overlayView)
-            NSLayoutConstraint.activate([
-                overlayView.topAnchor.constraint(equalTo: hostView.topAnchor),
-                overlayView.leadingAnchor.constraint(equalTo: hostView.leadingAnchor),
-                overlayView.trailingAnchor.constraint(equalTo: hostView.trailingAnchor),
-                overlayView.bottomAnchor.constraint(equalTo: hostView.bottomAnchor),
-            ])
-
-            overlayView.alphaValue = 0.0
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.25
-                overlayView.animator().alphaValue = 1.0
-            }
-
-            hostView.window?.makeFirstResponder(overlayView)
-
-            // Playback starts last: an immediate failure has to find the callbacks in place.
-            overlayView.start()
-
-        default:
-            result(FlutterMethodNotImplemented)
+        } else {
+            completion()
         }
+    }
+
+    func playVideo(configJson playerConfigJsonString: String, completion result: @escaping PlayBlock) {
+        guard activePlayerOverlay == nil else {
+            result(-1, -1, "PLAYER_ALREADY_ACTIVE", "A video player is already active")
+            return
+        }
+
+        guard let hostView = resolveHostView() else {
+            result(-1, -1, "NO_HOST_VIEW", "No host view available to display player")
+            return
+        }
+
+        guard let json = convertStringToDictionary(text: playerConfigJsonString),
+              let playerConfiguration = PlayerConfiguration.fromMap(map: json) else {
+            result(-1, -1, "INVALID_ARGS", "Invalid player configuration")
+            return
+        }
+
+        let resolvedConfiguration: PlayerConfiguration
+        switch resolvePlaybackSource(for: playerConfiguration) {
+        case .success(let configuration):
+            resolvedConfiguration = configuration
+        case .failure(let error):
+            result(-1, -1, error.code, error.message)
+            return
+        }
+
+        let overlayView = VideoPlayerOverlayView(configuration: resolvedConfiguration)
+        activePlayerOverlay = overlayView
+
+        overlayView.onPlaybackFinished = { [weak self] payload in
+            result(payload.first ?? 0, payload.dropFirst().first ?? 0, nil, nil)
+            self?.activePlayerOverlay = nil
+        }
+
+        overlayView.onPlaybackFailed = { [weak self] code, message in
+            result(-1, -1, code, message)
+            self?.activePlayerOverlay = nil
+        }
+
+        overlayView.onDidDismiss = { [weak self] in
+            self?.activePlayerOverlay = nil
+        }
+
+        overlayView.translatesAutoresizingMaskIntoConstraints = false
+        hostView.addSubview(overlayView)
+        NSLayoutConstraint.activate([
+            overlayView.topAnchor.constraint(equalTo: hostView.topAnchor),
+            overlayView.leadingAnchor.constraint(equalTo: hostView.leadingAnchor),
+            overlayView.trailingAnchor.constraint(equalTo: hostView.trailingAnchor),
+            overlayView.bottomAnchor.constraint(equalTo: hostView.bottomAnchor),
+        ])
+
+        overlayView.alphaValue = 0.0
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            overlayView.animator().alphaValue = 1.0
+        }
+
+        hostView.window?.makeFirstResponder(overlayView)
+
+        // Playback starts last: an immediate failure has to find the callbacks in place.
+        overlayView.start()
     }
 
     private func resolveHostView() -> NSView? {
