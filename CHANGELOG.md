@@ -1,3 +1,12 @@
+## [3.9.0] - 2026-11-13
+
+### Changed
+- Fullscreen `playVideo` and `close` no longer use a method channel: Android calls the Kotlin `VideoPlayerApi` through JNI (`jni`, `jnigen`), iOS and macOS call the Swift `VideoPlayerApi` through the Objective-C runtime (`objective_c`, `ffigen`). The public Dart API is unchanged.
+- The embedded `VideoPlayerView` keeps its per-view platform channel.
+- `NativeFailure` carries `code` and `message` only.
+- **Android:** `consumer-rules.pro` keeps the JNI facade through R8; media3 and lifecycle dependencies are declared explicitly.
+- Example: Gradle daemon on JDK 21, foojay resolver 1.0.0, no `android.enableJetifier` or `android.nonFinalResIds=false`.
+
 ## [3.8.0] - 2026-11-13
 
 ### Migration
