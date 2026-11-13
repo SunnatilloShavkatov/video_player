@@ -13,7 +13,7 @@ HTTPS-only, channel names). This skill is the step order and the "where does it 
 | Change             | Files                                                                                                                     |
 |--------------------|---------------------------------------------------------------------------------------------------------------------------|
 | Full-screen option | `lib/src/models/player_configuration.dart` (field, `toMap`, `toString`, `remote`)                                         |
-| Full-screen method | `lib/src/video_player_platform_interface.dart` → `lib/src/video_player_method_channel.dart` → `lib/src/video_player.dart` |
+| Full-screen method | `lib/src/video_player_platform_interface.dart` → `lib/src/video_player_android.dart` / `video_player_darwin.dart` (+ `VideoPlayerApi.kt` / `VideoPlayerApi.swift` / `video_player_api.h`, then regenerate bindings) → `lib/src/video_player.dart` |
 | Embedded API       | `lib/src/video_player_view_controller.dart` (per-view channel `plugins.video/video_player_view_<id>`)                                |
 
 Add or extend a test in `test/` for every serialized key or channel method.

@@ -4,8 +4,8 @@
 Flutter plugin with native iOS (Swift), macOS (Swift), and Android (Kotlin) implementations.
 - **Three-Layer Sync:** All player features span 3 layers:
   1. `lib/src/video_player_platform_interface.dart` (interface)
-  2. `lib/src/video_player_method_channel.dart` (channel)
-  3. `darwin/.../VideoPlayerPlugin.swift` & `android/.../VideoPlayerPlugin.kt` (native)
+  2. `lib/src/video_player_android.dart` (JNI) / `video_player_darwin.dart` (Objective-C runtime), over `native_video_player.dart`; bindings in `lib/src/bindings/` (generated: `dart run tool/jnigen.dart`, `dart run tool/ffigen.dart`; no method channel for fullscreen)
+  3. `darwin/.../Common/VideoPlayerApi.swift` + `VideoPlayerPlugin.swift` (must match `Sources/video_player_c/video_player_api.h`) & `android/.../VideoPlayerApi.kt` + `VideoPlayerPlugin.kt` (native)
 - **Time Value Contract (STRICT):**
   - Full-screen API: **SECONDS (`int`)**. Never milliseconds.
   - Embedded view API: **SECONDS (`double`)** (`seekTo`, `getDuration`, `positionStream`).
@@ -21,7 +21,7 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
 | Feature / Concern | iOS (UIKit) | macOS (AppKit) | Android (Media3) | Dart Layer |
 |---|---|---|---|---|
 | **Buttons, Slider, Layout** | `iOS/Player/PlayerOverlayView.swift` | `macOS/PlayerControlsView.swift` | `activity_video_player.xml` | `video_player_view.dart` |
-| **Play, Pause, Seek, Rate** | `iOS/Player/PlayerController.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_method_channel.dart` |
+| **Play, Pause, Seek, Rate** | `iOS/Player/PlayerController.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_android.dart` / `video_player_darwin.dart` |
 | **KVO, Time, Notifications** | `iOS/Player/PlayerObserverManager.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_view_controller.dart` |
 | **Gestures (Tap/Pan/Pinch)** | `iOS/Player/PlayerGestureHandler.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerGestureHandler.kt` | - |
 | **Controls Visibility & Spinner**| `iOS/Player/PlayerControlsCoordinator.swift` | `macOS/PlayerControlsView.swift` | `player/PlayerControlsCoordinator.kt` | - |
