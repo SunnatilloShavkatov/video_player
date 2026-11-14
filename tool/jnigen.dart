@@ -16,9 +16,7 @@ Future<void> main() async {
   await JniGenerator(
     input: Input(
       classPath: <Uri>[classes],
-      classes: <String>[
-        'uz.plugin.video_player.VideoPlayerApi',
-      ],
+      classes: <String>['uz.plugin.video_player.VideoPlayerApi'],
       backend: SummarizerBackend.asm,
     ),
     output: Output(
