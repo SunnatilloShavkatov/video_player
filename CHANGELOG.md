@@ -1,3 +1,10 @@
+## [3.9.1] - 2026-11-14
+
+### Fixed
+- Declare `ffi` in `pubspec.yaml`; the generated Darwin bindings import it, so pub.dev validation rejected the package.
+- Apply `dart format` to `tool/jnigen.dart` so the CI format check passes.
+- CI: unified workflow aligned with audio_player.
+
 ## [3.9.0] - 2026-11-13
 
 ### Changed
