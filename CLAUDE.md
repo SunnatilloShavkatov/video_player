@@ -16,7 +16,6 @@ This file only adds Claude Code specifics.
   touching `darwin/`, and `release-bump` for version bumps (see `.claude/skills/`).
 - **No builds without asking:** don't run `flutter build`, `flutter run`, `pod install`
   or Gradle. `flutter test` and the darwin typecheck script are fine.
-- **No commits:** stop after showing the diff; the user commits and tags.
 - **Hooks** (`.claude/settings.json`): `slow-cmd-guard` blocks builds and raw `flutter test`
   (use `-r failures-only`), `plugin-guard` checks file size / Darwin `#if os` / seconds contract
   after each edit, `token-report` logs each turn's cost; `/token-review` analyzes that log.
