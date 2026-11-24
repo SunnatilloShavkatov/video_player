@@ -18,6 +18,13 @@ struct QualityVariant {
 
 class HlsParser {
 
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 15
+        return URLSession(configuration: config)
+    }()
+
     static func isLikelyHls(url: String) -> Bool {
         let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedUrl.isEmpty else { return false }
@@ -41,11 +48,6 @@ class HlsParser {
             completion([])
             return nil
         }
-
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 15
-        config.timeoutIntervalForResource = 15
-        let session = URLSession(configuration: config)
 
         let task = session.dataTask(with: masterUrl) { data, response, error in
             guard let data = data, error == nil else {

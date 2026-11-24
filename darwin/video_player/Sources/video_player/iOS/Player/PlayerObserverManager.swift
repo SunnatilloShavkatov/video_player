@@ -282,17 +282,12 @@ final class PlayerObserverManager: NSObject {
         change: [NSKeyValueChangeKey: Any]?,
         context: UnsafeMutableRawPointer?
     ) {
-        // CRITICAL: Check if we're still observing (disposal guard)
-        guard observingMediaPlayer, !isDisposed else {
-            return
-        }
-        
         // Duration change
         if context == &PlayerObserverManager.playerItemDurationContext {
             if let duration = change?[.newKey] as? CMTime {
                 let seconds = CMTimeGetSeconds(duration)
                 if seconds.isFinite && !seconds.isNaN && seconds > 0 {
-                    delegate?.observerManager(self, didUpdateDuration: seconds)
+                    notifyOnMain { $0.delegate?.observerManager($0, didUpdateDuration: seconds) }
                 }
             }
         }
@@ -300,14 +295,14 @@ final class PlayerObserverManager: NSObject {
         else if context == &PlayerObserverManager.playerItemStatusContext {
             if let statusNumber = change?[.newKey] as? NSNumber {
                 let status = AVPlayerItem.Status(rawValue: statusNumber.intValue) ?? .unknown
-                delegate?.observerManager(self, didUpdateStatus: status)
+                notifyOnMain { $0.delegate?.observerManager($0, didUpdateStatus: status) }
             }
         }
         // Time control status change
         else if context == &PlayerObserverManager.playerTimeControlStatusContext {
             if let statusNumber = change?[.newKey] as? NSNumber {
                 let status = AVPlayer.TimeControlStatus(rawValue: statusNumber.intValue) ?? .paused
-                delegate?.observerManager(self, didChangeTimeControlStatus: status)
+                notifyOnMain { $0.delegate?.observerManager($0, didChangeTimeControlStatus: status) }
             }
         }
         else {
@@ -319,19 +314,26 @@ final class PlayerObserverManager: NSObject {
     // MARK: - Notification Handlers
     
     @objc private func playerDidFinishPlaying(_ notification: Notification) {
-        guard !isDisposed else { return }
-        delegate?.observerManagerDidFinishPlaying(self)
+        notifyOnMain { $0.delegate?.observerManagerDidFinishPlaying($0) }
     }
     
     @objc private func playerStalled(_ notification: Notification) {
-        guard !isDisposed else { return }
-        delegate?.observerManagerDidStall(self)
+        notifyOnMain { $0.delegate?.observerManagerDidStall($0) }
     }
     
     @objc private func playerFailedToPlay(_ notification: Notification) {
-        guard !isDisposed else { return }
         let error = (notification.object as? AVPlayerItem)?.error
-        delegate?.observerManager(self, didFailWithError: error)
+        notifyOnMain { $0.delegate?.observerManager($0, didFailWithError: error) }
+    }
+    
+    /// AVFoundation posts KVO and item notifications on arbitrary queues; delegates touch UIKit.
+    private func notifyOnMain(_ body: @escaping (PlayerObserverManager) -> Void) {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.notifyOnMain(body) }
+            return
+        }
+        guard observingMediaPlayer, !isDisposed else { return }
+        body(self)
     }
     
     // MARK: - Deinitialization

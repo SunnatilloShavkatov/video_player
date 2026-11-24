@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:video_player/src/models/playback_result.dart';
-import 'package:video_player/src/video_player_android.dart';
-import 'package:video_player/src/video_player_darwin.dart';
+import 'package:video_player/src/native_platform_stub.dart'
+    if (dart.library.ffi) 'package:video_player/src/native_platform.dart';
 
 abstract class VideoPlayerPlatform extends PlatformInterface {
   /// Constructs a VideoPlayerPlatform.
@@ -14,10 +13,9 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
 
   /// The default instance of [VideoPlayerPlatform] to use.
   ///
-  /// Defaults to [AndroidVideoPlayer] on Android and [DarwinVideoPlayer] elsewhere (iOS, macOS), unless replaced,
-  /// e.g. by a test.
-  static VideoPlayerPlatform get instance =>
-      _instance ??= defaultTargetPlatform == TargetPlatform.android ? AndroidVideoPlayer() : DarwinVideoPlayer();
+  /// Defaults to the JNI player on Android, the Objective-C runtime player on iOS and macOS, and a player that
+  /// reports [UnsupportedError] elsewhere (web, Windows, Linux), unless replaced, e.g. by a test.
+  static VideoPlayerPlatform get instance => _instance ??= createNativeVideoPlayer();
 
   /// Platform-specific implementations should set this with their own
   /// platform-specific class that extends [VideoPlayerPlatform] when

@@ -33,7 +33,8 @@ let package = Package(
             ],
             path: "Sources/video_player",
             resources: [
-                .process("Assets")
+                .process("Assets"),
+                .process("PrivacyInfo.xcprivacy"),
             ]
         )
     ]

@@ -30,8 +30,9 @@ internal class PictureInPictureHandler(
 
     fun enterFromButton() = enter(BUTTON_ASPECT_RATIO)
 
-    /** Call from `onUserLeaveHint`. */
-    fun onUserLeaveHint() {
+    /** Call from `onUserLeaveHint`; a paused or stopped player is not moved into PiP. */
+    fun onUserLeaveHint(isPlaying: Boolean) {
+        if (!isPlaying) return
         val supported = activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
         if (supported && !activity.isInPictureInPictureMode) enter(AUTO_ASPECT_RATIO)
     }

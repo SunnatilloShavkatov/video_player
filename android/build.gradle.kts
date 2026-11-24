@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uz.plugin.video_player"
-version = "3.8.0"
+version = "3.10.0"
 
 android {
     namespace = "uz.plugin.video_player"

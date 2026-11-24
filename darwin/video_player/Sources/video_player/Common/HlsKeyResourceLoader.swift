@@ -24,7 +24,7 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
     private let keyHeaders: [String: String]
     private let allowedKeyHosts: Set<String>
-    private let session = URLSession(configuration: .default)
+    private let session: URLSession
     private let queue = DispatchQueue(label: "uz.plugin.video_player.hls-key-loader")
     // Accessed on `queue` only.
     private var keyCache: [URL: Data] = [:]
@@ -33,6 +33,15 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     private init(keyHeaders: [String: String], allowedKeyHosts: Set<String>) {
         self.keyHeaders = keyHeaders
         self.allowedKeyHosts = allowedKeyHosts
+        // Ephemeral and uncached: AES keys must never reach the disk.
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        session = URLSession(
+            configuration: configuration,
+            delegate: RedirectGuard(allowedKeyHosts: allowedKeyHosts, keyHeaderNames: Array(keyHeaders.keys)),
+            delegateQueue: nil
+        )
     }
 
     deinit {
@@ -137,7 +146,7 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                         throw Self.error(code: -1, "No HTTP response")
                     }
                     guard (200..<300).contains(http.statusCode) else {
-                        throw Self.error(code: http.statusCode, "HTTP \(http.statusCode) for \(request.url?.path ?? "")")
+                        throw Self.error(code: http.statusCode, "HTTP \(http.statusCode) from \(request.url?.host ?? "")")
                     }
                     loadingRequest.dataRequest?.respond(with: try transform(data, http))
                     loadingRequest.finishLoading()
@@ -208,5 +217,36 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
     private static func error(code: Int, _ message: String) -> NSError {
         NSError(domain: errorDomain, code: code, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+}
+
+/// Separate from the loader: a session retains its delegate until invalidated (done in the loader's `deinit`).
+/// Refuses non-https redirects, and redirects of key requests (they carry the key headers) to unlisted hosts.
+private final class RedirectGuard: NSObject, URLSessionTaskDelegate {
+    private let allowedKeyHosts: Set<String>
+    private let keyHeaderNames: [String]
+
+    init(allowedKeyHosts: Set<String>, keyHeaderNames: [String]) {
+        self.allowedKeyHosts = allowedKeyHosts
+        self.keyHeaderNames = keyHeaderNames
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        guard let target = request.url, target.scheme?.lowercased() == "https" else {
+            completionHandler(nil)
+            return
+        }
+        let carriesKeyHeaders = keyHeaderNames.contains { task.originalRequest?.value(forHTTPHeaderField: $0) != nil }
+        if carriesKeyHeaders, !allowedKeyHosts.contains(target.host?.lowercased() ?? "") {
+            completionHandler(nil)
+            return
+        }
+        completionHandler(request)
     }
 }

@@ -56,7 +56,7 @@ final class PlayerControlsCoordinator {
         activityIndicator: UIActivityIndicatorView?,
         topView: UIView?,
         bottomView: UIView?,
-        overlayView: UIView?,
+        overlayView: UIView?
     ) {
         self.playButton = playButton
         self.timeSlider = timeSlider

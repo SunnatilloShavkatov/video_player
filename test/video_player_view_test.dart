@@ -192,4 +192,46 @@ void main() {
     await expectLater(controller!.play(), throwsStateError);
     debugDefaultTargetPlatformOverride = null;
   });
+
+  testWidgets('view disposes its controller on unmount and loads a new source on rebuild', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+    int? viewId;
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (call) async {
+      if (call.method == 'create') {
+        viewId = (call.arguments as Map<Object?, Object?>)['id']! as int;
+      }
+      return null;
+    });
+
+    VideoPlayerViewController? controller;
+    Widget view(String url) => Directionality(
+      textDirection: TextDirection.ltr,
+      child: VideoPlayerView(url: url, onVideoViewCreated: (c) => controller = c),
+    );
+    await tester.pumpWidget(view('https://example.com/a.mp4'));
+    await tester.pump();
+
+    final calls = <MethodCall>[];
+    final channel = MethodChannel('plugins.video/video_player_view_$viewId');
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return null;
+    });
+
+    await tester.pumpWidget(view('https://example.com/a.mp4'));
+    expect(calls, isEmpty, reason: 'an unchanged source must not reload');
+
+    await tester.pumpWidget(view('https://example.com/b.mp4'));
+    await tester.pump();
+    expect(calls.single.method, 'setUrl');
+    expect((calls.single.arguments as Map<Object?, Object?>)['url'], 'https://example.com/b.mp4');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    await expectLater(controller!.play(), throwsStateError);
+
+    messenger.setMockMethodCallHandler(channel, null);
+    debugDefaultTargetPlatformOverride = null;
+  });
 }

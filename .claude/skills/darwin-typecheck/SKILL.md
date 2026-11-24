@@ -16,7 +16,7 @@ Native Swift changes can't be hot-reloaded, and this project's rule is **not** t
 .claude/skills/darwin-typecheck/scripts/typecheck.sh macos
 ```
 
-The script typechecks exactly what the podspec compiles per platform:
+The script typechecks what `Package.swift` compiles per platform (`#if os(...)` splits the files):
 - iOS: `Common/**` + `iOS/**` + `VideoPlayerPlugin.swift`, against Flutter.framework and SnapKit
 - macOS: `Common/**` + `macOS/**` + `VideoPlayerPlugin.swift`, against FlutterMacOS.framework
 
@@ -30,9 +30,9 @@ The script typechecks exactly what the podspec compiles per platform:
 
 ## If SnapKit isn't found
 
-The script looks for SnapKit sources in `example/build/ios/SourcePackages`, `example/ios/Pods`,
-and Xcode DerivedData. If none exist, the example has never been resolved on this machine.
-Ask the user before running `pod install` or any build; the macOS check still works.
+The script looks for SnapKit SwiftPM checkouts in `example/build/ios/SourcePackages` and Xcode
+DerivedData. If none exist, the example has never been resolved on this machine (SPM only, no
+CocoaPods). Ask the user before any build; the macOS check still works.
 
 ## Limits
 

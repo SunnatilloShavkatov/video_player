@@ -26,18 +26,17 @@ import uz.plugin.video_player.R
 import uz.plugin.video_player.bottomsheet.PlayerBottomSheets
 import uz.plugin.video_player.databinding.ActivityPlayerBinding
 import uz.plugin.video_player.databinding.CustomPlaybackViewBinding
-import uz.plugin.video_player.extraArgument
 import uz.plugin.video_player.models.PlaybackState
 import uz.plugin.video_player.models.PlayerConfiguration
 import uz.plugin.video_player.models.PlayerViews
 import uz.plugin.video_player.models.QualityOption
-import uz.plugin.video_player.player.AudioFocusHandler
 import uz.plugin.video_player.player.PlaybackRecoveryManager
 import uz.plugin.video_player.player.PlayerController
 import uz.plugin.video_player.player.PlayerControllerDelegate
 import uz.plugin.video_player.player.PlayerControlsCoordinator
 import uz.plugin.video_player.player.PlayerGestureHandler
 import uz.plugin.video_player.playerActivityFinish
+import uz.plugin.video_player.playerActivitySessionLost
 import uz.plugin.video_player.subtitles.SubtitleController
 import uz.plugin.video_player.utils.applyBlackSystemBars
 import uz.plugin.video_player.utils.setImmersive
@@ -51,7 +50,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - PlayerControlsCoordinator  controls state: play icon, spinner, title, resize (player/)
  * - PlayerGestureHandler       taps, double-tap seek, brightness/volume swipe, pinch (player/)
  * - PlaybackRecoveryManager    network-restore and foreground recovery (player/)
- * - AudioFocusHandler          media audio focus (player/)
  * - SubtitleController         sidecar subtitle selection + size (subtitles/)
  * - PlayerBottomSheets         settings, quality, speed, subtitle pickers (bottomsheet/)
  * - PictureInPictureHandler    entering PiP, PiP view state, PiP-closed detection (fullscreen/)
@@ -67,14 +65,26 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
         @Volatile
         private var currentInstance: WeakReference<VideoPlayerActivity>? = null
 
-        /** Programmatically close the active VideoPlayerActivity (called from plugin's close()). */
-        fun closeCurrentIfActive() {
-            currentInstance?.get()?.let { activity ->
-                if (!activity.isFinishing) {
-                    activity.finishWithResult()
-                }
-            }
+        @Volatile
+        private var closeOnCreate = false
+
+        /** A close() arrived after the launch but before onCreate: that onCreate finishes as cancelled. */
+        fun requestCloseOnCreate() { closeOnCreate = true }
+
+        fun clearCloseOnCreate() { closeOnCreate = false }
+
+        /**
+         * Programmatically close the active VideoPlayerActivity (called from plugin's close()). Returns whether a
+         * player was open, i.e. whether its result is still to come.
+         */
+        fun closeCurrentIfActive(): Boolean {
+            val activity = currentInstance?.get()
             currentInstance = null
+            if (activity == null) return false
+            if (!activity.isFinishing) {
+                activity.finishWithResult()
+            }
+            return true
         }
     }
 
@@ -87,7 +97,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     private lateinit var controls: PlayerControlsCoordinator
     private lateinit var gestureHandler: PlayerGestureHandler
     private lateinit var recoveryManager: PlaybackRecoveryManager
-    private lateinit var audioFocus: AudioFocusHandler
     private lateinit var subtitles: SubtitleController
     private lateinit var bottomSheets: PlayerBottomSheets
     private lateinit var pip: PictureInPictureHandler
@@ -113,13 +122,24 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     @SuppressLint("AppCompatMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (closeOnCreate) {
+            closeOnCreate = false
+            setResult(RESULT_CANCELED)
+            finish()
+            return
+        }
         currentInstance = WeakReference(this)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = finishWithResult()
         })
         playerConfiguration = try {
-            readConfiguration()
+            intent.readPlayerConfiguration()
         } catch (_: Exception) {
+            finish()
+            return
+        } ?: run {
+            // The key headers lived in the process that died; playing without them would fail the key fetch.
+            setResult(playerActivitySessionLost)
             finish()
             return
         }
@@ -149,6 +169,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
         views = bindPlayerViews()
         setUpComponents()
         bindControlActions()
+        applyOrientation(resources.configuration)
 
         // 1. Window render pipeline ready
         window.decorView.post {
@@ -184,7 +205,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
     override fun onResume() {
         super.onResume()
-        audioFocus.request()
         resumePlaybackIfNeeded()
         gestureHandler.syncBrightnessWithSystem()
     }
@@ -212,6 +232,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
         if (currentInstance?.get() === this) {
             currentInstance = null
         }
+        if (isFinishing) intent.releaseKeyHeadersSession()
         // Finished in onCreate (bad configuration) before anything was set up.
         if (!::bottomSheets.isInitialized) return
 
@@ -221,20 +242,16 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
             playerView.player = null
             playerView.visibility = View.GONE
             controllerOrNull?.release()
-            mainHandler.removeCallbacksAndMessages(null)
-            audioFocus.abandon()
-            recoveryManager.stop()
         } catch (_: IllegalArgumentException) {
             // Ignore cleanup exceptions during shutdown races
+        } finally {
+            mainHandler.removeCallbacksAndMessages(null)
+            recoveryManager.stop()
+            bottomSheets.dismissAll()
         }
-        bottomSheets.dismissAll()
     }
 
     // MARK: - Setup
-
-    @Suppress("DEPRECATION")
-    private fun readConfiguration(): PlayerConfiguration =
-        intent.getSerializableExtra(extraArgument) as PlayerConfiguration
 
     private fun bindPlayerViews(): PlayerViews {
         // The controller layout is inflated by Media3 inside the PlayerView.
@@ -264,7 +281,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
     private fun setUpComponents() {
         controls = PlayerControlsCoordinator(playerView, views, playerConfiguration.title)
-        controls.applyTitle(resources.configuration.orientation)
 
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         gestureHandler = PlayerGestureHandler(this, playerView, views, audioManager) { forward ->
@@ -272,12 +288,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
             else controllerOrNull?.seekBackward(SEEK_INCREMENT_MS)
         }
         gestureHandler.attach()
-
-        audioFocus = AudioFocusHandler(audioManager) {
-            controllerOrNull?.pause()
-            playerView.hideController()
-        }
-        audioFocus.request()
 
         recoveryManager = PlaybackRecoveryManager(this, { controllerOrNull }) {
             lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || isInPictureInPictureMode
@@ -334,7 +344,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
     }
 
     private fun onStartFailed(error: Throwable) {
-        Log.e(TAG, "Failed to start playback: ${error.message}", error)
+        Log.e(TAG, "Failed to start playback: ${error.javaClass.simpleName}")
         pendingErrorToastMessage = getString(R.string.video_player_error_retry)
         onPlaybackStateChanged(PlaybackState.ERROR)
     }
@@ -373,7 +383,8 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
             type = "text/html"
             putExtra(Intent.EXTRA_TEXT, playerConfiguration.movieShareLink)
         }
-        startActivity(Intent.createChooser(intent, "Share using..."))
+        // NO_USER_ACTION: the chooser must not count as leaving the app (onUserLeaveHint would enter PiP).
+        startActivity(Intent.createChooser(intent, "Share using...").addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION))
     }
 
     /** Report position/duration in seconds to the plugin and close. */
@@ -402,7 +413,9 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
     // MARK: - Picture-in-Picture
 
-    override fun onUserLeaveHint() = pip.onUserLeaveHint()
+    override fun onUserLeaveHint() {
+        if (::pip.isInitialized) pip.onUserLeaveHint(isPlaying = controllerOrNull?.isPlaying() == true)
+    }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
@@ -411,10 +424,13 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val isLandscape = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE
-        window.setImmersive(isLandscape, findViewById(R.id.player_activity))
-        controls.applyOrientation(newConfig.orientation)
+        applyOrientation(newConfig)
         bottomSheets.onOrientationChanged()
+    }
+
+    private fun applyOrientation(configuration: Configuration) {
+        window.setImmersive(configuration.orientation == Configuration.ORIENTATION_LANDSCAPE, binding.root)
+        controls.applyOrientation(configuration.orientation)
     }
 
     // MARK: - PlayerControllerDelegate
@@ -449,7 +465,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
             if (recoveryManager.hasConnection()) R.string.video_player_error_retry
             else R.string.video_player_error_no_internet
         )
-        Log.e(TAG, "Playback error: ${error.message}", error)
+        Log.e(TAG, "Playback error: ${error.errorCodeName}")
     }
 
     override fun onTracksChanged(qualities: List<QualityOption>) {

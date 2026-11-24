@@ -29,10 +29,10 @@ Flutter video player plugin with native iOS (AVPlayer) and Android (ExoPlayer) i
 
 ## Requirements
 
-- Flutter SDK: ≥3.32.0
-- Dart: ≥3.8.0
-- iOS: ≥15.0
-- Android: minSdk 21
+- Flutter SDK: ≥3.47.0
+- Dart: ≥3.13.0
+- iOS: ≥15.0 (Swift Package Manager only, no CocoaPods)
+- Android: minSdk 26
 
 ## Installation
 
@@ -45,10 +45,11 @@ dependencies:
 
 ### iOS Setup
 
-Add to `ios/Podfile`:
-```ruby
-platform :ios, '15.0'
-```
+The plugin ships for iOS and macOS through **Swift Package Manager only** (no CocoaPods / podspec).
+Make sure Swift Package Manager is enabled for your Flutter app — see
+[Swift Package Manager for app developers](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers).
+
+Set the Runner target's minimum deployment to iOS 15.0 (`IPHONEOS_DEPLOYMENT_TARGET = 15.0`).
 
 Add permissions to `Info.plist`:
 ```xml

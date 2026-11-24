@@ -54,11 +54,12 @@ dependencies:
 
 ### iOS Setup
 
-1. Set minimum iOS version to 15.0 in `ios/Podfile`:
+The plugin ships for iOS and macOS through **Swift Package Manager only** (no CocoaPods / podspec).
+Make sure Swift Package Manager is enabled for your Flutter app — see
+[Swift Package Manager for app developers](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers).
 
-```ruby
-platform :ios, '15.0'
-```
+1. Set the Runner target's minimum deployment to iOS 15.0 (Xcode → Runner → General → Minimum Deployments,
+   i.e. `IPHONEOS_DEPLOYMENT_TARGET = 15.0`).
 
 2. Use **HTTPS** URLs for remote playback.
 
@@ -74,7 +75,7 @@ for normal HTTPS playback.
 <true/>
 ```
 
-2. Minimum macOS version is 10.15 (macOS 11.0+ recommended in `macos/Podfile`).
+2. Minimum macOS version is 10.15 (11.0+ recommended): set `MACOSX_DEPLOYMENT_TARGET` on the Runner target.
 
 ### Android Setup
 

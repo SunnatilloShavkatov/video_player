@@ -89,15 +89,18 @@ class PlayerGestureHandler(
         }
     }
 
-    /** Re-read the system brightness (it may have changed while backgrounded). */
+    /** Re-read the brightness: the window's own override if set, else the system setting (may change while backgrounded). */
     fun syncBrightnessWithSystem() {
-        brightness = try {
-            Settings.System.getInt(activity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-                .toDouble().coerceIn(0.0, BRIGHTNESS_MAX.toDouble())
-        } catch (_: Settings.SettingNotFoundException) {
-            BRIGHTNESS_DEFAULT.toDouble()
-        }
-        views.brightnessSeekbar.progress = brightness.toInt()
+        brightness = BrightnessLevel.fromWindow(activity.window.attributes.screenBrightness, BRIGHTNESS_MAX)
+            ?: try {
+                BrightnessLevel.fromSystem(
+                    Settings.System.getInt(activity.contentResolver, Settings.System.SCREEN_BRIGHTNESS),
+                    BRIGHTNESS_MAX,
+                )
+            } catch (_: Settings.SettingNotFoundException) {
+                BRIGHTNESS_DEFAULT.toDouble()
+            }
+        views.brightnessSeekbar.progress = BrightnessLevel.step(brightness, BRIGHTNESS_MAX)
     }
 
     fun cancelPendingTaps() {
@@ -124,10 +127,14 @@ class PlayerGestureHandler(
             views.layoutVolume.visibility = View.GONE
             val newValue = if (increase) brightness + BRIGHTNESS_STEP else brightness - BRIGHTNESS_STEP
             if (newValue in 0.0..maxBrightness) {
+                val previousStep = BrightnessLevel.step(brightness, BRIGHTNESS_MAX)
                 brightness = newValue
-                views.brightnessSeekbar.progress = brightness.toInt()
-                activity.window.attributes = activity.window.attributes.apply {
-                    screenBrightness = SCREEN_BRIGHTNESS_SCALE * brightness.toInt()
+                val step = BrightnessLevel.step(brightness, BRIGHTNESS_MAX)
+                if (step != previousStep) {
+                    views.brightnessSeekbar.progress = step
+                    activity.window.attributes = activity.window.attributes.apply {
+                        screenBrightness = SCREEN_BRIGHTNESS_SCALE * step
+                    }
                 }
             }
         } else {

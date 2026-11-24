@@ -18,18 +18,18 @@ Flutter plugin with native iOS (Swift), macOS (Swift), and Android (Kotlin) impl
 ## 2. Zero-Hop Feature Dispatch Matrix
 Do not search or explore the codebase blindly. Dispatch directly to the component that owns the logic:
 
-| Feature / Concern | iOS (UIKit) | macOS (AppKit) | Android (Media3) | Dart Layer |
-|---|---|---|---|---|
-| **Buttons, Slider, Layout** | `iOS/Player/PlayerOverlayView.swift` | `macOS/PlayerControlsView.swift` | `activity_video_player.xml` | `video_player_view.dart` |
-| **Play, Pause, Seek, Rate** | `iOS/Player/PlayerController.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_android.dart` / `video_player_darwin.dart` |
-| **KVO, Time, Notifications** | `iOS/Player/PlayerObserverManager.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerController.kt` | `video_player_view_controller.dart` |
-| **Gestures (Tap/Pan/Pinch)** | `iOS/Player/PlayerGestureHandler.swift` | `macOS/VideoPlayerOverlayView.swift` | `player/PlayerGestureHandler.kt` | - |
-| **Controls Visibility & Spinner**| `iOS/Player/PlayerControlsCoordinator.swift` | `macOS/PlayerControlsView.swift` | `player/PlayerControlsCoordinator.kt` | - |
-| **Stall / Network / Audio Recovery**| `iOS/Player/PlaybackRecoveryManager.swift` | - | `player/PlaybackRecoveryManager.kt` | - |
-| **Subtitles (WebVTT)** | `iOS/Subtitles/SubtitleController.swift` | - | `subtitles/SubtitleController.kt` | `video_player_view.dart` |
-| **Sheets, PiP, Screen Protect** | `iOS/FullScreen/VideoPlayerViewController.swift` (+ `+Settings.swift`: sheets, quality/speed/subtitle) | - | `fullscreen/VideoPlayerActivity.kt` (+ `PictureInPictureHandler.kt`) | `video_player.dart` |
-| **Embedded Platform View** | `iOS/Embedded/VideoViewController.swift` + `Common/EmbeddedPlayerObserver.swift` (KVO, position; shared) | `macOS/VideoPlayerPlatformView.swift` + `Common/EmbeddedPlayerObserver.swift` | `embedded/VideoPlayerView.kt` | `video_player_view.dart` (widget) + `video_player_view_controller.dart` (commands, streams) |
-| **Shared Darwin Logic** | `Common/` (Strictly NO UIKit/AppKit imports) | `Common/` | - | - |
+| Feature / Concern                    | iOS (UIKit)                                                                                              | macOS (AppKit)                                                                | Android (Media3)                                                     | Dart Layer                                                                                  |
+|--------------------------------------|----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| **Buttons, Slider, Layout**          | `iOS/Player/PlayerOverlayView.swift`                                                                     | `macOS/PlayerControlsView.swift`                                              | `activity_video_player.xml`                                          | `video_player_view.dart`                                                                    |
+| **Play, Pause, Seek, Rate**          | `iOS/Player/PlayerController.swift`                                                                      | `macOS/VideoPlayerOverlayView.swift`                                          | `player/PlayerController.kt`                                         | `video_player_android.dart` / `video_player_darwin.dart`                                    |
+| **KVO, Time, Notifications**         | `iOS/Player/PlayerObserverManager.swift`                                                                 | `macOS/VideoPlayerOverlayView.swift`                                          | `player/PlayerController.kt`                                         | `video_player_view_controller.dart`                                                         |
+| **Gestures (Tap/Pan/Pinch)**         | `iOS/Player/PlayerGestureHandler.swift`                                                                  | `macOS/VideoPlayerOverlayView.swift`                                          | `player/PlayerGestureHandler.kt`                                     | -                                                                                           |
+| **Controls Visibility & Spinner**    | `iOS/Player/PlayerControlsCoordinator.swift`                                                             | `macOS/PlayerControlsView.swift`                                              | `player/PlayerControlsCoordinator.kt`                                | -                                                                                           |
+| **Stall / Network / Audio Recovery** | `iOS/Player/PlaybackRecoveryManager.swift`                                                               | -                                                                             | `player/PlaybackRecoveryManager.kt`                                  | -                                                                                           |
+| **Subtitles (WebVTT)**               | `iOS/Subtitles/SubtitleController.swift`                                                                 | -                                                                             | `subtitles/SubtitleController.kt`                                    | `video_player_view.dart`                                                                    |
+| **Sheets, PiP, Screen Protect**      | `iOS/FullScreen/VideoPlayerViewController.swift` (+ `+Settings.swift`: sheets, quality/speed/subtitle)   | -                                                                             | `fullscreen/VideoPlayerActivity.kt` (+ `PictureInPictureHandler.kt`) | `video_player.dart`                                                                         |
+| **Embedded Platform View**           | `iOS/Embedded/VideoViewController.swift` + `Common/EmbeddedPlayerObserver.swift` (KVO, position; shared) | `macOS/VideoPlayerPlatformView.swift` + `Common/EmbeddedPlayerObserver.swift` | `embedded/VideoPlayerView.kt`                                        | `video_player_view.dart` (widget) + `video_player_view_controller.dart` (commands, streams) |
+| **Shared Darwin Logic**              | `Common/` (Strictly NO UIKit/AppKit imports)                                                             | `Common/`                                                                     | -                                                                    | -                                                                                           |
 
 ---
 
@@ -40,13 +40,15 @@ Do not search or explore the codebase blindly. Dispatch directly to the componen
    - For files > 300 lines (`VideoPlayerActivity.kt`, `VideoPlayerViewController.swift`, `video_player_view_controller.dart`), read only target line ranges (`StartLine`/`EndLine`).
    - Never read `CHANGELOG.md`, `INSTRUCTIONS.md`, `API_CLARIFICATION.md`, `pubspec.lock`, or generated files in full. Use `rg -n` for lookups.
 3. **No Builds Without User Consent:**
-   - Never run `flutter build`, `flutter run`, `pod install`, or `./gradlew`.
+   - Never run `flutter build`, `flutter run`, `xcodebuild`, or `./gradlew`.
    - For Swift compile check: `bash .claude/skills/darwin-typecheck/scripts/typecheck.sh`
    - For Android compile check: `bash .claude/skills/android-typecheck/scripts/typecheck.sh`
    - For Dart unit tests: `flutter test -r failures-only [test/<file>_test.dart]`
+   - E2E tests: Patrol in `example/patrol_test/` (config: `patrol:` block in `example/pubspec.yaml`; native runners `example/android/app/src/androidTest/.../MainActivityTest.java`, `example/ios/RunnerUITests/RunnerUITests.m`). They build and run the app on a device — the developer runs `patrol test` from `example/`; agents only write them and run `flutter analyze`.
    - Android JVM unit tests live in `android/src/test/kotlin` (pure Kotlin, no `android.*`); CI runs them with Gradle. Recovery/intent rules live in `player/PlaybackIntent.kt` (unit tested). Swift unit tests for `Common/` live in `darwin/video_player/Tests`; run `bash darwin/video_player/Tests/run-tests.sh` (add new pure `Common/` files to that script). CI (`.github/workflows/ci.yml`) also analyzes Dart and compiles the example on iOS/macOS.
 4. **iOS & macOS Darwin Rules:**
-   - Podspec globs `Common/**` + `iOS/**` for iOS, and `Common/**` + `macOS/**` for macOS.
+   - **Swift Package Manager only — CocoaPods is dropped completely.** No podspec, no `Podfile` in `example/`, no `pod install`: never add, restore or suggest them (code, docs, CI, scripts). Native dependencies (SnapKit) go in `darwin/video_player/Package.swift` only.
+   - `Package.swift`: one target over `Sources/video_player`; `#if os(...)` picks `iOS/**` or `macOS/**`, `Common/**` builds on both.
    - Wrap platform files in `#if os(iOS)` or `#if os(macOS)`.
    - Never put UIKit/AppKit/Cocoa imports in `Common/`.
 5. **Android Rules:**

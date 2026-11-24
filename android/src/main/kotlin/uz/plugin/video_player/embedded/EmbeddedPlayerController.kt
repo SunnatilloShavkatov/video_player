@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
 import uz.plugin.video_player.player.createRenderersFactory
 import uz.plugin.video_player.player.hlsMediaSourceFactory
+import uz.plugin.video_player.player.movieAudioAttributes
 import uz.plugin.video_player.utils.UrlPolicy
 
 /**
@@ -43,12 +44,15 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
         const val POSITION_INTERVAL_MS = 1000L
     }
 
-    private val player = ExoPlayer.Builder(context, createRenderersFactory(context)).build()
+    private val player = ExoPlayer.Builder(context, createRenderersFactory(context))
+        .setAudioAttributes(movieAudioAttributes(), true)
+        .setHandleAudioBecomingNoisy(true)
+        .build()
     private val playerView = PlayerView(context).apply {
         layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         player = this@EmbeddedPlayerController.player
         useController = false
-        keepScreenOn = true
+        keepScreenOn = false
     }
     private val container = FrameLayout(context).apply {
         layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -205,6 +209,7 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isReleased) return
+        playerView.keepScreenOn = isPlaying
         // Poll position only while actually playing; stop when paused or buffering
         if (isPlaying) {
             startPositionUpdates()
@@ -234,6 +239,7 @@ class EmbeddedPlayerController(context: Context, private val listener: Listener)
     fun release() {
         if (isReleased) return
         isReleased = true
+        playerView.keepScreenOn = false
         stopPositionUpdates()
         handler.removeCallbacksAndMessages(null)
         player.removeListener(this)

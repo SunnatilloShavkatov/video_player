@@ -9,7 +9,7 @@ part of 'video_player_view.dart';
 /// 1. Controller is created when [VideoPlayerView] is initialized
 /// 2. Use controller methods to control playback
 /// 3. Listen to streams for position and status updates
-/// 4. Call [dispose] when done to clean up resources
+/// 4. [VideoPlayerView] disposes it when the view leaves the tree; call [dispose] earlier to stop using it sooner
 ///
 /// **Errors:** commands are not swallowed. A disposed controller throws
 /// [StateError], an invalid URL throws [ArgumentError], and native failures
