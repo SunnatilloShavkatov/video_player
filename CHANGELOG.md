@@ -1,3 +1,40 @@
+## [3.10.0] - 2026-11-24
+
+### Migration
+Minimum versions are lowered to Dart `>=3.13.0` and Flutter `>=3.47.0` (from 3.14 / 3.50; CI builds on 3.47.0); `jni` `^1.2.1` and `jnigen` `^1.1.0`.
+
+**Breaking (iOS / macOS):** `darwin/video_player.podspec` is removed; the plugin builds through Swift Package Manager only. Apps that disabled SwiftPM (`flutter config --no-enable-swift-package-manager` or `disable-swift-package-manager` in `pubspec.yaml`) must enable it.
+
+### Fixed
+- **Android:** several engines (a background `FlutterEngine` for push messages, add-to-app, engine groups) no longer break fullscreen playback. The newest engine with an Activity plays the video; a detaching engine no longer leaves the plugin `NOT_ATTACHED`.
+- **iOS / macOS:** each engine registers its own host; on iOS the plugin is published, so a destroyed engine unregisters and cancels its pending session.
+- **Android:** `close()` completes after the player has delivered its result, as on iOS and macOS (it used to complete before the player closed).
+- **Android:** the player's request codes (`0x5650` / `0x5651`) no longer collide with other plugins' `111` / `222`.
+- Web, Windows and Linux: the package compiles without `dart:ffi` (conditional import); `playVideo` returns `PlaybackFailed` with `UnsupportedError` instead of reaching the Objective-C bindings.
+- **Android:** fullscreen asset videos (`playVideoFromAsset`) play again; `asset:///` URIs no longer go through the HTTP data source.
+- **Android:** the player window is hardware accelerated again (`android:hardwareAccelerated="false"` removed), so controls no longer render on the CPU.
+- **Android:** choosing "Auto" after a manual quality lets adaptive bitrate go below the previous pick again.
+- **Android:** `close()` called before the player Activity is created now closes it; sharing no longer enters Picture-in-Picture, and PiP is entered only while playing.
+- **Android:** immersive mode applies when the player opens in landscape; a locale change no longer restarts playback.
+- **iOS:** end-of-playback and item status callbacks reach UIKit on the main thread.
+- **iOS:** a presentation refused by a busy presenter resolves with `PRESENT_FAILED` instead of never completing; the player presents from the top-most presented controller of its own engine.
+- **iOS:** `PlayerControlsCoordinator` compiles with Swift < 6.1 (trailing comma in a parameter list removed).
+- **macOS:** a stream that fails to load or play resolves with `PLAYBACK_FAILED` instead of a spinner forever.
+- `VideoPlayerView` owns its controller: it is disposed when the view leaves the tree, and a rebuild with a different `url`, `resizeMode` or key headers loads the new source. Calling `dispose()` yourself is still safe. On web it shows an unsupported message instead of a native view.
+
+### Security
+- **Android:** invalid player configuration errors no longer echo the configuration JSON, which could carry `keyRequestHeaders`, into `NativeFailure.message` and the error log.
+- **Android:** `keyRequestHeaders` no longer travel in the player Activity's Intent extras; they stay in process memory under a session id, and a session lost to process death fails with `SESSION_LOST` instead of playing without them. Release logs carry only error codes.
+- **iOS:** AES-128 key responses are fetched with an ephemeral session and never written to the URL cache; key-header requests refuse redirects to non-https or unlisted hosts.
+- **iOS:** with screenshots disabled, Picture-in-Picture and AirPlay are off in fullscreen. **macOS:** the player window is excluded from screen capture (`sharingType = .none`) while the overlay is shown.
+- Invalid-URL errors no longer include the URL (signed query tokens).
+
+### Changed
+- JNI bindings regenerated with `jnigen` 1.1.0; the facade adds `VideoPlayerApi.CloseCallback`.
+- **Performance / battery (Android):** the screen stays on only while playing; Media3 handles audio focus (transient loss pauses, music resumes after) and pauses when headphones disconnect; brightness swipes start from the real level and update the window only when the step changes.
+- **Performance / battery (iOS):** fullscreen uses the `.playback` / `.moviePlayback` audio session and restores the previous one on close; screen brightness is restored on close; the HLS parser reuses one session; media loads once per presentation.
+- **iOS / macOS:** `PrivacyInfo.xcprivacy` declares UserDefaults (CA92.1).
+
 ## [3.9.1] - 2026-11-14
 
 ### Fixed

@@ -18,6 +18,7 @@ class NetworkChangeReceiver(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var isRegistered = false
+    @Volatile
     private var isConnected = hasValidatedConnection()
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {

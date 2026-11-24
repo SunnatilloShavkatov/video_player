@@ -42,8 +42,8 @@ Add or extend a test in `test/` for every serialized key or channel method.
 Rules:
 - If a change would push `PlayerView.swift` past ~450 lines or mix a second concern into it,
   add or extend a component instead.
-- A new Darwin file goes in the folder for its role; the podspec globs `iOS/**`, `macOS/**`,
-  `Common/**`, so no build-file edit is needed. Never put iOS-only code in `Common/`.
+- A new Darwin file goes in the folder for its role; `Package.swift` compiles everything under
+  `Sources/video_player`, so no build-file edit is needed. Never put iOS-only code in `Common/`.
 - Every iOS/macOS file is wrapped in `#if os(iOS)` / `#if os(macOS)` like its neighbors.
 
 ## 3. Verify

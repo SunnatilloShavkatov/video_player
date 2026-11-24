@@ -7,17 +7,17 @@ folder layout and pitfalls — shared with other coding agents. Edit rules there
 This file only adds Claude Code specifics.
 
 - **Package:** `uz.plugin.video_player`
-- **Current Version:** `3.8.0`
+- **Current Version:** `3.10.0`
 - **Repository:** `https://github.com/SunnatilloShavkatov/video_player`
 
 ## Claude Code specifics
 
 - **Skills:** use `native-feature` for any cross-layer change, `darwin-typecheck` after
   touching `darwin/`, and `release-bump` for version bumps (see `.claude/skills/`).
-- **No builds without asking:** don't run `flutter build`, `flutter run`, `pod install`
-  or Gradle. `flutter test` and the darwin typecheck script are fine.
+- **No builds without asking:** don't run `flutter build`, `flutter run`, `xcodebuild`
+  or Gradle. iOS/macOS are SPM only — CocoaPods is gone; never suggest `pod install` or a Podfile. `flutter test` and the darwin typecheck script are fine.
 - **Hooks** (`.claude/settings.json`): `slow-cmd-guard` blocks builds and raw `flutter test`
   (use `-r failures-only`), `plugin-guard` checks file size / Darwin `#if os` / seconds contract
   after each edit, `token-report` logs each turn's cost; `/token-review` analyzes that log.
-- **Moving Swift files:** use `git mv` so history follows; the podspec globs pick up new
-  paths automatically. Update the folder map in `AGENTS.md` in the same change.
+- **Moving Swift files:** use `git mv` so history follows; `Package.swift` picks up new
+  paths under `Sources/video_player` automatically (SPM only, no podspec). Update the folder map in `AGENTS.md` in the same change.

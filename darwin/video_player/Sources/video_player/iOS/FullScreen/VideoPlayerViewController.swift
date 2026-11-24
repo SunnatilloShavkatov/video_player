@@ -22,6 +22,9 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private var isClosingPlayer = false
     private var dismissalCompletionHandlers: [() -> Void] = []
     private var supportedOrientations: UIInterfaceOrientationMask = .allButUpsideDown
+    private var hasLoadedMedia = false
+    private var originalBrightness: CGFloat?
+    private var previousAudioSession: (category: AVAudioSession.Category, mode: AVAudioSession.Mode, options: AVAudioSession.CategoryOptions)?
 
     ///
     weak var delegate: VideoPlayerDelegate?
@@ -88,7 +91,8 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     func setupPictureInPicture() {
-        if AVPictureInPictureController.isPictureInPictureSupported() {
+        // PiP would carry protected content out of the screen-capture-protected window.
+        if playerConfiguration.isScreenshotEnabled, AVPictureInPictureController.isPictureInPictureSupported() {
             guard let controller = AVPictureInPictureController(playerLayer: playerView.playerLayer) else {
                 playerView.setIsPipEnabled(v: false)
                 return
@@ -147,11 +151,41 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     }
 
     override func viewWillAppear(_ animated: Bool) {
-        playerView.loadMedia(autoPlay: true, playPosition: TimeInterval(playerConfiguration.lastPosition), area: view.safeAreaLayoutGuide)
+        let isFirstAppearance = !hasLoadedMedia
+        if isFirstAppearance {
+            hasLoadedMedia = true
+            applyPlaybackEnvironment()
+            playerView.loadMedia(autoPlay: true, playPosition: TimeInterval(playerConfiguration.lastPosition), area: view.safeAreaLayoutGuide)
+            // With screenshots disabled, AirPlay must not show the video on another screen.
+            playerView.playerLayer.player?.allowsExternalPlayback = playerConfiguration.isScreenshotEnabled
+        }
         playerView.setShareEnabled(canShareContent)
         setupPictureInPicture()
-        setupInitialSubtitles()
+        if isFirstAppearance {
+            setupInitialSubtitles()
+        }
         super.viewWillAppear(animated)
+    }
+
+    /// Saved on open and restored on close: screen brightness (the swipe gesture changes it) and the audio session.
+    private func applyPlaybackEnvironment() {
+        originalBrightness = UIScreen.main.brightness
+        let audioSession = AVAudioSession.sharedInstance()
+        previousAudioSession = (audioSession.category, audioSession.mode, audioSession.categoryOptions)
+        try? audioSession.setCategory(.playback, mode: .moviePlayback)
+        try? audioSession.setActive(true)
+    }
+
+    private func restorePlaybackEnvironment() {
+        if let originalBrightness {
+            UIScreen.main.brightness = originalBrightness
+            self.originalBrightness = nil
+        }
+        guard let previous = previousAudioSession else { return }
+        previousAudioSession = nil
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        try? audioSession.setCategory(previous.category, mode: previous.mode, options: previous.options)
     }
 
     private func setupInitialSubtitles() {
@@ -404,6 +438,7 @@ class VideoPlayerViewController: UIViewController, AVPictureInPictureControllerD
     private func notifyDismissalIfNeeded() {
         guard !hasNotifiedDismissal else { return }
         hasNotifiedDismissal = true
+        restorePlaybackEnvironment()
         onDidDismiss?()
 
         let completions = dismissalCompletionHandlers

@@ -7,6 +7,10 @@ public typealias PlayBlock = (Int, Int, String?, String?) -> Void
 
 /// What the plugin instance implements; `VideoPlayerApi` forwards to it on the main thread.
 protocol VideoPlayerHost: AnyObject {
+    /// Whether this engine has a view to present the player from.
+    var canPresent: Bool { get }
+    /// Whether a player started by this engine has not finished yet.
+    var hasActivePlayer: Bool { get }
     func playVideo(configJson: String, completion: @escaping PlayBlock)
     func closePlayer(completion: @escaping () -> Void)
 }
@@ -17,12 +21,28 @@ protocol VideoPlayerHost: AnyObject {
 /// exactly once; before the plugin registers it answers `NOT_ATTACHED`.
 @objc(VideoPlayerApi)
 public final class VideoPlayerApi: NSObject {
-    // Strong on purpose: on macOS nothing else retains the plugin instance once the method channel is gone.
-    static var host: VideoPlayerHost?
+    // One entry per attached engine (add-to-app, engine groups), newest last; touched on the main thread only.
+    // Strong on purpose: on macOS nothing else retains the plugin instance, and macOS never detaches.
+    private static var hosts: [VideoPlayerHost] = []
+
+    static func register(_ host: VideoPlayerHost) {
+        onMain {
+            hosts.removeAll { $0 === host }
+            hosts.append(host)
+        }
+    }
+
+    static func unregister(_ host: VideoPlayerHost) {
+        onMain { hosts.removeAll { $0 === host } }
+    }
+
+    private static var currentHost: VideoPlayerHost? {
+        hosts.last(where: { $0.canPresent }) ?? hosts.last
+    }
 
     @objc public static func playVideo(_ playerConfigJson: String, callback: @escaping PlayBlock) {
         onMain {
-            guard let host else {
+            guard let host = currentHost else {
                 callback(-1, -1, "NOT_ATTACHED", "video_player is not attached to an engine")
                 return
             }
@@ -32,7 +52,7 @@ public final class VideoPlayerApi: NSObject {
 
     @objc public static func close(_ callback: @escaping () -> Void) {
         onMain {
-            guard let host else {
+            guard let host = hosts.last(where: { $0.hasActivePlayer }) ?? currentHost else {
                 callback()
                 return
             }

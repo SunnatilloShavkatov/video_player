@@ -11,6 +11,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     private var videoViewController: VideoViewController
     private var _methodChannel: FlutterMethodChannel
     private weak var containerViewController: UIViewController?
+    private weak var registrar: FlutterPluginRegistrar?
     private var isAttachedToParent = false
     
     func view() -> UIView {
@@ -35,6 +36,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
         let keyRequestHosts = (args?["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
         let viewController = VideoViewController(registrar: registrar, methodChannel: _methodChannel, assets: assets ?? "", url: url ?? "", keyRequestHeaders: keyRequestHeaders, keyRequestHosts: keyRequestHosts, gravity: gravity)
         self.videoViewController = viewController
+        self.registrar = registrar
         
         super.init()
         attachVideoViewControllerIfNeeded()
@@ -197,7 +199,7 @@ class VideoPlayerView: NSObject, FlutterPlatformView {
     }
 
     private func resolveHostViewController() -> UIViewController? {
-        if let flutterViewController = VideoPlayerPlugin.viewController {
+        if let flutterViewController = registrar?.viewController ?? VideoPlayerPlugin.viewController {
             return flutterViewController
         }
 

@@ -17,7 +17,9 @@ part 'video_player_view_controller.dart';
 
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
-class VideoPlayerView extends StatelessWidget {
+/// Owns the [VideoPlayerViewController] it creates: the controller is disposed when the view leaves the tree, and
+/// a rebuild with a different [url], [resizeMode], [keyRequestHeaders] or [keyRequestHosts] loads the new source.
+class VideoPlayerView extends StatefulWidget {
   const new({
     super.key,
     required this.url,
@@ -43,56 +45,102 @@ class VideoPlayerView extends StatelessWidget {
   /// [keyRequestHeaders]. See `PlayerConfiguration.keyRequestHosts`.
   final List<String> keyRequestHosts;
 
-  Map<String, dynamic> get _creationParams => <String, dynamic>{
-    'url': url,
-    'resizeMode': resizeMode.value,
-    'keyRequestHeaders': keyRequestHeaders,
-    'keyRequestHosts': keyRequestHosts,
-  };
+  @override
+  State<VideoPlayerView> createState() => _VideoPlayerViewState();
+}
+
+class _VideoPlayerViewState extends State<VideoPlayerView> {
+  VideoPlayerViewController? _controller;
+
+  @override
+  void didUpdateWidget(VideoPlayerView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final controller = _controller;
+    if (controller == null || !_sourceChanged(oldWidget)) {
+      return;
+    }
+    if (UrlValidator.instance.isNotValidHttpsUrl(widget.url)) {
+      return;
+    }
+    unawaited(
+      controller
+          .setUrl(
+            url: widget.url,
+            resizeMode: widget.resizeMode,
+            keyRequestHeaders: widget.keyRequestHeaders,
+            keyRequestHosts: widget.keyRequestHosts,
+          )
+          .catchError((Object _) {}, test: (e) => e is StateError || e is PlatformException),
+    );
+  }
+
+  bool _sourceChanged(VideoPlayerView old) =>
+      old.url != widget.url ||
+      old.resizeMode != widget.resizeMode ||
+      !mapEquals(old.keyRequestHeaders, widget.keyRequestHeaders) ||
+      !listEquals(old.keyRequestHosts, widget.keyRequestHosts);
+
+  @override
+  void dispose() {
+    unawaited(_controller?.dispose());
+    _controller = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
+    if (kIsWeb) {
+      return const Text('Web is not yet supported by the video_player plugin');
+    }
+    if (UrlValidator.instance.isNotValidHttpsUrl(widget.url)) {
       return const Center(child: Text('Error: Invalid URL format. Must be HTTPS URL'));
     }
+    final creationParams = <String, dynamic>{
+      'url': widget.url,
+      'resizeMode': widget.resizeMode.value,
+      'keyRequestHeaders': widget.keyRequestHeaders,
+      'keyRequestHosts': widget.keyRequestHosts,
+    };
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return AndroidView(
-          viewType: _viewType,
+          viewType: VideoPlayerView._viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: _creationParams,
+          creationParams: creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
       case TargetPlatform.iOS:
         return UiKitView(
-          viewType: _viewType,
+          viewType: VideoPlayerView._viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: _creationParams,
+          creationParams: creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
       case TargetPlatform.macOS:
         return AppKitView(
-          viewType: _viewType,
+          viewType: VideoPlayerView._viewType,
           layoutDirection: TextDirection.ltr,
           hitTestBehavior: PlatformViewHitTestBehavior.transparent,
-          creationParams: _creationParams,
+          creationParams: creationParams,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParamsCodec: const StandardMessageCodec(),
         );
       case TargetPlatform.fuchsia:
-        return Text('$defaultTargetPlatform is not yet supported by the video_player plugin');
       case TargetPlatform.windows:
-        return Text('$defaultTargetPlatform is not yet supported by the video_player plugin');
       case TargetPlatform.linux:
         return Text('$defaultTargetPlatform is not yet supported by the video_player plugin');
     }
   }
 
-  // Callback method when platform view is created
-  void _onPlatformViewCreated(int id) => onVideoViewCreated(VideoPlayerViewController._(id));
+  void _onPlatformViewCreated(int id) {
+    unawaited(_controller?.dispose());
+    final controller = VideoPlayerViewController._(id);
+    _controller = controller;
+    widget.onVideoViewCreated(controller);
+  }
 }

@@ -55,7 +55,25 @@ class AndroidVideoPlayerBridge implements VideoPlayerBridge {
   }
 
   @override
-  Future<void> close() async => VideoPlayerApi.close();
+  Future<void> close() {
+    final Completer<void> completer = Completer<void>();
+    try {
+      final VideoPlayerApi$CloseCallback callback = VideoPlayerApi$CloseCallback.implement(
+        $VideoPlayerApi$CloseCallback(
+          onClosed: () {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          },
+          onClosed$async: true,
+        ),
+      );
+      handOver(callback, VideoPlayerApi.close);
+    } on JThrowable catch (e) {
+      return Future<void>.error(NativeFailure(code: 'JNI_ERROR', message: e.toString()));
+    }
+    return completer.future;
+  }
 }
 
 /// Passes a Dart-implemented [proxy] to native code and drops Dart's own reference to it. Kotlin keeps the proxy

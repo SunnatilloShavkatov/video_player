@@ -4,22 +4,33 @@ publish_to: "none"
 description: "Demonstrates how to use the video_player plugin."
 
 environment:
-  sdk: ">=3.14.0 <4.0.0"
-  flutter: ">=3.50.0"
+  sdk: ">=3.13.0 <4.0.0"
+  flutter: ">=3.47.0"
 
 dependencies:
   flutter:
     sdk: flutter
   video_player:
     path: ../
-  material_ui: ^1.11.0
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
-  analysis_lints: ^1.1.1
+  analysis_lints: any
+  patrol: ^4.12.0
 
 flutter:
   uses-material-design: true
+
+# Patrol E2E tests (patrol_test/), run with `patrol test`.
+patrol:
+  app_name: Video Player Example
+  android:
+    package_name: uz.plugin.video_player_example
+  ios:
+    bundle_id: uz.plugin.videoPlayer
+  macos:
+    bundle_id: uz.plugin.videoPlayer

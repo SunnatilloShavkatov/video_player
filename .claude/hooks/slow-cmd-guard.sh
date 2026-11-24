@@ -87,7 +87,7 @@ while IFS= read -r raw; do
   case "$seg" in
     "flutter build"*|"flutter run"*|"flutter clean"*|"flutter pub get"*|"flutter pub upgrade"*)
       block "build/run/clean/pub get are the developer's call (CLAUDE.md). Ask instead. Compile signal: .claude/skills/{darwin,android}-typecheck/scripts/typecheck.sh" ;;
-    "pod install"*|"pod update"*|"xcodebuild"*|"./gradlew"*|"gradlew"*|"gradle "*|"bash gradlew"*)
+    "pod install"*|"pod update"*|"xcodebuild"*|"patrol test"*|"patrol build"*|"patrol develop"*|"./gradlew"*|"gradlew"*|"gradle "*|"bash gradlew"*)
       block "native builds are the developer's call (CLAUDE.md). Ask instead. Compile signal: darwin-typecheck / android-typecheck skill." ;;
     "flutter test"*)
       # Allowed, but only with a compact reporter: the default one prints every test.

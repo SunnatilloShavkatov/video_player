@@ -1,6 +1,8 @@
 package uz.plugin.video_player.player
 
 import android.content.Context
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.RenderersFactory
@@ -39,3 +41,9 @@ internal fun createRenderersFactory(context: Context): RenderersFactory {
             }
         }
 }
+
+/** Media3 requests and abandons audio focus for these attributes (pass `handleAudioFocus = true`). */
+internal fun movieAudioAttributes(): AudioAttributes = AudioAttributes.Builder()
+    .setUsage(C.USAGE_MEDIA)
+    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+    .build()

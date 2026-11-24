@@ -59,8 +59,10 @@ struct VideoSourceResolutionFailure: Error {
 }
 
 public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate, VideoPlayerHost {
-    public private(set) static var viewController: FlutterViewController?
+    /// The most recently resolved host of any engine; weak, and cleared when that engine detaches.
+    public private(set) static weak var viewController: FlutterViewController?
     private var registrar: FlutterPluginRegistrar?
+    private weak var fallbackViewController: FlutterViewController?
     private var activePlaybackSession: PlaybackSession?
     private weak var activePlayerViewController: VideoPlayerViewController?
 
@@ -68,14 +70,19 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         let instance = VideoPlayerPlugin()
         instance.registrar = registrar
         if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController as? FlutterViewController {
-            viewController = rootViewController
+            instance.fallbackViewController = rootViewController
         } else if let windowScene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }),
                   let flutterController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController as? FlutterViewController {
-            viewController = flutterController
+            instance.fallbackViewController = flutterController
         }
-        VideoPlayerApi.host = instance
+        if let hostViewController = instance.hostViewController {
+            viewController = hostViewController
+        }
+        // Published so Flutter calls detachFromEngine(for:) when this engine goes away.
+        registrar.publish(instance)
+        VideoPlayerApi.register(instance)
         registrar.addApplicationDelegate(instance)
         registrar.addSceneDelegate(instance)
         let videoViewFactory = VideoPlayerViewFactory(registrar: registrar)
@@ -84,6 +91,30 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
 
     // Signature must match FlutterSceneLifeCycleDelegate exactly (Bool return, optional
     // options) or Flutter never calls it. Returns false: we observe, not handle, the connection.
+    public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        VideoPlayerApi.unregister(self)
+        activePlaybackSession?.cancel()
+        activePlaybackSession = nil
+        if let ownViewController = hostViewController, VideoPlayerPlugin.viewController === ownViewController {
+            VideoPlayerPlugin.viewController = nil
+        }
+        fallbackViewController = nil
+        self.registrar = nil
+    }
+
+    /// This engine's own view controller; the window lookup is only a fallback for registrars without one.
+    private var hostViewController: FlutterViewController? {
+        (registrar?.viewController as? FlutterViewController) ?? fallbackViewController
+    }
+
+    var canPresent: Bool {
+        hostViewController != nil
+    }
+
+    var hasActivePlayer: Bool {
+        activePlayerViewController != nil
+    }
+
     public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions?) -> Bool {
         updateViewController(from: scene)
         return false
@@ -102,7 +133,8 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
               let flutterController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController as? FlutterViewController else {
             return
         }
-        VideoPlayerPlugin.viewController = flutterController
+        fallbackViewController = flutterController
+        VideoPlayerPlugin.viewController = hostViewController
     }
 
     private func cleanupOrphanedSessionIfNeeded() {
@@ -194,7 +226,7 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
             result(-1, -1, "PLAYER_ALREADY_ACTIVE", "A video player is already active")
             return
         }
-        guard let presenter = VideoPlayerPlugin.viewController else {
+        guard let hostViewController else {
             result(-1, -1, "NO_VIEW_CONTROLLER", "No FlutterViewController available to present video")
             return
         }
@@ -223,10 +255,27 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDe
         activePlaybackSession = session
         activePlayerViewController = vc
         bindPlaybackLifecycle(to: vc, session: session)
-        if let orientation = presenter.view.window?.windowScene?.interfaceOrientation {
+        if let orientation = hostViewController.view.window?.windowScene?.interfaceOrientation {
             vc.pinOrientationForPresentation(to: orientation)
         }
-        presenter.present(vc, animated: true, completion: nil)
+        let presenter = topMostPresenter(from: hostViewController)
+        if !presenter.isBeingDismissed {
+            presenter.present(vc, animated: true, completion: nil)
+        }
+        // UIKit refuses (and only logs) a presentation from a busy presenter; the session would never resolve.
+        if vc.presentingViewController == nil {
+            activePlayerViewController = nil
+            activePlaybackSession = nil
+            session.resolve(code: "PRESENT_FAILED", message: "Unable to present the video player")
+        }
+    }
+
+    private func topMostPresenter(from root: UIViewController) -> UIViewController {
+        var presenter = root
+        while let presented = presenter.presentedViewController, !presented.isBeingDismissed {
+            presenter = presented
+        }
+        return presenter
     }
 }
 
@@ -251,10 +300,18 @@ public class VideoPlayerPlugin: NSObject, FlutterPlugin, VideoPlayerHost {
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let instance = VideoPlayerPlugin(registrar: registrar)
-        VideoPlayerApi.host = instance
+        VideoPlayerApi.register(instance)
 
         let viewFactory = VideoPlayerPlatformViewFactory(registrar: registrar)
         registrar.register(viewFactory, withId: "plugins.video/video_player_view")
+    }
+
+    var canPresent: Bool {
+        resolveHostView() != nil
+    }
+
+    var hasActivePlayer: Bool {
+        activePlayerOverlay != nil
     }
 
     func closePlayer(completion: @escaping () -> Void) {

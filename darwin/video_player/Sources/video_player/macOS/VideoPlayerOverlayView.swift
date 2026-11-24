@@ -33,11 +33,14 @@ class VideoPlayerOverlayView: NSView {
 
     // State & Observers
     private var timeObserver: Any?
+    private var statusObservation: NSKeyValueObservation?
     private var isUserScrubbing = false
     private var totalDuration: Double = 0
     private var currentPlaybackRate: Float = 1.0
 
     private var trackingArea: NSTrackingArea?
+    private weak var captureProtectedWindow: NSWindow?
+    private var previousSharingType: NSWindow.SharingType?
 
     init(configuration: PlayerConfiguration) {
         self.playerConfiguration = configuration
@@ -67,6 +70,23 @@ class VideoPlayerOverlayView: NSView {
     }
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        restoreWindowSharing()
+        guard let newWindow, !playerConfiguration.isScreenshotEnabled else { return }
+        previousSharingType = newWindow.sharingType
+        captureProtectedWindow = newWindow
+        newWindow.sharingType = .none
+    }
+
+    private func restoreWindowSharing() {
+        if let window = captureProtectedWindow, let previousSharingType {
+            window.sharingType = previousSharingType
+        }
+        captureProtectedWindow = nil
+        previousSharingType = nil
+    }
 
     // MARK: - Setup
 
@@ -127,7 +147,7 @@ class VideoPlayerOverlayView: NSView {
 
     private func setupPlayback() {
         guard let url = URL(string: playerConfiguration.url) else {
-            failPlayback(code: "INVALID_URL", message: "Invalid video URL: \(playerConfiguration.url)")
+            failPlayback(code: "INVALID_URL", message: "Invalid video URL: only HTTPS is allowed")
             return
         }
 
@@ -156,6 +176,18 @@ class VideoPlayerOverlayView: NSView {
             name: .AVPlayerItemDidPlayToEndTime,
             object: item
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerItemFailedToPlayToEnd),
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: item
+        )
+        statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            guard item.status == .failed else { return }
+            DispatchQueue.main.async {
+                self?.failPlayback(code: "PLAYBACK_FAILED", message: "Unable to play the video")
+            }
+        }
 
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
@@ -267,7 +299,20 @@ class VideoPlayerOverlayView: NSView {
     }
 
     @objc private func playerItemDidFinish() {
-        requestClose()
+        DispatchQueue.main.async { [weak self] in self?.requestClose() }
+    }
+
+    @objc private func playerItemFailedToPlayToEnd() {
+        DispatchQueue.main.async { [weak self] in
+            self?.failPlayback(code: "PLAYBACK_FAILED", message: "Playback failed before the end of the video")
+        }
+    }
+
+    private func removeItemObservers() {
+        statusObservation?.invalidate()
+        statusObservation = nil
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: nil)
     }
 
     // MARK: - Mouse & Keyboard (auto-hide lives in PlayerControlsView)
@@ -355,6 +400,7 @@ class VideoPlayerOverlayView: NSView {
         }
 
         player.pause()
+        removeItemObservers()
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
             timeObserver = nil
@@ -378,6 +424,7 @@ class VideoPlayerOverlayView: NSView {
         controls.cancelAutoHide()
 
         player.pause()
+        removeItemObservers()
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
             timeObserver = nil

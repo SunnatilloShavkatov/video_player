@@ -6,8 +6,7 @@
     <application android:supportsRtl="true">
         <activity
             android:name=".fullscreen.VideoPlayerActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|layoutDirection"
-            android:hardwareAccelerated="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|layoutDirection|locale"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AppCompat.NoActionBar" />

@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -48,6 +49,7 @@ class PlayerController(
     private val delegate: PlayerControllerDelegate?
 ) {
     private var player: ExoPlayer? = null
+    private var attachedView: androidx.media3.ui.PlayerView? = null
     private val playerListener = createPlayerListener()
     private val intent = PlaybackIntent()
 
@@ -85,6 +87,8 @@ class PlayerController(
         val startPositionMs = (lastPositionSeconds * 1000).coerceAtLeast(0)
         player = ExoPlayer.Builder(context, createRenderersFactory(context))
             .setLoadControl(loadControl)
+            .setAudioAttributes(movieAudioAttributes(), true)
+            .setHandleAudioBecomingNoisy(true)
             .build().apply {
             setMediaSource(mediaSource, startPositionMs)
             prepare()
@@ -101,8 +105,9 @@ class PlayerController(
      * @param playerView The ExoPlayer PlayerView component
      */
     fun attachToView(playerView: androidx.media3.ui.PlayerView) {
+        attachedView = playerView
         playerView.player = player
-        playerView.keepScreenOn = true
+        playerView.keepScreenOn = player?.isPlaying == true
         playerView.useController = true
     }
 
@@ -157,6 +162,7 @@ class PlayerController(
                 .buildUpon()
                 .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
                 .clearVideoSizeConstraints()
+                .setMinVideoSize(0, 0)
                 .build()
         }
     }
@@ -286,6 +292,8 @@ class PlayerController(
             try { it.release() } catch (_: Exception) {}
         }
         player = null
+        attachedView?.keepScreenOn = false
+        attachedView = null
         intent.onReleased()
     }
 
@@ -305,7 +313,17 @@ class PlayerController(
             if (isPlaying) {
                 intent.onPlaying()
             }
+            attachedView?.keepScreenOn = isPlaying
             delegate?.onIsPlayingChanged(isPlaying)
+        }
+
+        // Media3 pauses on permanent focus loss and on headphones unplugged; the user did not ask to resume.
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (!playWhenReady && (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS ||
+                    reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY)
+            ) {
+                intent.onPause()
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -376,13 +394,11 @@ class PlayerController(
         keyRequestHeaders: Map<String, String> = emptyMap(),
         keyRequestHosts: Set<String> = emptySet(),
     ): MediaSource {
-        val dataSourceFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
-
-        val uri = if (UrlPolicy.isHttps(url)) {
-            url.toUri()
-        } else {
-            "asset:///flutter_assets/$url".toUri()
-        }
+        val isHttps = UrlPolicy.isHttps(url)
+        // Assets need DefaultDataSource (asset: scheme); https keeps the plain http source.
+        val dataSourceFactory: DataSource.Factory =
+            if (isHttps) DefaultHttpDataSource.Factory() else DefaultDataSource.Factory(context)
+        val uri = if (isHttps) url.toUri() else "asset:///flutter_assets/$url".toUri()
 
         val subtitleConfigs = subtitles.map { sub ->
             MediaItem.SubtitleConfiguration.Builder(sub.url.toUri())
@@ -395,7 +411,7 @@ class PlayerController(
 
         val isHls = UrlPolicy.isHls(url)
 
-        if (isHls && keyRequestHeaders.isNotEmpty()) {
+        if (isHttps && isHls && keyRequestHeaders.isNotEmpty()) {
             return createKeyAuthorizedHlsSource(url, uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders, keyRequestHosts)
         }
 

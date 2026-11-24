@@ -15,7 +15,6 @@ ENGINE="$FLUTTER_ROOT/bin/cache/artifacts/engine"
 find_snapkit() {
   local candidates=(
     "$ROOT/example/build/ios/SourcePackages/checkouts/SnapKit/Sources"
-    "$ROOT/example/ios/Pods/SnapKit/Sources"
   )
   candidates+=("$HOME"/Library/Developer/Xcode/DerivedData/Runner-*/SourcePackages/checkouts/SnapKit/Sources)
   for dir in "${candidates[@]}"; do
@@ -30,7 +29,7 @@ typecheck_ios() {
   snapkit="$(find_snapkit)"
   if [[ -z "$snapkit" ]]; then
     echo "SnapKit sources not found. The example app must have been resolved once" >&2
-    echo "(pod install or an Xcode/Flutter iOS build) — ask the user before building." >&2
+    echo "(SwiftPM: an Xcode/Flutter iOS build of example/) — ask the user before building." >&2
     return 1
   fi
   sdk="$(xcrun --sdk iphonesimulator --show-sdk-path)"
