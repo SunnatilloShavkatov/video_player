@@ -65,8 +65,6 @@ final class VideoPlayerViewController {
   /// - [resizeMode]: How the new video should fit in the view (default: [ResizeMode.fit])
   /// - [keyRequestHeaders]: Headers sent only with HLS AES-128 key requests
   ///   (default: none). See [VideoPlayerView.keyRequestHeaders].
-  /// - [keyRequestHosts]: Extra hosts allowed to receive [keyRequestHeaders]
-  ///   (default: none). See [VideoPlayerView.keyRequestHosts].
   ///
   /// **Example:**
   /// ```
@@ -81,7 +79,6 @@ final class VideoPlayerViewController {
     required String url,
     ResizeMode resizeMode = ResizeMode.fit,
     Map<String, String> keyRequestHeaders = const {},
-    List<String> keyRequestHosts = const [],
   }) async {
     _checkNotDisposed();
     if (UrlValidator.instance.isNotValidHttpsUrl(url)) {
@@ -91,7 +88,6 @@ final class VideoPlayerViewController {
       'url': url,
       'resizeMode': resizeMode.value,
       'keyRequestHeaders': keyRequestHeaders,
-      'keyRequestHosts': keyRequestHosts,
     });
   }
 

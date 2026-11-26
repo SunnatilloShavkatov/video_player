@@ -153,7 +153,7 @@ class VideoPlayerOverlayView: NSView {
 
         controls.setLoading(true)
 
-        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: url, keyHeaders: playerConfiguration.keyRequestHeaders, keyHosts: playerConfiguration.keyRequestHosts)
+        let (asset, loader) = HlsKeyResourceLoader.makeAsset(url: url, keyHeaders: playerConfiguration.keyRequestHeaders)
         keyLoader = loader
         let playerItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: playerItem)

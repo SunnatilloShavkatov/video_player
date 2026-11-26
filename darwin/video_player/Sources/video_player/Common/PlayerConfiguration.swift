@@ -23,9 +23,8 @@ struct PlayerConfiguration{
     var subtitleSizeText: String
     var subtitleOffText: String
     var keyRequestHeaders: [String: String]
-    var keyRequestHosts: [String]
 
-    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false, subtitles: [SubtitleTrack] = [], subtitleText: String = "Subtitles", subtitleSizeText: String = "Subtitle Size", subtitleOffText: String = "Off", keyRequestHeaders: [String: String] = [:], keyRequestHosts: [String] = []) {
+    init(qualityText: String, speedText: String, lastPosition: Int, title: String, playVideoFromAsset: Bool, assetPath: String? = nil, autoText: String, url: String, movieShareLink: String, isScreenshotEnabled: Bool = false, subtitles: [SubtitleTrack] = [], subtitleText: String = "Subtitles", subtitleSizeText: String = "Subtitle Size", subtitleOffText: String = "Off", keyRequestHeaders: [String: String] = [:]) {
         self.url = url
         self.title = title
         self.lastPosition = lastPosition
@@ -41,7 +40,6 @@ struct PlayerConfiguration{
         self.subtitleSizeText = subtitleSizeText
         self.subtitleOffText = subtitleOffText
         self.keyRequestHeaders = keyRequestHeaders
-        self.keyRequestHosts = keyRequestHosts
     }
     
     static func fromMap(map: [String: Any]) -> PlayerConfiguration? {
@@ -63,7 +61,6 @@ struct PlayerConfiguration{
         let subtitleSizeText = map["subtitleSizeText"] as? String ?? "Subtitle Size"
         let subtitleOffText = map["subtitleOffText"] as? String ?? "Off"
         let keyRequestHeaders = map["keyRequestHeaders"] as? [String: String] ?? [:]
-        let keyRequestHosts = (map["keyRequestHosts"] as? [Any])?.compactMap { $0 as? String } ?? []
 
         return PlayerConfiguration(
             qualityText: qualityText,
@@ -80,8 +77,7 @@ struct PlayerConfiguration{
             subtitleText: subtitleText,
             subtitleSizeText: subtitleSizeText,
             subtitleOffText: subtitleOffText,
-            keyRequestHeaders: keyRequestHeaders,
-            keyRequestHosts: keyRequestHosts
+            keyRequestHeaders: keyRequestHeaders
         )
     }
 }

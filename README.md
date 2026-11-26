@@ -165,18 +165,7 @@ final result = await VideoPlayer.instance.playVideo(
 );
 ```
 
-The headers are sent only over HTTPS and only to the playlist's own host. If the key endpoint is on
-another host, list it in `keyRequestHosts` (exact host names); a key request to any other host fails
-instead of leaking the token:
-
-```
-PlayerConfiguration.remote(
-  videoUrl: 'https://cdn.example.com/lesson/master.m3u8',
-  title: 'Lesson 1',
-  keyRequestHeaders: {'Authorization': 'Bearer $token'},
-  keyRequestHosts: ['keys.example.com'],
-);
-```
+The headers are sent only over HTTPS; the key endpoint may be on any host.
 
 - The headers are sent **only** with AES key requests. Playlist and segment requests never carry them.
 - The key is fetched when playback starts, so pass a token that is valid at that moment.
@@ -321,7 +310,6 @@ PlayerConfiguration.remote({
   String speedText = 'Speed',         // UI label (optional)
   String autoText = 'Auto',           // UI label (optional)
   Map<String, String> keyRequestHeaders = const {}, // AES key request headers (optional)
-  List<String> keyRequestHosts = const [],          // Extra hosts allowed to get those headers (optional)
 })
 ```
 
@@ -350,7 +338,6 @@ PlayerConfiguration.asset({
 - `playVideoFromAsset`: Whether to play from app assets
 - `assetPath`: Asset file path (when `playVideoFromAsset` is true)
 - `keyRequestHeaders`: Headers sent only with HLS AES-128 key requests (default: empty)
-- `keyRequestHosts`: Extra hosts, besides the playlist host, that may receive `keyRequestHeaders` (default: empty)
 
 ### PlaybackResult
 

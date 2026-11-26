@@ -1,3 +1,11 @@
+## [3.10.1] - 2026-11-26
+
+### Removed
+- `keyRequestHosts` (`PlayerConfiguration`, `VideoPlayerView`, `VideoPlayerViewController.setUrl`). Remove the argument from your calls.
+
+### Fixed
+- HLS AES-128 key requests failed with `HlsKeyResourceLoader` (iOS/macOS) or "HLS key request blocked" (Android) when the key was served from a host other than the playlist's. `keyRequestHeaders` now go to the key URI on any host again, as before 3.10.0; they are still sent only over HTTPS and only with key requests.
+
 ## [3.10.0] - 2026-11-24
 
 ### Migration

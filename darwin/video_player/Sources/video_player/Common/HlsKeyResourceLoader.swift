@@ -23,23 +23,21 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     private static let errorDomain = "uz.plugin.video_player.HlsKeyResourceLoader"
 
     private let keyHeaders: [String: String]
-    private let allowedKeyHosts: Set<String>
     private let session: URLSession
     private let queue = DispatchQueue(label: "uz.plugin.video_player.hls-key-loader")
     // Accessed on `queue` only.
     private var keyCache: [URL: Data] = [:]
     private var tasks: [AVAssetResourceLoadingRequest: URLSessionDataTask] = [:]
 
-    private init(keyHeaders: [String: String], allowedKeyHosts: Set<String>) {
+    private init(keyHeaders: [String: String]) {
         self.keyHeaders = keyHeaders
-        self.allowedKeyHosts = allowedKeyHosts
         // Ephemeral and uncached: AES keys must never reach the disk.
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         session = URLSession(
             configuration: configuration,
-            delegate: RedirectGuard(allowedKeyHosts: allowedKeyHosts, keyHeaderNames: Array(keyHeaders.keys)),
+            delegate: HttpsRedirectGuard(),
             delegateQueue: nil
         )
     }
@@ -49,20 +47,16 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     /// Returns a plain asset when there are no headers or the URL is not an https HLS playlist.
-    /// `keyHosts` lists hosts besides the playlist's own that may receive `keyHeaders`.
     static func makeAsset(
         url: URL,
-        keyHeaders: [String: String],
-        keyHosts: [String] = []
+        keyHeaders: [String: String]
     ) -> (asset: AVURLAsset, loader: HlsKeyResourceLoader?) {
         guard !keyHeaders.isEmpty,
               url.absoluteString.lowercased().contains(".m3u8"),
               let proxiedURL = replacingScheme(of: url, from: "https", to: playlistScheme) else {
             return (AVURLAsset(url: url), nil)
         }
-        var allowedHosts = Set(keyHosts.map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
-        if let playlistHost = url.host?.lowercased() { allowedHosts.insert(playlistHost) }
-        let loader = HlsKeyResourceLoader(keyHeaders: keyHeaders, allowedKeyHosts: allowedHosts)
+        let loader = HlsKeyResourceLoader(keyHeaders: keyHeaders)
         let asset = AVURLAsset(url: proxiedURL)
         asset.resourceLoader.setDelegate(loader, queue: loader.queue)
         return (asset, loader)
@@ -105,14 +99,6 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     private func loadKey(from url: URL, for loadingRequest: AVAssetResourceLoadingRequest) {
-        // The key URI comes from the playlist: never send the headers to an unlisted host.
-        guard let host = url.host?.lowercased(), allowedKeyHosts.contains(host) else {
-            loadingRequest.finishLoading(with: Self.error(
-                code: -1,
-                "HLS key request blocked: host is not the playlist host or in keyRequestHosts"
-            ))
-            return
-        }
         if let cached = keyCache[url] {
             loadingRequest.dataRequest?.respond(with: cached)
             loadingRequest.finishLoading()
@@ -221,16 +207,8 @@ final class HlsKeyResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 }
 
 /// Separate from the loader: a session retains its delegate until invalidated (done in the loader's `deinit`).
-/// Refuses non-https redirects, and redirects of key requests (they carry the key headers) to unlisted hosts.
-private final class RedirectGuard: NSObject, URLSessionTaskDelegate {
-    private let allowedKeyHosts: Set<String>
-    private let keyHeaderNames: [String]
-
-    init(allowedKeyHosts: Set<String>, keyHeaderNames: [String]) {
-        self.allowedKeyHosts = allowedKeyHosts
-        self.keyHeaderNames = keyHeaderNames
-    }
-
+/// Refuses non-https redirects so playlists and keys never travel over plain http.
+private final class HttpsRedirectGuard: NSObject, URLSessionTaskDelegate {
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
@@ -238,15 +216,6 @@ private final class RedirectGuard: NSObject, URLSessionTaskDelegate {
         newRequest request: URLRequest,
         completionHandler: @escaping (URLRequest?) -> Void
     ) {
-        guard let target = request.url, target.scheme?.lowercased() == "https" else {
-            completionHandler(nil)
-            return
-        }
-        let carriesKeyHeaders = keyHeaderNames.contains { task.originalRequest?.value(forHTTPHeaderField: $0) != nil }
-        if carriesKeyHeaders, !allowedKeyHosts.contains(target.host?.lowercased() ?? "") {
-            completionHandler(nil)
-            return
-        }
-        completionHandler(request)
+        completionHandler(request.url?.scheme?.lowercased() == "https" ? request : nil)
     }
 }

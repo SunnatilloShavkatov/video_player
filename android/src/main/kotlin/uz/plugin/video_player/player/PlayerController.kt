@@ -59,19 +59,17 @@ class PlayerController(
      * @param url Video URL (HLS stream)
      * @param lastPositionSeconds Starting position in seconds
      * @param keyRequestHeaders Headers added only to HLS AES-128 key requests
-     * @param keyRequestHosts Extra hosts (besides the playlist host) allowed to receive them
      */
     fun initialize(
         url: String,
         lastPositionSeconds: Long,
         subtitles: List<SubtitleTrack> = emptyList(),
         keyRequestHeaders: Map<String, String> = emptyMap(),
-        keyRequestHosts: Set<String> = emptySet(),
     ) {
         require(!UrlPolicy.isInsecureHttp(url)) { "Only HTTPS URLs are allowed" }
         intent.onInitialized(remote = UrlPolicy.isHttps(url))
 
-        val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders, keyRequestHosts)
+        val mediaSource = createMediaSource(url, subtitles, keyRequestHeaders)
 
         // CUSTOM LOAD CONTROL: More conservative buffer for low-end devices
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
@@ -392,7 +390,6 @@ class PlayerController(
         url: String,
         subtitles: List<SubtitleTrack> = emptyList(),
         keyRequestHeaders: Map<String, String> = emptyMap(),
-        keyRequestHosts: Set<String> = emptySet(),
     ): MediaSource {
         val isHttps = UrlPolicy.isHttps(url)
         // Assets need DefaultDataSource (asset: scheme); https keeps the plain http source.
@@ -412,7 +409,7 @@ class PlayerController(
         val isHls = UrlPolicy.isHls(url)
 
         if (isHttps && isHls && keyRequestHeaders.isNotEmpty()) {
-            return createKeyAuthorizedHlsSource(url, uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders, keyRequestHosts)
+            return createKeyAuthorizedHlsSource(url, uri, dataSourceFactory, subtitleConfigs, keyRequestHeaders)
         }
 
         val mediaItem = MediaItem.Builder()
@@ -462,9 +459,8 @@ class PlayerController(
         dataSourceFactory: DataSource.Factory,
         subtitleConfigs: List<MediaItem.SubtitleConfiguration>,
         keyRequestHeaders: Map<String, String>,
-        keyRequestHosts: Set<String>,
     ): MediaSource {
-        val hlsSource = hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders, url, keyRequestHosts)
+        val hlsSource = hlsMediaSourceFactory(dataSourceFactory, keyRequestHeaders)
             .createMediaSource(
                 MediaItem.Builder()
                     .setUri(uri)

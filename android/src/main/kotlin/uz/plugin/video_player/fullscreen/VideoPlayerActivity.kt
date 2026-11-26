@@ -332,7 +332,6 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerControllerDelegate {
                 playerConfiguration.lastPosition,
                 playerConfiguration.subtitles,
                 playerConfiguration.keyRequestHeaders.orEmpty(),
-                playerConfiguration.keyRequestHosts.toSet(),
             )
             playerController.attachToView(playerView)
             subtitles.restore()

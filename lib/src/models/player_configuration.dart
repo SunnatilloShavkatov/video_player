@@ -60,7 +60,6 @@ class PlayerConfiguration {
     this.isScreenshotEnabled = false,
     required this.playVideoFromAsset,
     this.keyRequestHeaders = const {},
-    this.keyRequestHosts = const [],
   }) : assert(lastPosition >= 0, 'lastPosition must be non-negative');
 
   /// Creates a configuration for playing a remote video via HTTPS.
@@ -81,8 +80,6 @@ class PlayerConfiguration {
   /// - [subtitleOffText]: Label for the "subtitles disabled" option (default: 'Off')
   /// - [keyRequestHeaders]: HTTP headers sent only with HLS AES-128 key requests
   ///   (default: empty). See [keyRequestHeaders].
-  /// - [keyRequestHosts]: Extra hosts allowed to receive [keyRequestHeaders]
-  ///   (default: none). See [keyRequestHosts].
   ///
   /// **Example:**
   /// ```
@@ -120,7 +117,6 @@ class PlayerConfiguration {
     String subtitleSizeText = 'Subtitle Size',
     String subtitleOffText = 'Off',
     Map<String, String> keyRequestHeaders = const {},
-    List<String> keyRequestHosts = const [],
   }) {
     if (startPositionSeconds < 0) {
       throw ArgumentError.value(startPositionSeconds, 'startPositionSeconds', 'must be non-negative');
@@ -141,7 +137,6 @@ class PlayerConfiguration {
       subtitleSizeText: subtitleSizeText,
       subtitleOffText: subtitleOffText,
       keyRequestHeaders: keyRequestHeaders,
-      keyRequestHosts: keyRequestHosts,
     );
   }
 
@@ -336,15 +331,6 @@ class PlayerConfiguration {
   /// valid at that moment. Header values are never included in [toString].
   final Map<String, String> keyRequestHeaders;
 
-  /// Hosts, besides the playlist's own host, that may receive [keyRequestHeaders]
-  /// (matched case-insensitively, exact host, e.g. `keys.example.com`).
-  ///
-  /// The key URI comes from the playlist, so [keyRequestHeaders] are sent only to
-  /// the playlist host and these hosts; a key request to any other host fails
-  /// instead of leaking the token. Leave empty when keys are served from the same
-  /// host as the playlist.
-  final List<String> keyRequestHosts;
-
   /// Converts this configuration to a map for platform channel communication.
   ///
   /// This method is used internally to serialize configuration data
@@ -367,7 +353,6 @@ class PlayerConfiguration {
     'isScreenshotEnabled': isScreenshotEnabled,
     'subtitles': subtitles.map((s) => s.toMap()).toList(),
     'keyRequestHeaders': keyRequestHeaders,
-    'keyRequestHosts': keyRequestHosts,
   };
 
   @override
@@ -387,7 +372,6 @@ class PlayerConfiguration {
       'subtitleText: $subtitleText, '
       'subtitleSizeText: $subtitleSizeText, '
       'subtitleOffText: $subtitleOffText, '
-      'keyRequestHeaders: ${keyRequestHeaders.keys.toList()}, '
-      'keyRequestHosts: $keyRequestHosts'
+      'keyRequestHeaders: ${keyRequestHeaders.keys.toList()}'
       '}';
 }

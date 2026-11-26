@@ -18,7 +18,7 @@ part 'video_player_view_controller.dart';
 typedef FlutterVideoPlayerViewCreatedCallback = void Function(VideoPlayerViewController controller);
 
 /// Owns the [VideoPlayerViewController] it creates: the controller is disposed when the view leaves the tree, and
-/// a rebuild with a different [url], [resizeMode], [keyRequestHeaders] or [keyRequestHosts] loads the new source.
+/// a rebuild with a different [url], [resizeMode] or [keyRequestHeaders] loads the new source.
 class VideoPlayerView extends StatefulWidget {
   const new({
     super.key,
@@ -26,7 +26,6 @@ class VideoPlayerView extends StatefulWidget {
     required this.onVideoViewCreated,
     this.resizeMode = ResizeMode.fit,
     this.keyRequestHeaders = const {},
-    this.keyRequestHosts = const [],
   });
 
   /// Platform view type name for video player
@@ -40,10 +39,6 @@ class VideoPlayerView extends StatefulWidget {
   /// `#EXT-X-KEY`), e.g. `{'Authorization': 'Bearer $token'}`. Playlist and
   /// segment requests never carry them.
   final Map<String, String> keyRequestHeaders;
-
-  /// Extra hosts, besides the playlist's own host, that may receive
-  /// [keyRequestHeaders]. See `PlayerConfiguration.keyRequestHosts`.
-  final List<String> keyRequestHosts;
 
   @override
   State<VideoPlayerView> createState() => _VideoPlayerViewState();
@@ -68,7 +63,6 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
             url: widget.url,
             resizeMode: widget.resizeMode,
             keyRequestHeaders: widget.keyRequestHeaders,
-            keyRequestHosts: widget.keyRequestHosts,
           )
           .catchError((Object _) {}, test: (e) => e is StateError || e is PlatformException),
     );
@@ -77,8 +71,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
   bool _sourceChanged(VideoPlayerView old) =>
       old.url != widget.url ||
       old.resizeMode != widget.resizeMode ||
-      !mapEquals(old.keyRequestHeaders, widget.keyRequestHeaders) ||
-      !listEquals(old.keyRequestHosts, widget.keyRequestHosts);
+      !mapEquals(old.keyRequestHeaders, widget.keyRequestHeaders);
 
   @override
   void dispose() {
@@ -99,7 +92,6 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       'url': widget.url,
       'resizeMode': widget.resizeMode.value,
       'keyRequestHeaders': widget.keyRequestHeaders,
-      'keyRequestHosts': widget.keyRequestHosts,
     };
 
     switch (defaultTargetPlatform) {
